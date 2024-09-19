@@ -1630,7 +1630,7 @@ class ProImageEditorState extends State<ProImageEditor>
     final fileName = '${newDirectory.path}/${_getFormattedDateTime()}.jpg';
     final pathOfImage = await File(fileName).create();
     await pathOfImage.writeAsBytes(bytes);
-    await Share.share(fileName);
+    await Share.shareXFiles([XFile(fileName)]);
     if (context.mounted) {
       if (mounted) {
         Navigator.pop(context);
