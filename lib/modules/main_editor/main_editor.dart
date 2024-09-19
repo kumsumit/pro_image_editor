@@ -1623,6 +1623,9 @@ class ProImageEditorState extends State<ProImageEditor>
     Uint8List? bytes = await captureEditorImage();
     final directory = await getApplicationDocumentsDirectory();
     final newDirectory = Directory('${directory.path}/filex/images');
+    if(! await newDirectory.exists()){
+       await newDirectory.create(recursive: true);
+    }
     await newDirectory.createTemp();
     final fileName = '${newDirectory.path}/${_getFormattedDateTime()}.jpg';
     final pathOfImage = await File(fileName).create();
