@@ -34,7 +34,11 @@ void main() {
 
     testWidgets('EmojiEditor should set custom configs for EmojiPicker',
         (WidgetTester tester) async {
-      const swapCategoryAndBottomBar = false;
+      const viewOrderConfig = ViewOrderConfig(
+                      top: EmojiPickerItem.categoryBar,
+                      middle: EmojiPickerItem.emojiView,
+                      bottom: EmojiPickerItem.searchBar,
+                    );
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -42,7 +46,7 @@ void main() {
               configs: ProImageEditorConfigs(
                 imageEditorTheme: ImageEditorTheme(
                   emojiEditor: EmojiEditorTheme(
-                      swapCategoryAndBottomBar: swapCategoryAndBottomBar),
+                      viewOrderConfig: viewOrderConfig),
                 ),
               ),
             ),
@@ -51,8 +55,8 @@ void main() {
       );
       final EmojiPicker emojiPicker =
           tester.widget<EmojiPicker>(find.byType(EmojiPicker).first);
-      expect(emojiPicker.config.swapCategoryAndBottomBar,
-          swapCategoryAndBottomBar);
+      expect(emojiPicker.config.viewOrderConfig,
+          viewOrderConfig);
     });
   });
 }

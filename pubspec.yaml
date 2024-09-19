@@ -5,7 +5,7 @@ homepage: https://github.com/hm21/pro_image_editor/
 repository: https://github.com/hm21/pro_image_editor/
 issue_tracker: https://github.com/hm21/pro_image_editor/issues/
 documentation: https://github.com/hm21/pro_image_editor/
-
+publish_to: none
 
 topics:
   - image-editor
@@ -38,10 +38,12 @@ dependencies:
   flutter:
     sdk: flutter
 
-  emoji_picker_flutter: ^3.0.0
+  emoji_picker_flutter:
+    git: https://github.com/kumsumit/emoji_picker_flutter.git
   http: ^1.2.2
   image: ^4.2.0
-  vibration: ^2.0.0
+  vibration: 
+    git: https://github.com/kumsumit/vibration.git
   mime: ^1.0.6
 
 dev_dependencies:
