@@ -37,14 +37,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  path_provider:
+    git: https://github.com/kumsumit/path_provider.git
   emoji_picker_flutter:
     git: https://github.com/kumsumit/emoji_picker_flutter.git
   http: ^1.2.2
   image: ^4.2.0
+  intl: ^0.19.0
   vibration: 
     git: https://github.com/kumsumit/vibration.git
   mime: ^1.0.6
+  share_plus:
+    git: https://github.com/kumsumit/share_plus.git
 
 dev_dependencies:
   flutter_test:

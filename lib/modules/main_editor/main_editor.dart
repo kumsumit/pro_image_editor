@@ -8,6 +8,9 @@ import 'dart:ui' as ui show Image;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 // Package imports:
 import 'package:vibration/vibration.dart';
@@ -1604,6 +1607,34 @@ class ProImageEditorState extends State<ProImageEditor>
     });
   }
 
+  String _getFormattedDateTime() {
+    final now = DateTime.now();
+    final formatter = DateFormat('yyyyMMdd_HHmmss');
+    return formatter.format(now);
+  }
+
+  /// Complete the editing process and share the edited image.
+  ///
+  /// This function is called when the user is done editing the image and want
+  ///  to share imediately. If no changes have been made or if the image has no
+  ///  additional layers, it will share the original image
+
+  Future<void> shareEditorImage() async {
+    Uint8List? bytes = await captureEditorImage();
+    final directory = await getApplicationDocumentsDirectory();
+    final newDirectory = Directory('${directory.path}/filex/images');
+    await newDirectory.createTemp();
+    final fileName = '${newDirectory.path}/${_getFormattedDateTime()}.jpg';
+    final pathOfImage = await File(fileName).create();
+    await pathOfImage.writeAsBytes(bytes);
+    await Share.share(fileName);
+    if (context.mounted) {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
   /// Captures the final editor image.
   ///
   /// This method generates the final image of the editor content, taking
@@ -1975,6 +2006,10 @@ class ProImageEditorState extends State<ProImageEditor>
                       iconSize: 28,
                       onPressed: doneEditing,
                     ),
+              if (_initialized)
+                IconButton(
+                    onPressed: shareEditorImage,
+                    icon: const Icon(Icons.share_sharp))
             ],
           );
   }
