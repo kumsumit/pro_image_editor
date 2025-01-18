@@ -2,12 +2,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-// Project imports:
-import 'package:pro_image_editor/designs/frosted_glass/frosted_glass.dart';
-import 'package:pro_image_editor/models/editor_callbacks/pro_image_editor_callbacks.dart';
-import 'package:pro_image_editor/modules/emoji_editor/emoji_editor.dart';
-import 'package:pro_image_editor/modules/sticker_editor/sticker_editor.dart';
-import '../../models/editor_configs/pro_image_editor_configs.dart';
+import '/core/models/editor_callbacks/pro_image_editor_callbacks.dart';
+import '/core/models/editor_configs/pro_image_editor_configs.dart';
+import '/designs/frosted_glass/frosted_glass.dart';
+import '/features/emoji_editor/emoji_editor.dart';
+import '/features/sticker_editor/sticker_editor.dart';
 
 /// Represents the temporary sticker mode for Frosted-Glass.
 ///
@@ -60,7 +59,7 @@ class _FrostedGlassStickerPageState extends State<FrostedGlassStickerPage> {
   void initState() {
     _searchCtrl = TextEditingController();
     _searchFocus = FocusNode();
-    if (!widget.configs.emojiEditorConfigs.enabled) {
+    if (!widget.configs.emojiEditor.enabled) {
       temporaryStickerMode = FrostedGlassStickerMode.sticker;
     }
     super.initState();
@@ -96,7 +95,7 @@ class _FrostedGlassStickerPageState extends State<FrostedGlassStickerPage> {
                         configs: widget.configs,
                       ),
                     ),
-                    if (widget.configs.stickerEditorConfigs != null)
+                    if (widget.configs.stickerEditor.enabled)
                       Offstage(
                         offstage: temporaryStickerMode !=
                             FrostedGlassStickerMode.sticker,
@@ -142,7 +141,7 @@ class _FrostedGlassStickerPageState extends State<FrostedGlassStickerPage> {
                 }
               },
               icon: Icon(
-                widget.configs.icons.backButton,
+                widget.configs.mainEditor.icons.backButton,
                 color: Colors.white,
               ),
             ),
@@ -152,7 +151,7 @@ class _FrostedGlassStickerPageState extends State<FrostedGlassStickerPage> {
               ),
               onPressed: null,
               icon: Icon(
-                widget.configs.icons.stickerEditor.bottomNavBar,
+                widget.configs.stickerEditor.icons.bottomNavBar,
                 color: Colors.white,
               ),
             ),
@@ -181,7 +180,7 @@ class _FrostedGlassStickerPageState extends State<FrostedGlassStickerPage> {
                         color: Colors.white,
                       ),
                     ),
-                    if (widget.configs.stickerEditorConfigs != null)
+                    if (widget.configs.stickerEditor.enabled)
                       Align(
                         alignment: Alignment.center,
                         child: SegmentedButton(
@@ -233,7 +232,7 @@ class _FrostedGlassStickerPageState extends State<FrostedGlassStickerPage> {
   }
 
   Widget _buildSearchBar() {
-    if (widget.configs.designMode == ImageEditorDesignModeE.cupertino) {
+    if (widget.configs.designMode == ImageEditorDesignMode.cupertino) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
         child: Row(

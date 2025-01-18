@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 // Project imports:
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'utils/whatsapp_appbar_button_style.dart';
+import 'styles/whatsapp_appbar_button_style.dart';
 import 'whatsapp_done_btn.dart';
 
 /// Represents the app bar for the text-editor in the WhatsApp theme.
@@ -61,28 +61,27 @@ class _WhatsAppTextAppBarState extends State<WhatsAppTextAppBar> {
                   tooltip: widget.configs.i18n.textEditor.textAlign,
                   onPressed: widget.onAlignChange,
                   icon: Icon(widget.align == TextAlign.left
-                      ? widget.configs.icons.textEditor.alignLeft
+                      ? widget.configs.textEditor.icons.alignLeft
                       : widget.align == TextAlign.right
-                          ? widget.configs.icons.textEditor.alignRight
-                          : widget.configs.icons.textEditor.alignCenter),
+                          ? widget.configs.textEditor.icons.alignRight
+                          : widget.configs.textEditor.icons.alignCenter),
                 ),
                 gap,
                 IconButton(
                   style: whatsAppButtonStyle,
                   tooltip: widget.configs.i18n.textEditor.backgroundMode,
                   onPressed: widget.onBackgroundModeChange,
-                  icon: Icon(widget.configs.icons.textEditor.backgroundMode),
+                  icon: Icon(widget.configs.textEditor.icons.backgroundMode),
                 ),
               ],
             ),
             Align(
               alignment:
-                  widget.configs.designMode == ImageEditorDesignModeE.cupertino
+                  widget.configs.designMode == ImageEditorDesignMode.cupertino
                       ? Alignment.centerLeft
                       : Alignment.centerRight,
               child: WhatsAppDoneBtn(
-                foregroundColor: widget.configs.imageEditorTheme.paintingEditor
-                    .appBarForegroundColor,
+                foregroundColor: widget.configs.textEditor.style.appBarColor,
                 configs: widget.configs,
                 onPressed: widget.onDone,
               ),

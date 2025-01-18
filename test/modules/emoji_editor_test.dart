@@ -1,9 +1,8 @@
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-// Project imports:
-import 'package:pro_image_editor/models/editor_configs/pro_image_editor_configs.dart';
-import 'package:pro_image_editor/modules/emoji_editor/emoji_editor.dart';
+import 'package:pro_image_editor/core/models/editor_configs/pro_image_editor_configs.dart';
+import 'package:pro_image_editor/features/emoji_editor/emoji_editor.dart';
 
 void main() {
   group('EmojiEditor Tests', () {
@@ -39,15 +38,13 @@ void main() {
                       middle: EmojiPickerItem.emojiView,
                       bottom: EmojiPickerItem.searchBar,
                     );
+
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: EmojiEditor(
               configs: ProImageEditorConfigs(
-                imageEditorTheme: ImageEditorTheme(
-                  emojiEditor: EmojiEditorTheme(
-                      viewOrderConfig: viewOrderConfig),
-                ),
+                
               ),
             ),
           ),
