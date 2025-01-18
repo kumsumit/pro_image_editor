@@ -1899,10 +1899,7 @@ class CropRotateEditorState extends State<CropRotateEditor>
           _cursor = SystemMouseCursors.basic;
         }
         return;
-      default:
-        _cursor = SystemMouseCursors.basic;
-        return;
-    }
+      }
 
     _cursor = cursorNumber <= 3
         ? getCornerCursor(cursorNumber)
