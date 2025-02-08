@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 // Project imports:
-import '../../pro_image_editor.dart';
+import '/pro_image_editor.dart';
 
 /// Represents the toolbar for the crop/rotate functionality in the WhatsApp
 /// theme.

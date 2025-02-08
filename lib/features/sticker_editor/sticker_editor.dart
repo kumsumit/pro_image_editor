@@ -5,8 +5,8 @@ import '/core/mixins/converted_configs.dart';
 import '/core/mixins/editor_configs_mixin.dart';
 import '/core/models/editor_callbacks/pro_image_editor_callbacks.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
+import '/core/models/layers/layer.dart';
 import '/shared/widgets/extended/extended_pop_scope.dart';
-import '../../core/models/layers/layer.dart';
 
 /// The `StickerEditor` class is responsible for creating a widget that allows
 /// users to select stickers
@@ -41,11 +41,11 @@ class StickerEditorState extends State<StickerEditor>
 
   @override
   void initState() {
+    super.initState();
     callbacks.stickerEditorCallbacks?.onInit?.call();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       callbacks.stickerEditorCallbacks?.onAfterViewInit?.call();
     });
-    super.initState();
   }
 
   @override

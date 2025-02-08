@@ -34,7 +34,6 @@ const Map<String, String> kMinifiedLayerKeys = {
   'flipX': 'fx',
   'flipY': 'fy',
   'isDeleted': 'de',
-  'enableInteraction': 'ei',
   'type': 't',
   'emoji': 'e',
   'text': 'te',
@@ -57,6 +56,21 @@ const Map<String, String> kMinifiedLayerKeys = {
   'height': 'h',
   'wordSpacing': 'ws',
   'decoration': 'd',
+  'interaction': 'in',
+  'meta': 'm',
+
+  /// Only in version < 8.0.0
+  'enableInteraction': 'ei',
+};
+
+/// A constant map containing minified layer interaction keys for import/export
+/// services.
+const Map<String, String> kMinifiedLayerInteractionKeys = {
+  'enableMove': 'm',
+  'enableScale': 's',
+  'enableRotate': 'r',
+  'enableSelection': 't',
+  'enableEdit': 'e',
 };
 
 /// A constant map containing minified paint-item keys for import/export

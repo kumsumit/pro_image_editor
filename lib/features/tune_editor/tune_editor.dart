@@ -1,6 +1,5 @@
 // Dart imports:
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,15 +9,18 @@ import '/core/mixins/converted_callbacks.dart';
 import '/core/mixins/converted_configs.dart';
 import '/core/mixins/standalone_editor.dart';
 import '/core/models/transform_helper.dart';
-import '/core/models/tune_editor/tune_adjustment_matrix.dart';
+import '/core/platform/io/io_helper.dart';
+import '/features/tune_editor/widgets/tune_editor_bottombar.dart';
 import '/pro_image_editor.dart';
 import '/shared/services/content_recorder/widgets/content_recorder.dart';
 import '/shared/widgets/layer/layer_stack.dart';
 import '/shared/widgets/transform/transformed_content_generator.dart';
 import '../filter_editor/widgets/filtered_image.dart';
+import 'models/tune_adjustment_matrix.dart';
 import 'utils/tune_presets.dart';
+import 'widgets/tune_editor_appbar.dart';
 
-export '/core/models/tune_editor/tune_adjustment_item.dart';
+export 'models/tune_adjustment_item.dart';
 
 /// The `TuneEditor` widget allows users to edit images with various
 /// tune adjustment tools such as brightness, contrast, and saturation.
@@ -103,33 +105,34 @@ class TuneEditor extends StatefulWidget
   /// Either [byteArray], [file], [networkUrl], or [assetPath] must be provided.
   factory TuneEditor.autoSource({
     Key? key,
-    required TuneEditorInitConfigs initConfigs,
     Uint8List? byteArray,
     File? file,
     String? assetPath,
     String? networkUrl,
+    EditorImage? editorImage,
+    required TuneEditorInitConfigs initConfigs,
   }) {
-    if (byteArray != null) {
+    if (byteArray != null || editorImage?.byteArray != null) {
       return TuneEditor.memory(
-        byteArray,
+        byteArray ?? editorImage!.byteArray!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (file != null) {
+    } else if (file != null || editorImage?.file != null) {
       return TuneEditor.file(
-        file,
+        file ?? editorImage!.file!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (networkUrl != null) {
+    } else if (networkUrl != null || editorImage?.networkUrl != null) {
       return TuneEditor.network(
-        networkUrl,
+        networkUrl ?? editorImage!.networkUrl!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (assetPath != null) {
+    } else if (assetPath != null || editorImage?.assetPath != null) {
       return TuneEditor.asset(
-        assetPath,
+        assetPath ?? editorImage!.assetPath!,
         key: key,
         initConfigs: initConfigs,
       );
@@ -202,10 +205,9 @@ class TuneEditorState extends State<TuneEditor>
 
   @override
   void initState() {
+    super.initState();
     uiStream = StreamController.broadcast();
     uiStream.stream.listen((_) => rebuildController.add(null));
-
-    tuneAdjustmentMatrix = appliedTuneAdjustments;
 
     var items = tuneEditorConfigs.tuneAdjustmentOptions ??
         tunePresets(
@@ -225,15 +227,17 @@ class TuneEditorState extends State<TuneEditor>
       );
     }).toList();
 
-    if (tuneAdjustmentMatrix.isEmpty) {
-      _setMatrixList();
+    for (final item in items) {
+      int i = appliedTuneAdjustments.indexWhere((el) => el.id == item.id);
+      tuneAdjustmentMatrix.add(
+        i >= 0 ? appliedTuneAdjustments[i] : item.toMatrixItem(),
+      );
     }
 
     tuneEditorCallbacks?.onInit?.call();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       tuneEditorCallbacks?.onAfterViewInit?.call();
     });
-    super.initState();
   }
 
   @override
@@ -395,44 +399,15 @@ class TuneEditorState extends State<TuneEditor>
       return tuneEditorConfigs.widgets.appBar!
           .call(this, rebuildController.stream);
     }
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: tuneEditorConfigs.style.appBarBackground,
-      foregroundColor: tuneEditorConfigs.style.appBarColor,
-      actions: [
-        IconButton(
-          tooltip: i18n.tuneEditor.back,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(tuneEditorConfigs.icons.backButton),
-          onPressed: close,
-        ),
-        const Spacer(),
-        IconButton(
-          tooltip: i18n.tuneEditor.undo,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(
-            tuneEditorConfigs.icons.undoAction,
-            color: canUndo ? Colors.white : Colors.white.withAlpha(80),
-          ),
-          onPressed: canUndo ? undo : null,
-        ),
-        IconButton(
-          tooltip: i18n.tuneEditor.redo,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(
-            tuneEditorConfigs.icons.redoAction,
-            color: canRedo ? Colors.white : Colors.white.withAlpha(80),
-          ),
-          onPressed: canRedo ? redo : null,
-        ),
-        IconButton(
-          tooltip: i18n.tuneEditor.done,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(tuneEditorConfigs.icons.applyChanges),
-          iconSize: 28,
-          onPressed: done,
-        ),
-      ],
+    return TuneEditorAppbar(
+      tuneEditorConfigs: tuneEditorConfigs,
+      i18n: i18n.tuneEditor,
+      canRedo: canRedo,
+      canUndo: canUndo,
+      onClose: close,
+      onDone: done,
+      onRedo: redo,
+      onUndo: undo,
     );
   }
 
@@ -450,46 +425,9 @@ class TuneEditorState extends State<TuneEditor>
               alignment: Alignment.center,
               fit: StackFit.expand,
               children: [
-                Hero(
-                  tag: heroTag,
-                  createRectTween: (begin, end) =>
-                      RectTween(begin: begin, end: end),
-                  child: TransformedContentGenerator(
-                    configs: configs,
-                    transformConfigs:
-                        initialTransformConfigs ?? TransformConfigs.empty(),
-                    child: StreamBuilder(
-                        stream: uiStream.stream,
-                        builder: (context, snapshot) {
-                          return FilteredImage(
-                            width: getMinimumSize(mainImageSize, editorBodySize)
-                                .width,
-                            height:
-                                getMinimumSize(mainImageSize, editorBodySize)
-                                    .height,
-                            configs: configs,
-                            image: editorImage,
-                            filters: appliedFilters,
-                            tuneAdjustments: tuneAdjustmentMatrix,
-                            blurFactor: appliedBlurFactor,
-                          );
-                        }),
-                  ),
-                ),
+                _buildBackgroundImage(),
                 if (tuneEditorConfigs.showLayers && layers != null)
-                  LayerStack(
-                    transformHelper: TransformHelper(
-                      mainBodySize:
-                          getMinimumSize(mainBodySize, editorBodySize),
-                      mainImageSize:
-                          getMinimumSize(mainImageSize, editorBodySize),
-                      editorBodySize: editorBodySize,
-                      transformConfigs: initialTransformConfigs,
-                    ),
-                    configs: configs,
-                    layers: layers!,
-                    clipBehavior: Clip.none,
-                  ),
+                  _buildLayers(),
                 if (tuneEditorConfigs.widgets.bodyItemsRecorded != null)
                   ...tuneEditorConfigs.widgets.bodyItemsRecorded!(
                       this, rebuildController.stream),
@@ -504,110 +442,67 @@ class TuneEditorState extends State<TuneEditor>
     });
   }
 
+  Widget _buildBackgroundImage() {
+    return Hero(
+      tag: heroTag,
+      createRectTween: (begin, end) => RectTween(begin: begin, end: end),
+      child: TransformedContentGenerator(
+        configs: configs,
+        transformConfigs: initialTransformConfigs ?? TransformConfigs.empty(),
+        child: StreamBuilder(
+            stream: uiStream.stream,
+            builder: (context, snapshot) {
+              return FilteredImage(
+                width: getMinimumSize(mainImageSize, editorBodySize).width,
+                height: getMinimumSize(mainImageSize, editorBodySize).height,
+                configs: configs,
+                image: editorImage,
+                filters: appliedFilters,
+                tuneAdjustments: tuneAdjustmentMatrix,
+                blurFactor: appliedBlurFactor,
+              );
+            }),
+      ),
+    );
+  }
+
+  Widget _buildLayers() {
+    return LayerStack(
+      transformHelper: TransformHelper(
+        mainBodySize: getMinimumSize(mainBodySize, editorBodySize),
+        mainImageSize: getMinimumSize(mainImageSize, editorBodySize),
+        editorBodySize: editorBodySize,
+        transformConfigs: initialTransformConfigs,
+      ),
+      configs: configs,
+      layers: layers!,
+      clipBehavior: Clip.none,
+    );
+  }
+
   /// Builds the bottom navigation bar with tune options.
   Widget? _buildBottomNavBar() {
     if (tuneEditorConfigs.widgets.bottomBar != null) {
       return tuneEditorConfigs.widgets.bottomBar!
           .call(this, rebuildController.stream);
     }
-    var bottomTextStyle = const TextStyle(fontSize: 10.0);
-    double bottomIconSize = 22.0;
 
-    return SafeArea(
-      child: Container(
-        color: tuneEditorConfigs.style.bottomBarBackground,
-        padding: const EdgeInsets.only(top: 5),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: RepaintBoundary(
-                child: StreamBuilder(
-                    stream: uiStream.stream,
-                    builder: (context, snapshot) {
-                      var activeOption = tuneAdjustmentList[selectedIndex];
-                      var activeMatrix = tuneAdjustmentMatrix[selectedIndex];
-                      return SizedBox(
-                        height: 40,
-                        child: tuneEditorConfigs.widgets.slider?.call(
-                              this,
-                              rebuildController.stream,
-                              activeMatrix.value,
-                              onChanged,
-                              onChangedEnd,
-                            ) ??
-                            Slider(
-                              min: activeOption.min,
-                              max: activeOption.max,
-                              divisions: activeOption.divisions,
-                              label: (activeMatrix.value *
-                                      activeOption.labelMultiplier)
-                                  .round()
-                                  .toString(),
-                              value: activeMatrix.value,
-                              onChangeStart: onChangedStart,
-                              onChanged: onChanged,
-                              onChangeEnd: onChangedEnd,
-                            ),
-                      );
-                    }),
-              ),
-            ),
-            const SizedBox(height: 4),
-            SizedBox(
-              height: kBottomNavigationBarHeight,
-              child: Scrollbar(
-                controller: bottomBarScrollCtrl,
-                scrollbarOrientation: ScrollbarOrientation.bottom,
-                thickness: isDesktop ? null : 0,
-                child: SingleChildScrollView(
-                  controller: bottomBarScrollCtrl,
-                  scrollDirection: Axis.horizontal,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12.0, 0, 12.0, 6.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      mainAxisSize: MainAxisSize.min,
-                      children:
-                          List.generate(tuneAdjustmentMatrix.length, (index) {
-                        var item = tuneAdjustmentList[index];
-                        return FlatIconTextButton(
-                          label: Text(
-                            item.label,
-                            style: bottomTextStyle.copyWith(
-                              color: selectedIndex == index
-                                  ? tuneEditorConfigs
-                                      .style.bottomBarActiveItemColor
-                                  : tuneEditorConfigs
-                                      .style.bottomBarInactiveItemColor,
-                            ),
-                          ),
-                          icon: Icon(
-                            item.icon,
-                            size: bottomIconSize,
-                            color: selectedIndex == index
-                                ? tuneEditorConfigs
-                                    .style.bottomBarActiveItemColor
-                                : tuneEditorConfigs
-                                    .style.bottomBarInactiveItemColor,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              selectedIndex = index;
-                            });
-                          },
-                        );
-                      }),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return TuneEditorBottombar(
+      state: this,
+      tuneEditorConfigs: tuneEditorConfigs,
+      tuneAdjustmentList: tuneAdjustmentList,
+      tuneAdjustmentMatrix: tuneAdjustmentMatrix,
+      rebuildController: rebuildController,
+      onChangedStart: onChangedStart,
+      onChanged: onChanged,
+      onChangedEnd: onChangedEnd,
+      bottomBarScrollCtrl: bottomBarScrollCtrl,
+      onSelect: (index) {
+        setState(() {
+          selectedIndex = index;
+        });
+      },
+      selectedIndex: selectedIndex,
     );
   }
 }

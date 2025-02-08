@@ -2,16 +2,12 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-// Flutter imports:
 import 'package:flutter/material.dart';
-// Package imports:
 import 'package:pro_image_editor/pro_image_editor.dart';
 
-import '../../features/preview_img.dart';
-// Project imports:
+import '/features/preview_img.dart';
 import '../constants/example_constants.dart';
-
-export '../../shared/widgets/prepare_image_widget.dart';
+export '/shared/widgets/prepare_image_widget.dart';
 
 /// A mixin that provides helper methods and state management for image editing
 /// using the [ProImageEditor]. It is intended to be used in a [StatefulWidget].
@@ -37,7 +33,7 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
   /// Returns `true` if the screen width is greater than or equal to
   /// [kImageEditorExampleIsDesktopBreakPoint], otherwise `false`.
   bool isDesktopMode(BuildContext context) =>
-      MediaQuery.of(context).size.width >=
+      MediaQuery.sizeOf(context).width >=
       kImageEditorExampleIsDesktopBreakPoint;
 
   /// Called when the image editing process starts.
@@ -86,7 +82,7 @@ mixin ExampleHelperState<T extends StatefulWidget> on State<T> {
       if (!mounted) return;
 
       // Navigate to the preview page to display the edited image.
-      editorKey.currentState?.disablePopScope = true;
+      editorKey.currentState?.isPopScopeDisabled = true;
       await Navigator.push(
         context,
         MaterialPageRoute(

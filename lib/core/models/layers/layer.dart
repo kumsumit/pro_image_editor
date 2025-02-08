@@ -1,13 +1,15 @@
 // Flutter imports:
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:pro_image_editor/shared/services/import_export/utils/key_minifier.dart';
 
 import '/shared/services/import_export/types/widget_loader.dart';
-import '../../utils/parser/double_parser.dart';
-import '../../utils/unique_id_generator.dart';
+import '/shared/services/import_export/utils/key_minifier.dart';
+import '/shared/utils/map_utils.dart';
+import '/shared/utils/parser/double_parser.dart';
+import '/shared/utils/unique_id_generator.dart';
 import '../editor_image.dart';
 import 'emoji_layer.dart';
+import 'layer_interaction.dart';
 import 'paint_layer.dart';
 import 'text_layer.dart';
 import 'widget_layer.dart';
@@ -33,25 +35,16 @@ class Layer {
   /// the layer
   Layer({
     String? id,
-    Offset? offset,
-    double? rotation,
-    double? scale,
-    bool? flipX,
-    bool? flipY,
-    bool? enableInteraction,
-    bool? isDeleted,
-  }) {
-    key = GlobalKey();
-    // Initialize properties with provided values or defaults.
-    this.id = id ?? generateUniqueId();
-    this.offset = offset ?? Offset.zero;
-    this.rotation = rotation ?? 0;
-    this.scale = scale ?? 1;
-    this.flipX = flipX ?? false;
-    this.flipY = flipY ?? false;
-    this.enableInteraction = enableInteraction ?? true;
-    this.isDeleted = isDeleted ?? false;
-  }
+    LayerInteraction? interaction,
+    this.offset = Offset.zero,
+    this.rotation = 0,
+    this.scale = 1,
+    this.flipX = false,
+    this.flipY = false,
+    this.isDeleted = false,
+    this.meta,
+  })  : id = id ?? generateUniqueId(),
+        interaction = interaction ?? LayerInteraction();
 
   /// Factory constructor for creating a Layer instance from a map and a list
   /// of stickers.
@@ -64,13 +57,20 @@ class Layer {
     EditorKeyMinifier? minifier,
   }) {
     var keyConverter = minifier?.convertLayerKey ?? (String key) => key;
+    var keyInteractionConverter =
+        minifier?.convertLayerInteractionKey ?? (String key) => key;
 
     /// Creates a base Layer instance with default or map-provided properties.
     Layer layer = Layer(
       id: id,
       flipX: map[keyConverter('flipX')] ?? false,
       flipY: map[keyConverter('flipY')] ?? false,
-      enableInteraction: map[keyConverter('enableInteraction')] ?? true,
+      interaction: LayerInteraction.fromMap(
+        map[keyConverter('interaction')] ?? {},
+        keyConverter: keyInteractionConverter,
+      ),
+      isDeleted: map[keyConverter('isDeleted')] ?? false,
+      meta: map[keyConverter('meta')],
       offset: Offset(safeParseDouble(map['x']), safeParseDouble(map['y'])),
       rotation: safeParseDouble(map[keyConverter('rotation')]),
       scale: safeParseDouble(map[keyConverter('scale')], fallback: 1),
@@ -109,25 +109,34 @@ class Layer {
 
   /// Global key associated with the Layer instance, used for accessing the
   /// widget tree.
-  late GlobalKey key;
+  GlobalKey key = GlobalKey();
 
   /// The position offset of the widget.
-  late Offset offset;
+  Offset offset;
 
   /// The rotation and scale values of the widget.
-  late double rotation, scale;
+  double rotation, scale;
 
   /// Flags to control horizontal and vertical flipping.
-  late bool flipX, flipY;
+  bool flipX, flipY;
 
-  /// Flag to enable or disable the user interaction with the layer.
-  late bool enableInteraction;
+  /// The interaction settings for the layer.
+  ///
+  /// It holds the interaction properties, such as whether moving, scaling,
+  /// rotating, or selecting the layer is enabled.
+  LayerInteraction interaction;
 
   /// Flag which indicates to the history that the layer is removed.
-  late bool isDeleted;
+  bool isDeleted;
 
   /// A unique identifier for the layer.
-  late String id;
+  String id;
+
+  /// A map containing metadata associated with the layer.
+  ///
+  /// This can be used to store additional information about the layer
+  /// that may be needed for processing or rendering.
+  Map<String, dynamic>? meta;
 
   /// Converts this transform object to a Map.
   ///
@@ -143,7 +152,8 @@ class Layer {
       'flipX': flipX,
       'flipY': flipY,
       if (isDeleted) 'isDeleted': isDeleted,
-      'enableInteraction': enableInteraction,
+      'interaction': interaction.toMap(),
+      if (meta != null) 'meta': meta,
       'type': 'default',
     };
   }
@@ -162,9 +172,10 @@ class Layer {
       if (layer.scale != scale) 'scale': scale,
       if (layer.flipX != flipX) 'flipX': flipX,
       if (layer.flipY != flipY) 'flipY': flipY,
-      if (isDeleted) 'isDeleted': isDeleted,
-      if (layer.enableInteraction != enableInteraction)
-        'enableInteraction': enableInteraction,
+      if (layer.isDeleted != isDeleted) 'isDeleted': isDeleted,
+      if (!mapIsEqual(layer.meta, meta)) 'meta': meta,
+      if (layer.interaction != interaction)
+        'interaction': interaction.toMapFromReference(layer.interaction),
     };
   }
 
@@ -179,7 +190,8 @@ class Layer {
         other.scale == scale &&
         other.flipX == flipX &&
         other.flipY == flipY &&
-        other.enableInteraction == enableInteraction &&
+        other.interaction == interaction &&
+        mapIsEqual(other.meta, meta) &&
         other.isDeleted == isDeleted;
   }
 
@@ -191,7 +203,8 @@ class Layer {
         scale.hashCode ^
         flipX.hashCode ^
         flipY.hashCode ^
-        enableInteraction.hashCode ^
+        interaction.hashCode ^
+        meta.hashCode ^
         isDeleted.hashCode;
   }
 }

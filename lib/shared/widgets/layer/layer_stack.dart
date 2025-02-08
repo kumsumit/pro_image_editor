@@ -2,9 +2,9 @@
 import 'package:flutter/material.dart';
 
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
+import '/core/models/layers/layer.dart';
 import '/core/models/transform_helper.dart';
 import '/features/crop_rotate_editor/widgets/crop_layer_painter.dart';
-import '../../../core/models/layers/layer.dart';
 import 'layer_widget.dart';
 
 /// A stateful widget that represents a stack of layers in an image editing
@@ -95,11 +95,11 @@ class _LayerStackState extends State<LayerStack> {
 
   @override
   void initState() {
+    super.initState();
     // Determine whether to cut content outside the image area based on widget
     // settings.
     _cutOutsideImageArea = widget.cutOutsideImageArea ??
         widget.configs.imageGeneration.captureOnlyBackgroundImageArea;
-    super.initState();
   }
 
   @override

@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 
 import '/core/models/i18n/i18n_emoji_editor.dart';
 import '/core/models/styles/emoji_editor_style.dart';
-import '/core/platform/platform_info.dart';
 import '/features/emoji_editor/services/emoji_state_manager.dart';
+import '/shared/utils/platform_info.dart';
 import 'emoji_cell_extended.dart';
 
 /// A widget that provides an enhanced emoji picker view.
@@ -83,6 +83,7 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
 
   @override
   void initState() {
+    super.initState();
     _scrollController = widget.scrollController ?? ScrollController();
     var initCategory = _categories.indexWhere((element) =>
         element.category == widget.config.categoryViewConfig.initCategory);
@@ -103,8 +104,6 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
     for (int i = 0; i < _categories.length; i++) {
       _itemKeys[i] = GlobalKey();
     }
-
-    super.initState();
   }
 
   void _setActiveCategory(Category category) {

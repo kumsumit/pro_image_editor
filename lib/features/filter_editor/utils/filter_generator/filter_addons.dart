@@ -77,6 +77,28 @@ class ColorFilterAddons {
     return [1, 0, 0, 0, r, 0, 1, 0, 0, g, 0, 0, 1, 0, b, 0, 0, 0, 1, 0];
   }
 
+  /// Generates a temperature adjustment filter matrix.
+  ///
+  /// This method adjusts the color temperature of an image by increasing
+  /// the warm (red) or cool (blue) tones.
+  ///
+  /// Parameters:
+  /// - [value]: The temperature adjustment factor, where negative values
+  ///   cool the image and positive values warm it.
+  static List<double> temperature(double value) {
+    // A positive value warms the image (adds red and green),
+    // a negative value cools it (adds blue and reduces red/green).
+    double r = value > 0 ? value : 0;
+    double b = value < 0 ? -value : 0;
+
+    return [
+      1 + r, 0, 0, 0, 0, // Red channel adjustment
+      0, 1 + r * 0.5, 0, 0, 0, // Green channel adjustment (half of red)
+      0, 0, 1 + b, 0, 0, // Blue channel adjustment
+      0, 0, 0, 1, 0 // Alpha channel (unchanged)
+    ];
+  }
+
   /// Generates a grayscale filter matrix.
   ///
   /// This method returns a color matrix that converts an image to grayscale
@@ -258,29 +280,36 @@ class ColorFilterAddons {
   ///   hue clockwise and negative values rotate it counterclockwise.
   static List<double> hue(double value) {
     if (value == 0) {
+      // No hue adjustment
       return [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0];
     }
+
+    // Convert value from [0, 1] range to radians (full rotation is 2π)
     value *= pi;
-    double cosVal = cos(value);
-    double sinVal = sin(value);
+
+    double cosVal = cos(value); // Cosine of the angle
+    double sinVal = sin(value); // Sine of the angle
+
+    // Luminance coefficients for RGB
     const double lumR = 0.213;
     const double lumG = 0.715;
     const double lumB = 0.072;
 
+    // Compute the matrix values
     return [
-      lumR + cosVal * (1 - lumR) + sinVal * -lumR,
-      lumG + cosVal * -lumG + sinVal * -lumG,
-      lumB + cosVal * -lumB + sinVal * (1 - lumB),
+      lumR + cosVal * (1 - lumR) + sinVal * -lumR, // Red-to-red
+      lumG + cosVal * -lumG + sinVal * -lumG, // Red-to-green
+      lumB + cosVal * -lumB + sinVal * (1 - lumB), // Red-to-blue
       0,
       0,
-      lumR + cosVal * -lumR + sinVal * 0.143,
-      lumG + cosVal * (1 - lumG) + sinVal * 0.14,
-      lumB + cosVal * -lumB + sinVal * -0.283,
+      lumR + cosVal * -lumR + sinVal * 0.143, // Green-to-red
+      lumG + cosVal * (1 - lumG) + sinVal * 0.14, // Green-to-green
+      lumB + cosVal * -lumB + sinVal * -0.283, // Green-to-blue
       0,
       0,
-      lumR + cosVal * -lumR + sinVal * -(1 - lumR),
-      lumG + cosVal * -lumG + sinVal * lumG,
-      lumB + cosVal * (1 - lumB) + sinVal * lumB,
+      lumR + cosVal * -lumR + sinVal * -(1 - lumR), // Blue-to-red
+      lumG + cosVal * -lumG + sinVal * lumG, // Blue-to-green
+      lumB + cosVal * (1 - lumB) + sinVal * lumB, // Blue-to-blue
       0,
       0,
       0,

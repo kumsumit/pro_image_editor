@@ -1,18 +1,17 @@
 // Dart imports:
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 
 import '/core/mixins/converted_callbacks.dart';
 import '/core/mixins/converted_configs.dart';
 import '/core/mixins/editor_configs_mixin.dart';
-import '/plugins/rounded_background_text/src/rounded_background_text_field.dart';
+import '/features/text_editor/widgets/text_editor_appbar.dart';
+import '/features/text_editor/widgets/text_editor_color_picker.dart';
+import '/features/text_editor/widgets/text_editor_input.dart';
 import '/pro_image_editor.dart';
 import '/shared/extensions/color_extension.dart';
-import '/shared/styles/platform_text_styles.dart';
-import '/shared/widgets/bottom_sheets_header_row.dart';
-import '/shared/widgets/platform/platform_popup_menu.dart';
+import '/shared/widgets/slider_bottom_sheet.dart';
 import 'widgets/text_editor_bottom_bar.dart';
 
 /// A StatefulWidget that provides a text editing interface for adding and
@@ -117,7 +116,6 @@ class TextEditorState extends State<TextEditor>
         textEditorConfigs.customTextStyles?.first ??
         textEditorConfigs.defaultTextStyle;
     _initializeFromLayer();
-    _setupTextControllerListener();
 
     textEditorCallbacks?.onInit?.call();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -136,6 +134,7 @@ class TextEditorState extends State<TextEditor>
   @override
   void setState(void Function() fn) {
     _rebuildController.add(null);
+    textEditorCallbacks?.handleUpdateUI();
     super.setState(fn);
   }
 
@@ -158,25 +157,11 @@ class TextEditorState extends State<TextEditor>
     }
   }
 
-  /// Sets up a listener to update the number of lines when text changes.
-  void _setupTextControllerListener() {
-    textCtrl.addListener(() {
-      setState(() {
-        textEditorCallbacks?.handleUpdateUI();
-      });
-    });
-  }
-
   /// Calculates the contrast color for a given color.
   Color getContrastColor(Color color) {
     int d = color.computeLuminance() > 0.5 ? 0 : 255;
 
-    return Color.fromRGBO(
-      d,
-      d,
-      d,
-      color.a,
-    );
+    return Color.fromRGBO(d, d, d, color.a);
   }
 
   /// Gets the text color based on the selected color mode.
@@ -213,28 +198,41 @@ class TextEditorState extends State<TextEditor>
 
   /// Toggles the text alignment between left, center, and right.
   void toggleTextAlign() {
-    setState(() {
-      align = align == TextAlign.left
-          ? TextAlign.center
-          : align == TextAlign.center
-              ? TextAlign.right
-              : TextAlign.left;
-    });
+    TextAlign nextTextAlign(TextAlign currentAlign) {
+      switch (currentAlign) {
+        case TextAlign.left:
+          return TextAlign.center;
+        case TextAlign.center:
+          return TextAlign.right;
+        case TextAlign.right:
+        default:
+          return TextAlign.left;
+      }
+    }
+
+    align = nextTextAlign(align);
     textEditorCallbacks?.handleTextAlignChanged(align);
+    setState(() {});
   }
 
   /// Toggles the background mode between various color modes.
   void toggleBackgroundMode() {
-    setState(() {
-      backgroundColorMode = backgroundColorMode == LayerBackgroundMode.onlyColor
-          ? LayerBackgroundMode.backgroundAndColor
-          : backgroundColorMode == LayerBackgroundMode.backgroundAndColor
-              ? LayerBackgroundMode.background
-              : backgroundColorMode == LayerBackgroundMode.background
-                  ? LayerBackgroundMode.backgroundAndColorWithOpacity
-                  : LayerBackgroundMode.onlyColor;
-    });
+    LayerBackgroundMode nextBackgroundMode(LayerBackgroundMode currentMode) {
+      switch (currentMode) {
+        case LayerBackgroundMode.onlyColor:
+          return LayerBackgroundMode.backgroundAndColor;
+        case LayerBackgroundMode.backgroundAndColor:
+          return LayerBackgroundMode.background;
+        case LayerBackgroundMode.background:
+          return LayerBackgroundMode.backgroundAndColorWithOpacity;
+        case LayerBackgroundMode.backgroundAndColorWithOpacity:
+          return LayerBackgroundMode.onlyColor;
+      }
+    }
+
+    backgroundColorMode = nextBackgroundMode(backgroundColorMode);
     textEditorCallbacks?.handleBackgroundModeChanged(backgroundColorMode);
+    setState(() {});
   }
 
   /// Gets the current font scale.
@@ -258,89 +256,30 @@ class TextEditorState extends State<TextEditor>
   /// This method shows a range slider in a modal bottom sheet for adjusting the
   /// line width of the paint tool.
   void openFontScaleBottomSheet() {
-    final presetFontScale = _fontScale;
     showModalBottomSheet(
       context: context,
       backgroundColor: textEditorConfigs.style.fontScaleBottomSheetBackground,
       builder: (BuildContext context) {
-        return Material(
-          color: Colors.transparent,
-          textStyle: platformTextStyle(context, designMode),
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: StatefulBuilder(builder: (context, setState) {
-                void updateFontScaleScale(double value) {
-                  fontScale = value;
-                  setState(() {});
-                }
-
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    BottomSheetHeaderRow(
-                      title: '${i18n.textEditor.fontScale} ${_fontScale}x',
-                      theme: widget.theme,
-                      textStyle:
-                          textEditorConfigs.style.fontSizeBottomSheetTitle,
-                      closeButton:
-                          textEditorConfigs.widgets.fontSizeCloseButton != null
-                              ? (fn) => textEditorConfigs
-                                  .widgets.fontSizeCloseButton!(this, fn)
-                              : null,
-                    ),
-                    textEditorConfigs.widgets.sliderFontSize?.call(
-                          this,
-                          _rebuildController.stream,
-                          _fontScale,
-                          updateFontScaleScale,
-                          (onChangedEnd) {},
-                        ) ??
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Slider.adaptive(
-                                max: textEditorConfigs.maxFontScale,
-                                min: textEditorConfigs.minFontScale,
-                                divisions: (textEditorConfigs.maxFontScale -
-                                        textEditorConfigs.minFontScale) ~/
-                                    0.1,
-                                value: _fontScale,
-                                onChanged: updateFontScaleScale,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconTheme(
-                              data: Theme.of(context).primaryIconTheme,
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 150),
-                                child: _fontScale != presetFontScale
-                                    ? IconButton(
-                                        onPressed: () {
-                                          updateFontScaleScale(presetFontScale);
-                                        },
-                                        icon: Icon(textEditorConfigs
-                                            .icons.resetFontScale),
-                                      )
-                                    : IconButton(
-                                        key: UniqueKey(),
-                                        color: Colors.transparent,
-                                        onPressed: null,
-                                        icon: Icon(textEditorConfigs
-                                            .icons.resetFontScale),
-                                      ),
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                          ],
-                        ),
-                  ],
-                );
-              }),
-            ),
-          ),
+        return SliderBottomSheet<TextEditorState>(
+          value: _fontScale,
+          title: i18n.textEditor.fontScale,
+          headerTextStyle: textEditorConfigs.style.fontSizeBottomSheetTitle,
+          resetIcon: textEditorConfigs.icons.resetFontScale,
+          max: textEditorConfigs.maxFontScale,
+          min: textEditorConfigs.minFontScale,
+          divisions: (textEditorConfigs.maxFontScale -
+                  textEditorConfigs.minFontScale) ~/
+              0.1,
+          state: this,
+          showFactorInTitle: true,
+          closeButton: textEditorConfigs.widgets.fontSizeCloseButton,
+          customSlider: textEditorConfigs.widgets.sliderFontSize,
+          designMode: designMode,
+          theme: widget.theme,
+          rebuildController: _rebuildController,
+          onValueChanged: (value) {
+            fontScale = value;
+          },
         );
       },
     );
@@ -350,7 +289,6 @@ class TextEditorState extends State<TextEditor>
   void setTextStyle(TextStyle style) {
     setState(() {
       selectedTextStyle = style;
-      textEditorCallbacks?.handleUpdateUI();
     });
   }
 
@@ -417,75 +355,17 @@ class TextEditorState extends State<TextEditor>
           .call(this, _rebuildController.stream);
     }
 
-    const int defaultIconButtonSize = 48;
-    final List<IconButton> configButtons = _getConfigButtons();
-
-    // Taking into account the back and done button
-    final iconButtonsSize = (2 + configButtons.length) * defaultIconButtonSize;
-
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: textEditorConfigs.style.appBarBackground,
-      foregroundColor: textEditorConfigs.style.appBarColor,
-      actions: [
-        IconButton(
-          tooltip: i18n.textEditor.back,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(textEditorConfigs.icons.backButton),
-          onPressed: close,
-        ),
-        const Spacer(),
-        if (constraints.maxWidth >= iconButtonsSize) ...[
-          ...configButtons,
-          const Spacer(),
-          _buildDoneBtn(),
-        ] else ...[
-          _buildDoneBtn(),
-          PlatformPopupBtn(
-            designMode: designMode,
-            title: i18n.textEditor.smallScreenMoreTooltip,
-            options: [
-              if (textEditorConfigs.canToggleTextAlign)
-                PopupMenuOption(
-                  label: i18n.textEditor.textAlign,
-                  icon: Icon(align == TextAlign.left
-                      ? textEditorConfigs.icons.alignLeft
-                      : align == TextAlign.right
-                          ? textEditorConfigs.icons.alignRight
-                          : textEditorConfigs.icons.alignCenter),
-                  onTap: () {
-                    toggleTextAlign();
-                    if (designMode == ImageEditorDesignMode.cupertino) {
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
-              if (textEditorConfigs.canChangeFontScale)
-                PopupMenuOption(
-                  label: i18n.textEditor.fontScale,
-                  icon: Icon(textEditorConfigs.icons.fontScale),
-                  onTap: () {
-                    openFontScaleBottomSheet();
-                    if (designMode == ImageEditorDesignMode.cupertino) {
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
-              if (textEditorConfigs.canToggleBackgroundMode)
-                PopupMenuOption(
-                  label: i18n.textEditor.backgroundMode,
-                  icon: Icon(textEditorConfigs.icons.backgroundMode),
-                  onTap: () {
-                    toggleBackgroundMode();
-                    if (designMode == ImageEditorDesignMode.cupertino) {
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
-            ],
-          ),
-        ],
-      ],
+    return TextEditorAppBar(
+      textEditorConfigs: textEditorConfigs,
+      i18n: i18n.textEditor,
+      onClose: close,
+      onDone: done,
+      align: align,
+      onToggleTextAlign: toggleTextAlign,
+      onOpenFontScaleBottomSheet: openFontScaleBottomSheet,
+      onToggleBackgroundMode: toggleBackgroundMode,
+      designMode: designMode,
+      constraints: constraints,
     );
   }
 
@@ -540,176 +420,37 @@ class TextEditorState extends State<TextEditor>
     });
   }
 
-  List<IconButton> _getConfigButtons() => [
-        if (textEditorConfigs.canToggleTextAlign)
-          IconButton(
-            key: const ValueKey('TextAlignIconButton'),
-            tooltip: i18n.textEditor.textAlign,
-            onPressed: toggleTextAlign,
-            icon: Icon(align == TextAlign.left
-                ? textEditorConfigs.icons.alignLeft
-                : align == TextAlign.right
-                    ? textEditorConfigs.icons.alignRight
-                    : textEditorConfigs.icons.alignCenter),
-          ),
-        if (textEditorConfigs.canChangeFontScale)
-          IconButton(
-            key: const ValueKey('BackgroundModeFontScaleButton'),
-            tooltip: i18n.textEditor.fontScale,
-            onPressed: openFontScaleBottomSheet,
-            icon: Icon(textEditorConfigs.icons.fontScale),
-          ),
-        if (textEditorConfigs.canToggleBackgroundMode)
-          IconButton(
-            key: const ValueKey('BackgroundModeColorIconButton'),
-            tooltip: i18n.textEditor.backgroundMode,
-            onPressed: toggleBackgroundMode,
-            icon: Icon(textEditorConfigs.icons.backgroundMode),
-          ),
-      ];
-
-  /// Builds and returns an IconButton for applying changes.
-  Widget _buildDoneBtn() {
-    return IconButton(
-      key: const ValueKey('TextEditorDoneButton'),
-      tooltip: i18n.textEditor.done,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      icon: Icon(textEditorConfigs.icons.applyChanges),
-      iconSize: 28,
-      onPressed: done,
-    );
-  }
-
   Widget _buildColorPicker() {
-    if (textEditorConfigs.widgets.colorPicker != null) {
-      return textEditorConfigs.widgets.colorPicker!.call(
-            this,
-            _rebuildController.stream,
-            selectedTextStyle.color ?? primaryColor,
-            (color) {
-              primaryColor = color;
-            },
-          ) ??
-          const SizedBox.shrink();
-    }
-    return Align(
-      alignment: Alignment.topRight,
-      child: Container(
-        margin: null,
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: BarColorPicker(
-          configs: widget.configs,
-          length: min(
-            350,
-            MediaQuery.of(context).size.height -
-                MediaQuery.of(context).viewInsets.bottom -
-                kToolbarHeight -
-                kBottomNavigationBarHeight -
-                10 * 2 -
-                MediaQuery.of(context).padding.top,
-          ),
-          onPositionChange: (value) {
-            colorPosition = value;
-          },
-          initPosition: colorPosition,
-          initialColor: primaryColor,
-          horizontal: false,
-          thumbColor: Colors.white,
-          cornerRadius: 10,
-          pickMode: PickMode.color,
-          colorListener: (int value) {
-            primaryColor = Color(value);
-          },
-        ),
-      ),
-    );
+    return TextEditorColorPicker(
+        state: this,
+        configs: configs,
+        colorPosition: colorPosition,
+        primaryColor: primaryColor,
+        rebuildController: _rebuildController,
+        selectedTextStyle: selectedTextStyle,
+        onUpdateColor: (color) {
+          primaryColor = color;
+        },
+        onPositionChange: (value) {
+          colorPosition = value;
+        });
   }
 
   /// Builds the text field for text input.
   Widget _buildTextField() {
-    return Center(
-      ///  TODO: remove `IntrinsicWidth` after updating
-      /// `RoundedBackgroundTextField` code
-      child: IntrinsicWidth(
-        child: Padding(
-          padding: textEditorConfigs.style.textFieldMargin,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Hero(
-                flightShuttleBuilder: ((
-                  flightContext,
-                  animation,
-                  flightDirection,
-                  fromHeroContext,
-                  toHeroContext,
-                ) {
-                  if (flightDirection == HeroFlightDirection.pop) {
-                    return fromHeroContext.widget;
-                  }
-
-                  void animationStatusListener(AnimationStatus status) {
-                    if (status == AnimationStatus.completed) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        focusNode.requestFocus();
-                      });
-                      animation.removeStatusListener(animationStatusListener);
-                    }
-                  }
-
-                  animation.addStatusListener(animationStatusListener);
-
-                  return toHeroContext.widget;
-                }),
-                tag: widget.heroTag ?? 'Text-Image-Editor-Empty-Hero',
-                createRectTween: (begin, end) =>
-                    RectTween(begin: begin, end: end),
-                child: RoundedBackgroundTextField(
-                  key: const ValueKey('rounded-background-text-editor-field'),
-                  heroTag: widget.heroTag ?? 'Text-Image-Editor-Empty-Hero',
-                  controller: textCtrl,
-                  focusNode: focusNode,
-                  onChanged: textEditorCallbacks?.handleChanged,
-                  onEditingComplete: textEditorCallbacks?.handleEditingComplete,
-                  onSubmitted: textEditorCallbacks?.handleSubmitted,
-                  autocorrect: textEditorConfigs.autocorrect,
-                  enableSuggestions: textEditorConfigs.enableSuggestions,
-                  keyboardType: TextInputType.multiline,
-                  textInputAction: TextInputAction.newline,
-                  textCapitalization: TextCapitalization.sentences,
-                  textAlign: textCtrl.text.isEmpty ? TextAlign.center : align,
-                  maxLines: null,
-                  cursorColor: textEditorConfigs.style.inputCursorColor,
-                  cursorHeight: _textFontSize * 1.2,
-                  scrollPhysics: const NeverScrollableScrollPhysics(),
-                  hint: textCtrl.text.isEmpty
-                      ? i18n.textEditor.inputHintText
-                      : '',
-                  hintStyle: selectedTextStyle.copyWith(
-                    color: textEditorConfigs.style.inputHintColor,
-                    fontSize: _textFontSize,
-                    height: 1.35,
-                    shadows: [],
-                  ),
-                  backgroundColor: _backgroundColor,
-                  style: selectedTextStyle.copyWith(
-                    color: _textColor,
-                    fontSize: _textFontSize,
-                    height: 1.35,
-                    letterSpacing: 0,
-                    decoration: TextDecoration.none,
-                    shadows: [],
-                  ),
-
-                  /// If we edit an layer we focus to the textfield after the
-                  /// hero animation is done
-                  autofocus: widget.layer == null,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return TextEditorInput(
+      callbacks: textEditorCallbacks,
+      configs: textEditorConfigs,
+      heroTag: widget.heroTag,
+      align: align,
+      backgroundColor: _backgroundColor,
+      textCtrl: textCtrl,
+      focusNode: focusNode,
+      i18n: i18n.textEditor,
+      layer: widget.layer,
+      selectedTextStyle: selectedTextStyle,
+      textColor: _textColor,
+      textFontSize: _textFontSize,
     );
   }
 }

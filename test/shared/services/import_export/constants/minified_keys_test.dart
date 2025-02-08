@@ -23,6 +23,14 @@ void main() {
       expect(values.length, uniqueValues.length,
           reason: 'kMinifiedLayerKeys contains duplicate values');
     });
+
+    test('No duplicate values in kMinifiedLayerInteractionKeys', () {
+      final values = kMinifiedLayerInteractionKeys.values.toList();
+      final uniqueValues = values.toSet();
+      expect(values.length, uniqueValues.length,
+          reason: 'kMinifiedLayerInteractionKeys contains duplicate values');
+    });
+
     test('No duplicate values in kMinifiedPaintKeys', () {
       final values = kMinifiedPaintKeys.values.toList();
       final uniqueValues = values.toSet();

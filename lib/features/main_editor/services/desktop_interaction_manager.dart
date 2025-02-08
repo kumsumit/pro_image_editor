@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 
 // Project imports:
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
-import '../../../core/models/layers/layer.dart';
+import '/core/models/layers/layer.dart';
 
 /// A manager class responsible for handling desktop interactions in the image
 /// editor.

@@ -1,9 +1,9 @@
 // Dart imports:
 import 'dart:ui';
 
-// Project imports:
-import '/core/models/paint_editor/painted_model.dart';
 import '../enums/paint_editor_enum.dart';
+// Project imports:
+import '../models/painted_model.dart';
 
 /// Represents an element within the paint-editor.
 class PaintElement {

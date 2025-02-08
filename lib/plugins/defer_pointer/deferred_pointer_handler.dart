@@ -6,9 +6,18 @@ part of 'defer_pointer.dart';
 /// Deferred painting (aka 'paint on top') is optional and can be defined per
 /// [DeferPointer].
 class DeferredPointerHandler extends StatefulWidget {
-  const DeferredPointerHandler({super.key, required this.child, this.link});
+  const DeferredPointerHandler({
+    super.key,
+    required this.child,
+    this.link,
+    this.id,
+    this.selectedLayerId,
+  });
   final Widget child;
   final DeferredPointerHandlerLink? link;
+  final String? id;
+  final String? selectedLayerId;
+
   @override
   DeferredPointerHandlerState createState() => DeferredPointerHandlerState();
 
@@ -31,21 +40,38 @@ class DeferredPointerHandlerState extends State<DeferredPointerHandler> {
   final DeferredPointerHandlerLink _link = DeferredPointerHandlerLink();
   get link => _link;
 
+  late String _id;
+
+  @override
+  void initState() {
+    super.initState();
+    _setId();
+  }
+
+  void _setId() {
+    _id = widget.id ?? generateUniqueId();
+  }
+
   @override
   void didUpdateWidget(covariant DeferredPointerHandler oldWidget) {
     if (widget.link != null) {
       _link.removeAll();
     }
+    if (widget.id != oldWidget.id) _setId();
     super.didUpdateWidget(oldWidget);
   }
 
   @override
   Widget build(BuildContext context) {
-    return _InheritedDeferredPaintSurface(
-      state: this,
-      child: _DeferredHitTargetRenderObjectWidget(
-        link: widget.link ?? _link,
-        child: widget.child,
+    return DeferManager(
+      id: _id,
+      selectedLayerId: widget.selectedLayerId ?? '',
+      child: _InheritedDeferredPaintSurface(
+        state: this,
+        child: _DeferredHitTargetRenderObjectWidget(
+          link: widget.link ?? _link,
+          child: widget.child,
+        ),
       ),
     );
   }
@@ -132,4 +158,30 @@ class _InheritedDeferredPaintSurface extends InheritedWidget {
   final DeferredPointerHandlerState state;
   @override
   bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
+}
+
+class DeferManager extends InheritedWidget {
+  const DeferManager({
+    super.key,
+    required super.child,
+    required this.id,
+    this.selectedLayerId = '',
+  });
+
+  final String selectedLayerId;
+  final String id;
+
+  static DeferManager? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<DeferManager>();
+  }
+
+  static DeferManager of(BuildContext context) {
+    final DeferManager? result = maybeOf(context);
+    assert(result != null, 'No DeferManager found in context');
+    return result!;
+  }
+
+  @override
+  bool updateShouldNotify(DeferManager oldWidget) =>
+      id != oldWidget.id || selectedLayerId != oldWidget.selectedLayerId;
 }

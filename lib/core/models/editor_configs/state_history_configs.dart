@@ -1,5 +1,5 @@
 // Project imports:
-import '../../../shared/services/import_export/import_state_history.dart';
+import '/shared/services/import_export/import_state_history.dart';
 
 /// A class representing configuration settings for managing state history.
 ///

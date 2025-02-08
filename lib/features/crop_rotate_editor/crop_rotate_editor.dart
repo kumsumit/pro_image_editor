@@ -1,5 +1,4 @@
 // Dart imports:
-import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
@@ -10,16 +9,19 @@ import 'package:flutter/services.dart';
 
 import '/core/mixins/converted_callbacks.dart';
 import '/core/mixins/converted_configs.dart';
-import '/core/mixins/extended_loop.dart';
 import '/core/mixins/standalone_editor.dart';
 import '/core/models/transform_helper.dart';
-import '/core/utils/debounce.dart';
-import '/core/utils/layer_transform_generator.dart';
+import '/core/platform/io/io_helper.dart';
+import '/features/crop_rotate_editor/widgets/crop_editor_appbar.dart';
+import '/features/crop_rotate_editor/widgets/crop_editor_bottombar.dart';
 import '/features/crop_rotate_editor/widgets/outside_gestures/crop_rotate_gesture_detector.dart';
 import '/features/crop_rotate_editor/widgets/outside_gestures/outside_gesture_listener.dart';
 import '/plugins/defer_pointer/defer_pointer.dart';
 import '/pro_image_editor.dart';
+import '/shared/mixins/extended_loop.dart';
 import '/shared/services/content_recorder/widgets/record_invisible_widget.dart';
+import '/shared/services/layer_transform_generator.dart';
+import '/shared/utils/debounce.dart';
 import '/shared/widgets/extended/extended_custom_paint.dart';
 import '/shared/widgets/extended/extended_mouse_cursor.dart';
 import '/shared/widgets/extended/extended_transform_scale.dart';
@@ -123,33 +125,34 @@ class CropRotateEditor extends StatefulWidget
   /// Either [byteArray], [file], [networkUrl], or [assetPath] must be provided.
   factory CropRotateEditor.autoSource({
     Key? key,
-    required CropRotateEditorInitConfigs initConfigs,
     Uint8List? byteArray,
     File? file,
     String? assetPath,
     String? networkUrl,
+    EditorImage? editorImage,
+    required CropRotateEditorInitConfigs initConfigs,
   }) {
-    if (byteArray != null) {
+    if (byteArray != null || editorImage?.byteArray != null) {
       return CropRotateEditor.memory(
-        byteArray,
+        byteArray ?? editorImage!.byteArray!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (file != null) {
+    } else if (file != null || editorImage?.file != null) {
       return CropRotateEditor.file(
-        file,
+        file ?? editorImage!.file!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (networkUrl != null) {
+    } else if (networkUrl != null || editorImage?.networkUrl != null) {
       return CropRotateEditor.network(
-        networkUrl,
+        networkUrl ?? editorImage!.networkUrl!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (assetPath != null) {
+    } else if (assetPath != null || editorImage?.assetPath != null) {
       return CropRotateEditor.asset(
-        assetPath,
+        assetPath ?? editorImage!.assetPath!,
         key: key,
         initConfigs: initConfigs,
       );
@@ -802,7 +805,7 @@ class CropRotateEditorState extends State<CropRotateEditor>
               ? initialTransformConfigs!
               : activeHistory;
 
-      screenshotCtrl.captureImage(
+      await screenshotCtrl.capture(
         imageInfos: imageInfos!,
         screenshots: screenshotHistory,
         targetSize: _rotated90deg
@@ -924,6 +927,10 @@ class CropRotateEditorState extends State<CropRotateEditor>
   void _setCropRectBounding({
     double? oldScaleAnimationValue,
   }) {
+    if (cropRect.isEmpty) {
+      return;
+    }
+
     if (!_renderedImgSize.isInfinite) {
       bool fitToWidth =
           (cropRect.width + _cropSpaceHorizontal) > _renderedImgSize.width;
@@ -967,6 +974,9 @@ class CropRotateEditorState extends State<CropRotateEditor>
         translate.dx * scaleFactor,
         translate.dy * scaleFactor,
       );
+      if (translate.dx.isNaN || translate.dx.isInfinite) {
+        throw ArgumentError('Hmmm');
+      }
       _setOffsetLimits();
     }
   }
@@ -1402,7 +1412,7 @@ class CropRotateEditorState extends State<CropRotateEditor>
         double outsideHitPosY = details.focalPoint.dy -
             _editorScreenOffsetHelper.dy -
             (_hasToolbar ? kToolbarHeight : 0) -
-            MediaQuery.of(context).padding.top;
+            MediaQuery.paddingOf(context).top;
 
         bool outsideLeft =
             details.focalPoint.dx - _editorScreenOffsetHelper.dx <
@@ -2013,39 +2023,16 @@ class CropRotateEditorState extends State<CropRotateEditor>
       return customToolbar;
     }
     _hasToolbar = true;
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: cropRotateEditorConfigs.style.appBarBackground,
-      foregroundColor: cropRotateEditorConfigs.style.appBarColor,
-      actions: [
-        if (initConfigs.enableCloseButton)
-          IconButton(
-            tooltip: i18n.cropRotateEditor.back,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            icon: Icon(cropRotateEditorConfigs.icons.backButton),
-            onPressed: close,
-          ),
-        const Spacer(),
-        IconButton(
-          tooltip: i18n.cropRotateEditor.undo,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(
-            cropRotateEditorConfigs.icons.undoAction,
-            color: canUndo ? Colors.white : Colors.white.withAlpha(80),
-          ),
-          onPressed: undoAction,
-        ),
-        IconButton(
-          tooltip: i18n.cropRotateEditor.redo,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(
-            cropRotateEditorConfigs.icons.redoAction,
-            color: canRedo ? Colors.white : Colors.white.withAlpha(80),
-          ),
-          onPressed: redoAction,
-        ),
-        _buildDoneBtn(),
-      ],
+    return CropEditorAppbar(
+      configs: configs.cropRotateEditor,
+      i18n: i18n.cropRotateEditor,
+      enableCloseButton: initConfigs.enableCloseButton,
+      canUndo: canUndo,
+      canRedo: canRedo,
+      onDone: done,
+      onClose: close,
+      onUndo: undoAction,
+      onRedo: redoAction,
     );
   }
 
@@ -2059,93 +2046,15 @@ class CropRotateEditorState extends State<CropRotateEditor>
             cropRotateEditorConfigs.canFlip ||
             cropRotateEditorConfigs.canChangeAspectRatio ||
             cropRotateEditorConfigs.canReset
-        ? Theme(
-            data: theme,
-            child: Scrollbar(
-              controller: _bottomBarScrollCtrl,
-              scrollbarOrientation: ScrollbarOrientation.top,
-              thickness: isDesktop ? null : 0,
-              child: BottomAppBar(
-                height: kToolbarHeight,
-                color: cropRotateEditorConfigs.style.bottomBarBackground,
-                padding: EdgeInsets.zero,
-                child: Center(
-                  child: SingleChildScrollView(
-                    controller: _bottomBarScrollCtrl,
-                    scrollDirection: Axis.horizontal,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minWidth: min(MediaQuery.of(context).size.width, 500),
-                        maxWidth: 500,
-                      ),
-                      child: Builder(builder: (context) {
-                        Color foregroundColor =
-                            cropRotateEditorConfigs.style.appBarColor;
-                        return Wrap(
-                          direction: Axis.horizontal,
-                          alignment: WrapAlignment.spaceAround,
-                          children: <Widget>[
-                            if (cropRotateEditorConfigs.canRotate)
-                              FlatIconTextButton(
-                                key: const ValueKey(
-                                    'crop-rotate-editor-rotate-btn'),
-                                label: Text(
-                                  i18n.cropRotateEditor.rotate,
-                                  style: TextStyle(
-                                      fontSize: 10.0, color: foregroundColor),
-                                ),
-                                icon: Icon(cropRotateEditorConfigs.icons.rotate,
-                                    color: foregroundColor),
-                                onPressed: rotate,
-                              ),
-                            if (cropRotateEditorConfigs.canFlip)
-                              FlatIconTextButton(
-                                key: const ValueKey(
-                                    'crop-rotate-editor-flip-btn'),
-                                label: Text(
-                                  i18n.cropRotateEditor.flip,
-                                  style: TextStyle(
-                                      fontSize: 10.0, color: foregroundColor),
-                                ),
-                                icon: Icon(cropRotateEditorConfigs.icons.flip,
-                                    color: foregroundColor),
-                                onPressed: flip,
-                              ),
-                            if (cropRotateEditorConfigs.canChangeAspectRatio)
-                              FlatIconTextButton(
-                                key: const ValueKey(
-                                    'crop-rotate-editor-ratio-btn'),
-                                label: Text(
-                                  i18n.cropRotateEditor.ratio,
-                                  style: TextStyle(
-                                      fontSize: 10.0, color: foregroundColor),
-                                ),
-                                icon: Icon(
-                                    cropRotateEditorConfigs.icons.aspectRatio,
-                                    color: foregroundColor),
-                                onPressed: openAspectRatioOptions,
-                              ),
-                            if (cropRotateEditorConfigs.canReset)
-                              FlatIconTextButton(
-                                key: const ValueKey(
-                                    'crop-rotate-editor-reset-btn'),
-                                label: Text(
-                                  i18n.cropRotateEditor.reset,
-                                  style: TextStyle(
-                                      fontSize: 10.0, color: foregroundColor),
-                                ),
-                                icon: Icon(cropRotateEditorConfigs.icons.reset,
-                                    color: foregroundColor),
-                                onPressed: reset,
-                              ),
-                          ],
-                        );
-                      }),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+        ? CropEditorBottombar(
+            bottomBarScrollCtrl: _bottomBarScrollCtrl,
+            i18n: i18n.cropRotateEditor,
+            configs: cropRotateEditorConfigs,
+            theme: theme,
+            onRotate: rotate,
+            onFlip: flip,
+            onOpenAspectRatioOptions: openAspectRatioOptions,
+            onReset: reset,
           )
         : null;
   }
@@ -2441,17 +2350,6 @@ class CropRotateEditorState extends State<CropRotateEditor>
           ],
         );
       }),
-    );
-  }
-
-  /// Builds and returns an IconButton for applying changes.
-  Widget _buildDoneBtn() {
-    return IconButton(
-      tooltip: i18n.cropRotateEditor.done,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      icon: Icon(cropRotateEditorConfigs.icons.applyChanges),
-      iconSize: 28,
-      onPressed: done,
     );
   }
 

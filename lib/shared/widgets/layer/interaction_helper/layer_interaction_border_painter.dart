@@ -15,7 +15,7 @@ import '/core/models/styles/layer_interaction_style.dart';
 class LayerInteractionBorderPainter extends CustomPainter {
   /// Creates a [LayerInteractionBorderPainter].
   ///
-  /// The painter uses the provided [theme] and [borderStyle] to determine the
+  /// The painter uses the provided [style]  to determine the
   /// appearance of the layer's border, such as color, stroke width, and style.
   ///
   /// Example:
@@ -26,25 +26,18 @@ class LayerInteractionBorderPainter extends CustomPainter {
   /// )
   /// ```
   LayerInteractionBorderPainter({
-    required this.theme,
-    required this.borderStyle,
+    required this.style,
   });
 
   /// The theme settings for the layer interaction.
   ///
   /// This theme provides color, opacity, and other styling options for the
   /// layer border, ensuring it matches the overall design of the application.
-  final LayerInteractionStyle theme;
-
-  /// The style of the layer interaction border.
-  ///
-  /// This style determines how the border is drawn, such as whether it is
-  /// solid, dashed, or dotted, and influences the border's appearance.
-  final LayerInteractionBorderStyle borderStyle;
+  final LayerInteractionStyle style;
 
   @override
   void paint(Canvas canvas, Size size) {
-    switch (borderStyle) {
+    switch (style.borderStyle) {
       case LayerInteractionBorderStyle.solid:
         _drawSolidBorder(canvas, size);
         break;
@@ -59,13 +52,13 @@ class LayerInteractionBorderPainter extends CustomPainter {
 
   void _drawDashedBorder(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = theme.borderColor
+      ..color = style.borderColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = theme.strokeWidth;
+      ..strokeWidth = style.strokeWidth;
 
     const startVal = 3.0;
-    final dashWidth = theme.borderElementWidth;
-    final dashSpace = theme.borderElementSpace;
+    final dashWidth = style.borderElementWidth;
+    final dashSpace = style.borderElementSpace;
     // Draw top border
     var currentX = startVal;
     while (currentX < size.width) {
@@ -114,9 +107,9 @@ class LayerInteractionBorderPainter extends CustomPainter {
 // Method to draw a solid border
   void _drawSolidBorder(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = theme.borderColor
+      ..color = style.borderColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = theme.strokeWidth;
+      ..strokeWidth = style.strokeWidth;
 
     // Draw top border
     canvas
@@ -151,12 +144,12 @@ class LayerInteractionBorderPainter extends CustomPainter {
 // Method to draw a rounded dotted border
   void _drawDottedBorder(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = theme.borderColor
+      ..color = style.borderColor
       ..style = PaintingStyle.fill
-      ..strokeWidth = theme.strokeWidth;
+      ..strokeWidth = style.strokeWidth;
 
-    final width = theme.borderElementWidth;
-    final space = theme.borderElementSpace;
+    final width = style.borderElementWidth;
+    final space = style.borderElementSpace;
     final startVal = width * 2;
 
     // Draw top border

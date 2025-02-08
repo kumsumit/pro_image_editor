@@ -5,20 +5,27 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 // Project imports:
+import '/core/models/editor_callbacks/pro_image_editor_callbacks.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/shared/services/content_recorder/controllers/content_recorder_controller.dart';
 
 /// A class that manages various controllers used in the main editor interface.
 class MainEditorControllers {
   /// Constructs a new instance of [MainEditorControllers].
-  MainEditorControllers(ProImageEditorConfigs configs) {
+  MainEditorControllers(
+    ProImageEditorConfigs configs,
+    ProImageEditorCallbacks callbacks,
+  ) {
     bottomBarScrollCtrl = ScrollController();
     helperLineCtrl = StreamController.broadcast();
     layerHeroResetCtrl = StreamController.broadcast();
     removeBtnCtrl = StreamController.broadcast();
     uiLayerCtrl = StreamController.broadcast();
     cropLayerPainterCtrl = StreamController.broadcast();
-    screenshot = ContentRecorderController(configs: configs);
+    screenshot = ContentRecorderController(
+      configs: configs.imageGeneration,
+      enableThumbnailGeneration: callbacks.onThumbnailGenerated != null,
+    );
   }
 
   /// Scroll controller for the bottom bar in the editor interface.

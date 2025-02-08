@@ -4,9 +4,9 @@ import 'dart:async';
 // Flutter imports:
 import 'package:flutter/material.dart';
 
-import '/core/models/paint_editor/painted_model.dart';
 import '../controllers/paint_controller.dart';
 import '../enums/paint_editor_enum.dart';
+import '../models/painted_model.dart';
 import 'draw_paint_item.dart';
 
 /// A widget for creating a canvas for paint on images.
@@ -63,8 +63,8 @@ class PaintCanvasState extends State<PaintCanvas> {
 
   @override
   void initState() {
-    _activePaintStreamCtrl = StreamController.broadcast();
     super.initState();
+    _activePaintStreamCtrl = StreamController.broadcast();
   }
 
   @override

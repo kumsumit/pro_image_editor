@@ -27,7 +27,9 @@ class EmojiLayer extends Layer {
     super.id,
     super.flipX,
     super.flipY,
-    super.enableInteraction,
+    super.interaction,
+    super.isDeleted,
+    super.meta,
   });
 
   /// Factory constructor for creating an EmojiLayer instance from a Layer
@@ -45,10 +47,12 @@ class EmojiLayer extends Layer {
       id: layer.id,
       flipX: layer.flipX,
       flipY: layer.flipY,
-      enableInteraction: layer.enableInteraction,
+      interaction: layer.interaction,
       offset: layer.offset,
       rotation: layer.rotation,
       scale: layer.scale,
+      isDeleted: layer.isDeleted,
+      meta: layer.meta,
       emoji: map[keyConverter('emoji')],
     );
   }
@@ -71,39 +75,5 @@ class EmojiLayer extends Layer {
       ...super.toMapFromReference(layer),
       if ((layer as EmojiLayer).emoji != emoji) 'emoji': emoji,
     };
-  }
-}
-
-// TODO: Remove in version 8.0.0
-/// **DEPRECATED:** Use [EmojiLayer] instead.
-@Deprecated('Use EmojiLayer instead')
-class EmojiLayerData extends EmojiLayer {
-  /// Constructor for EmojiLayerData
-  EmojiLayerData({
-    required super.emoji,
-    super.offset,
-    super.rotation,
-    super.scale,
-    super.id,
-    super.flipX,
-    super.flipY,
-    super.enableInteraction,
-  });
-
-  /// Factory constructor for creating an EmojiLayerData instance from a Layer
-  /// and a map.
-  factory EmojiLayerData.fromMap(Layer layer, Map<String, dynamic> map) {
-    /// Constructs and returns an EmojiLayerData instance with properties
-    /// derived from the layer and map.
-    return EmojiLayerData(
-      id: layer.id,
-      flipX: layer.flipX,
-      flipY: layer.flipY,
-      enableInteraction: layer.enableInteraction,
-      offset: layer.offset,
-      rotation: layer.rotation,
-      scale: layer.scale,
-      emoji: map['emoji'],
-    );
   }
 }

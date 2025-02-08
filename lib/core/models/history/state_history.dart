@@ -1,8 +1,8 @@
 // Project imports:
+import '/features/crop_rotate_editor/models/transform_factors.dart';
 import '/features/filter_editor/types/filter_matrix.dart';
-import '../crop_rotate_editor/transform_factors.dart';
+import '/features/tune_editor/models/tune_adjustment_matrix.dart';
 import '../layers/layer.dart';
-import '../tune_editor/tune_adjustment_matrix.dart';
 
 /// The `EditorStateHistory` class represents changes made to an image in the
 /// image editor. It contains information about the changes applied to the

@@ -1,9 +1,9 @@
 // Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
-import '/core/models/paint_editor/painted_model.dart';
 import '../enums/paint_editor_enum.dart';
+// Project imports:
+import '../models/painted_model.dart';
 
 /// The `PaintController` class is responsible for managing and controlling
 /// the paint state.

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 // Project imports:
-import '../../utils/unique_id_generator.dart';
+import '/shared/utils/unique_id_generator.dart';
 
 /// A class representing the state of a thread capturing an image.
 ///

@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 
 // Project imports:
 import '/core/mixins/standalone_editor.dart';
-import '/core/models/crop_rotate_editor/transform_factors.dart';
 import '/core/models/init_configs/crop_rotate_editor_init_configs.dart';
 import '/shared/widgets/extended/extended_custom_paint.dart';
 import '/shared/widgets/extended/extended_transform_scale.dart';
 import '/shared/widgets/extended/extended_transform_translate.dart';
 import '../crop_rotate_editor.dart';
+import '../models/transform_factors.dart';
 import '../utils/crop_aspect_ratios.dart';
 import '../widgets/crop_corner_painter.dart';
 

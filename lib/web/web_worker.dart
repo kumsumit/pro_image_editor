@@ -11,9 +11,9 @@ import 'dart:typed_data';
 import 'package:web/web.dart' as web;
 
 import '/core/models/multi_threading/thread_web_request_model.dart';
-import '/shared/services/content_recorder/managers/web_worker/web_utils.dart';
-import '/shared/services/content_recorder/utils/convert_raw_image.dart';
-import '/shared/services/content_recorder/utils/encode_image.dart';
+import '../shared/services/content_recorder/utils/converters/convert_raw_image.dart';
+import '../shared/services/content_recorder/utils/encoder/encode_image.dart';
+import '../shared/services/content_recorder/utils/web_worker_utils.dart';
 
 void main() {
   WebWorkerManager();

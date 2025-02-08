@@ -1,5 +1,72 @@
 # Changelog
 
+# 8.1.6
+- **FEAT**(layer): Add meta field to layermodels for custom metadata in export/import.
+
+# 8.1.5
+- **FEAT**(export): Optimize the export process by including only parameters that were modified in tune adjustments. This reduces the exported file size.  
+
+# 8.1.4
+- **FIX**(generation): Use `captureOnlyBackgroundImageArea` instead of `captureOnlyDrawingBounds` for background cropping.
+
+# 8.1.3
+- **PERF**(capture-image): Improved image capture performance by minimizing its impact on the main thread.  
+
+# 8.1.2
+- **FIX**(paint-editor): Ensure bottombar selection updates in UI when changed.
+- **FIX**(paint-editor): Correct appBar canRedo to use the proper function instead of canUndo.
+- **FIX**(layer): Resolve issue where selecting layers that overlap did not function as expected. Resolves issue [#282](https://github.com/hm21/pro_image_editor/issues/282)
+- **FIX**(import): Resolve issue where transformations exported from the crop-rotate editor were not properly imported.
+
+# 8.1.1
+- **FIX**(crop_rotate_editor): Fixed an issue where the crop-rotate editor would throw multiple errors when reopened. Resolves issue [#236](https://github.com/hm21/pro_image_editor/issues/236) and [#237](https://github.com/hm21/pro_image_editor/issues/237).
+- **PERF**(mediaquery): Replaces MediaQuery.of(...) with MediaQuery.sizeOf(...) to optimize performance and minimize unnecessary widget rebuilds.  
+
+# 8.1.0
+- **FEAT**(layer): Added new methods `lockAllLayers` and `unlockAllLayers` to the main editor, enabling direct locking or unlocking of all layers.
+
+# 8.0.4
+- **FIX**(export/import): Resolve an issue where exported stickers within the JSON file could no longer be imported. Resolves issue [#334](https://github.com/hm21/pro_image_editor/issues/334)
+
+## 8.0.3
+- **FIX**(blur-editor): Resolve issue where the slider animation does not work in the blur editor.
+- **FIX**(layer-context-menu): Resolve issue where the context menu is incorrectly positioned when the editor is embedded within the screen.
+- **CHORE**(dependencies): Update package `vibration` to `3.1.1`.
+
+## 8.0.2
+- **FIX**(paint-editor): Resolve issue where the paint editor did not use `appBarColor` from the style configuration. More details in PR [#333](https://github.com/hm21/pro_image_editor/pull/333)
+
+## 8.0.1
+- **FIX**(layer-interaction): Fix issue where layers remove-area still appear when attempting to move a layer, even when `enableMove` is set to `false`. Resolves issue [#332](https://github.com/hm21/pro_image_editor/issues/332)
+- **FEAT**(layer-interaction): Introduce `enableEdit` to the layer interaction options, allowing users to disable direct editing of text layers.
+
+## 8.0.0
+
+#### Features
+- **Layer Interaction Overhaul**:
+  - Replaced the old `enableInteraction` property on layers with the new `LayerInteraction` class, introducing more specific configuration options:
+    - `enableMove`, `enableScale`, `enableRotate`, and `enableSelection`.
+  - This provides greater flexibility and precision in configuring layer interactions.
+
+- **Customizable Interaction Widgets**:
+  - Updated `LayerInteractionWidgets` with two new options:
+    - **`children`**: Allows users to define their own interactive button designs when the layer is selected.
+    - **`border`**: Enables users to customize the border appearance of selected layers for a fully tailored design.
+
+#### Breaking Changes
+- Removed all deprecated values, including:
+  - `TextLayerData`
+  - `PaintingLayerData`
+  - `EmojiLayerData`
+  - `StickerLayerData`
+  - `ReactiveWidgetData`
+  - `ReactiveAppbarData`
+  - `serializeSticker`
+  - `exportStickers`
+
+## 7.6.5
+- **CHORE**(dependencies): Update `emoji_picker_flutter` to `4.3.0`, `vibration` to `3.0.0` and `http` to `1.3.0`.
+
 ## 7.6.4
 - **CHORE**(vibration): Updated the `vibration` package to version `2.1.0`.
 - **FIX**(vibration): Resolved lint issues introduced by the package update.

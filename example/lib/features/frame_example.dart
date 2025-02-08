@@ -40,11 +40,10 @@ class _FrameExampleState extends State<FrameExample>
 
   @override
   void initState() {
+    super.initState();
     _bottomBarScrollCtrl = ScrollController();
     preCacheImage(assetPath: _frameUrl);
     _createTransparentBackgroundImage();
-
-    super.initState();
   }
 
   @override
@@ -148,7 +147,7 @@ class _FrameExampleState extends State<FrameExample>
         context: context,
         showDragHandle: true,
         constraints: BoxConstraints(
-          minWidth: min(MediaQuery.of(context).size.width, 360),
+          minWidth: min(MediaQuery.sizeOf(context).width, 360),
         ),
         builder: (context) {
           return Material(

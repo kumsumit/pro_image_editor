@@ -2,7 +2,7 @@
 import 'dart:ui';
 
 // Project imports:
-import '../../../core/models/layers/layer.dart';
+import '/core/models/layers/layer.dart';
 
 /// A class responsible for managing layers in an image editing environment.
 ///
@@ -63,7 +63,7 @@ class LayerCopyManager {
       flipX: layer.flipX,
       flipY: layer.flipY,
       customSecondaryColor: layer.customSecondaryColor,
-      enableInteraction: layer.enableInteraction,
+      interaction: layer.interaction.copyWith(),
     );
   }
 
@@ -77,7 +77,7 @@ class LayerCopyManager {
       scale: layer.scale,
       flipX: layer.flipX,
       flipY: layer.flipY,
-      enableInteraction: layer.enableInteraction,
+      interaction: layer.interaction.copyWith(),
     );
   }
 
@@ -91,8 +91,8 @@ class LayerCopyManager {
       scale: layer.scale,
       flipX: layer.flipX,
       flipY: layer.flipY,
-      enableInteraction: layer.enableInteraction,
-      exportConfigs: layer.exportConfigs,
+      interaction: layer.interaction.copyWith(),
+      exportConfigs: layer.exportConfigs.copyWith(),
     );
   }
 
@@ -108,7 +108,7 @@ class LayerCopyManager {
       item: layer.item.copy(),
       rawSize: layer.rawSize,
       opacity: layer.opacity,
-      enableInteraction: layer.enableInteraction,
+      interaction: layer.interaction.copyWith(),
     );
   }
 }

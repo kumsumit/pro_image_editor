@@ -1,4 +1,4 @@
-import 'package:pro_image_editor/shared/services/import_export/constants/minified_keys.dart';
+import '/shared/services/import_export/constants/minified_keys.dart';
 
 /// A service class responsible for minifying or preserving keys in data
 /// structures, such as for history, layers, references, and other maps.
@@ -82,6 +82,16 @@ class EditorKeyMinifier {
     return value!;
   }
 
+  /// Converts a layer interaction key to its minified equivalent if
+  /// [enableMinify] is `true`.
+  String convertLayerInteractionKey(String key) {
+    if (!enableMinify) return key;
+
+    String? value = kMinifiedLayerInteractionKeys[key];
+    assert(value != null, 'Minified key "$key" not found!');
+    return value!;
+  }
+
   /// Converts the keys in a list of layer maps.
   ///
   /// This method transforms the keys in each map of the provided [layers] list.
@@ -102,6 +112,11 @@ class EditorKeyMinifier {
           // Get the new key or keep the same key if not found
           final newKey = kMinifiedLayerKeys[entry.key] ?? entry.key;
           var value = entry.value;
+
+          if (entry.key == 'interaction') {
+            value = Map.from(entry.value).map((itemKey, itemValue) =>
+                MapEntry(convertLayerInteractionKey(itemKey), itemValue));
+          }
 
           if (entry.key == 'item') {
             value = Map.from(entry.value).map((itemKey, itemValue) =>
@@ -131,6 +146,11 @@ class EditorKeyMinifier {
         key,
         Map.from(value).map(
           (entryKey, entryValue) {
+            if (entryKey == 'interaction') {
+              entryValue = Map.from(entryValue).map((itemKey, itemValue) =>
+                  MapEntry(convertLayerInteractionKey(itemKey), itemValue));
+            }
+
             if (entryKey == 'item') {
               entryValue = Map.from(entryValue).map((itemKey, itemValue) =>
                   MapEntry(convertPaintKey(itemKey), itemValue));

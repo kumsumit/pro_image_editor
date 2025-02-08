@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 // Project imports:
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/core/models/editor_image.dart';
-import '/core/models/tune_editor/tune_adjustment_matrix.dart';
 import '/shared/widgets/auto_image.dart';
+import '../../tune_editor/models/tune_adjustment_matrix.dart';
 import '../types/filter_matrix.dart';
 import 'filter_generator.dart';
 

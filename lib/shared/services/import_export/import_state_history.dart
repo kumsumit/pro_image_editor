@@ -1,19 +1,20 @@
 // Dart imports:
 import 'dart:convert';
-import 'dart:io';
 
 // Flutter imports:
 import 'package:flutter/services.dart';
 
-import '/core/models/crop_rotate_editor/transform_factors.dart';
 import '/core/models/editor_image.dart';
 import '/core/models/history/state_history.dart';
 import '/core/models/layers/layer.dart';
-import '/core/models/tune_editor/tune_adjustment_matrix.dart';
-import '/core/utils/parser/double_parser.dart';
-import '/core/utils/parser/int_parser.dart';
-import '/core/utils/parser/size_parser.dart';
+import '/core/platform/io/io_helper.dart';
+import '/features/crop_rotate_editor/models/transform_factors.dart';
 import '/features/filter_editor/utils/filter_generator/filter_addons.dart';
+import '/features/tune_editor/models/tune_adjustment_matrix.dart';
+import '../../utils/parser/double_parser.dart';
+import '../../utils/parser/int_parser.dart';
+import '../../utils/parser/size_parser.dart';
+import './utils/history_compatibility/history_compatibility_layer_interaction.dart';
 import 'constants/export_import_version.dart';
 import 'models/import_state_history_configs.dart';
 import 'utils/key_minifier.dart';
@@ -66,7 +67,7 @@ class ImportStateHistory {
     final version = map[minifier.convertMainKey('version')] as String? ??
         ExportImportVersion.version_1_0_0;
     final stateHistory = <EditorStateHistory>[];
-    final widgetRecords = _parseWidgetRecords(map, version);
+    final widgetRecords = _parseWidgetRecords(map, version, minifier);
     final lastRenderedImgSize =
         safeParseSize(map[minifier.convertMainKey('lastRenderedImgSize')]);
     final List<EditorImage> requirePrecacheList = [];
@@ -88,16 +89,17 @@ class ImportStateHistory {
         case ExportImportVersion.version_3_0_1:
         case ExportImportVersion.version_3_0_0:
         case ExportImportVersion.version_4_0_0:
-          layers = (historyItem['layers'] as List<dynamic>? ?? [])
-              .map(
-                (layer) => Layer.fromMap(
-                  layer,
-                  widgetRecords: widgetRecords,
-                  widgetLoader: configs.widgetLoader,
-                  requirePrecache: requirePrecacheList.add,
-                ),
-              )
-              .toList();
+          layers =
+              (historyItem['layers'] as List<dynamic>? ?? []).map((rawLayer) {
+            historyCompatibilityLayerInteraction(
+                layerMap: rawLayer, minifier: minifier, version: version);
+            return Layer.fromMap(
+              rawLayer,
+              widgetRecords: widgetRecords,
+              widgetLoader: configs.widgetLoader,
+              requirePrecache: requirePrecacheList.add,
+            );
+          }).toList();
           break;
         default:
           for (var rawLayer in List.from(
@@ -107,6 +109,14 @@ class ImportStateHistory {
               ...lastLayerStateHelper[id] ?? {},
               ...rawLayer,
             };
+
+            if (version == ExportImportVersion.version_5_0_0) {
+              historyCompatibilityLayerInteraction(
+                layerMap: convertedLayerMap,
+                minifier: minifier,
+                version: version,
+              );
+            }
 
             layers.add(Layer.fromMap(
               convertedLayerMap,
@@ -139,7 +149,9 @@ class ImportStateHistory {
       final transformConfigs = historyItem[transformKey] != null &&
               Map.from(historyItem[transformKey]).isNotEmpty
           ? TransformConfigs.fromMap(historyItem[transformKey])
-          : TransformConfigs.empty();
+          : stateHistory.isNotEmpty
+              ? stateHistory.last.transformConfigs
+              : TransformConfigs.empty();
 
       stateHistory.add(EditorStateHistory(
         blur: blur,
@@ -183,7 +195,10 @@ class ImportStateHistory {
   }
 
   static List<Uint8List> _parseWidgetRecords(
-      Map<String, dynamic> map, String version) {
+    Map<String, dynamic> map,
+    String version,
+    EditorKeyMinifier minifier,
+  ) {
     List<dynamic> items = [];
     switch (version) {
       case ExportImportVersion.version_1_0_0:
@@ -193,7 +208,9 @@ class ImportStateHistory {
         items = (map['stickers'] as List<dynamic>? ?? []);
         break;
       default:
-        items = (map['widgetRecords'] as List<dynamic>? ?? []);
+        items =
+            (map[minifier.convertMainKey('widgetRecords')] as List<dynamic>? ??
+                []);
         break;
     }
 

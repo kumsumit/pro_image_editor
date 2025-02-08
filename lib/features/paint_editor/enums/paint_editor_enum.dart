@@ -25,18 +25,3 @@ enum PaintMode {
   /// Remove paint-items when hit.
   eraser,
 }
-
-// TODO: Remove in version 8.0.0
-/// Old version of `PaintMode`.
-///
-/// Deprecated: Use `PaintMode` instead.
-@Deprecated(
-  'Use PaintMode instead. This will be removed in a future release.',
-)
-enum PaintModeE {
-  /// Represents the Material Design style.
-  material,
-
-  /// Represents the Cupertino Design style.
-  cupertino,
-}

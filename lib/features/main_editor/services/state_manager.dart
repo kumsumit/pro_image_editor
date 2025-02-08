@@ -1,9 +1,9 @@
-import '/core/models/crop_rotate_editor/transform_factors.dart';
 import '/core/models/history/state_history.dart';
+import '/core/models/layers/layer.dart';
 import '/core/models/multi_threading/thread_capture_model.dart';
-import '/core/models/tune_editor/tune_adjustment_matrix.dart';
-import '../../../core/models/layers/layer.dart';
-import '../../filter_editor/types/filter_matrix.dart';
+import '/features/crop_rotate_editor/models/transform_factors.dart';
+import '/features/filter_editor/types/filter_matrix.dart';
+import '/features/tune_editor/models/tune_adjustment_matrix.dart';
 
 /// A class for managing the state and history of image editing changes.
 class StateManager {
@@ -253,5 +253,38 @@ class StateManager {
   void undo() {
     historyPointer = _historyPointer - 1;
     updateActiveItems();
+  }
+
+  /// Locks or unlocks all layers based on the provided parameters.
+  ///
+  /// This method iterates through either the active layers or the entire state
+  /// history and toggles the lock state of each layer's interaction.
+  ///
+  /// Parameters:
+  /// - `enableInteraction` (required): A boolean value indicating whether to
+  ///   lock (`false`) or unlock (`true`) the layers.
+  /// - `onlyCurrentHistory` (required): A boolean value indicating whether to
+  ///   apply the lock/unlock operation only to the current history (`true`)
+  ///   or to all state history (`false`).
+  ///
+  /// If `onlyCurrentHistory` is `true`, the method will only affect the
+  /// active layers.
+  /// If `onlyCurrentHistory` is `false`, the method will iterate through all
+  /// layers in the state history and apply the lock/unlock operation.
+  void updateLayerInteraction({
+    required bool enableInteraction,
+    required bool onlyCurrentHistory,
+  }) {
+    if (onlyCurrentHistory) {
+      for (Layer layer in activeLayers) {
+        layer.interaction.toggleAll(enableInteraction);
+      }
+    } else {
+      for (var history in stateHistory) {
+        for (var layer in history.layers) {
+          layer.interaction.toggleAll(enableInteraction);
+        }
+      }
+    }
   }
 }

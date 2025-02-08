@@ -1,7 +1,7 @@
 // Project imports:
 import '/features/crop_rotate_editor/crop_rotate_editor.dart';
-import '/shared/widgets/custom_widgets/reactive_custom_appbar.dart';
-import '/shared/widgets/custom_widgets/reactive_custom_widget.dart';
+import '/shared/widgets/reactive_widgets/reactive_custom_appbar.dart';
+import '/shared/widgets/reactive_widgets/reactive_custom_widget.dart';
 import 'utils/custom_widgets_standalone_editor.dart';
 import 'utils/custom_widgets_typedef.dart';
 

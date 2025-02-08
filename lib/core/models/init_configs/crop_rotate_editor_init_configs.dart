@@ -1,7 +1,6 @@
 // Project imports:
-import '/core/utils/decode_image.dart';
-
-import '../crop_rotate_editor/transform_factors.dart';
+import '/features/crop_rotate_editor/models/transform_factors.dart';
+import '/shared/utils/decode_image.dart';
 import 'editor_init_configs.dart';
 
 /// A typedef representing a callback function signature for completing the

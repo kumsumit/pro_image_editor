@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
 import '/shared/extensions/color_extension.dart';
-import '../../utils/parser/double_parser.dart';
-import '../../utils/parser/int_parser.dart';
+import '/shared/utils/parser/double_parser.dart';
+import '/shared/utils/parser/int_parser.dart';
 import 'enums/layer_background_mode.dart';
 import 'layer.dart';
 
@@ -39,7 +39,9 @@ class TextLayer extends Layer {
     super.id,
     super.flipX,
     super.flipY,
-    super.enableInteraction,
+    super.interaction,
+    super.isDeleted,
+    super.meta,
   });
 
   /// Factory constructor for creating a TextLayer instance from a Layer
@@ -110,13 +112,21 @@ class TextLayer extends Layer {
       id: layer.id,
       flipX: layer.flipX,
       flipY: layer.flipY,
-      enableInteraction: layer.enableInteraction,
+      interaction: layer.interaction,
       offset: layer.offset,
       rotation: layer.rotation,
       scale: layer.scale,
+      isDeleted: layer.isDeleted,
+      meta: layer.meta,
       text: map[keyConverter('text')] ?? '-',
       fontScale: map[keyConverter('fontScale')] ?? 1.0,
-      textStyle: map[keyConverter('fontFamily')] != null
+      textStyle: fontFamily != null ||
+              wordSpacing != null ||
+              height != null ||
+              letterSpacing != null ||
+              fontWeight != null ||
+              fontStyle != null ||
+              decoration != null
           ? TextStyle(
               fontFamily: fontFamily,
               height: height,
@@ -228,126 +238,5 @@ class TextLayer extends Layer {
       if (paintLayer.textStyle?.decoration != textStyle?.decoration)
         'decoration': textStyle?.decoration.toString(),
     };
-  }
-}
-
-// TODO: Remove in version 8.0.0
-/// **DEPRECATED:** Use [TextLayer] instead.
-@Deprecated('Use TextLayer instead')
-class TextLayerData extends TextLayer {
-  /// Constructor for TextLayerData
-  TextLayerData({
-    required super.text,
-    super.customSecondaryColor,
-    super.textStyle,
-    super.colorMode,
-    super.colorPickerPosition,
-    super.color,
-    super.background,
-    super.align,
-    super.fontScale,
-    super.offset,
-    super.rotation,
-    super.scale,
-    super.id,
-    super.flipX,
-    super.flipY,
-    super.enableInteraction,
-  });
-
-  /// Factory constructor for creating a TextLayerData instance from a Layer
-  /// instance and a map.
-  factory TextLayerData.fromMap(Layer layer, Map<String, dynamic> map) {
-    /// Helper function to determine the text decoration style from a string.
-    TextDecoration getDecoration(String decoration) {
-      if (decoration.contains('combine')) {
-        /// List to hold multiple text decoration styles if combined.
-        List<TextDecoration> decorations = [];
-
-        /// Adds line-through decoration if specified.
-        if (decoration.contains('lineThrough')) {
-          decorations.add(TextDecoration.lineThrough);
-        }
-
-        /// Adds overline decoration if specified.
-        if (decoration.contains('overline')) {
-          decorations.add(TextDecoration.overline);
-        }
-
-        /// Adds underline decoration if specified.
-        if (decoration.contains('underline')) {
-          decorations.add(TextDecoration.underline);
-        }
-
-        /// Combines multiple decorations into a single TextDecoration.
-        return TextDecoration.combine(decorations);
-      } else {
-        /// Checks and returns line-through decoration.
-        if (decoration.contains('lineThrough')) {
-          return TextDecoration.lineThrough;
-        }
-
-        /// Checks and returns overline decoration.
-        else if (decoration.contains('overline')) {
-          return TextDecoration.overline;
-        }
-
-        /// Checks and returns underline decoration.
-        else if (decoration.contains('underline')) {
-          return TextDecoration.underline;
-        }
-      }
-
-      /// Returns no decoration if none is specified.
-      return TextDecoration.none;
-    }
-
-    /// Optional properties for text styling from the map.
-    String? fontFamily = map['fontFamily'] as String?;
-    double? wordSpacing = tryParseDouble(map['wordSpacing']);
-    double? height = tryParseDouble(map['height']);
-    double? letterSpacing = tryParseDouble(map['letterSpacing']);
-    int? fontWeight = tryParseInt(map['fontWeight']);
-    String? fontStyle = map['fontStyle'] as String?;
-    String? decoration = map['decoration'] as String?;
-
-    /// Constructs and returns a TextLayerData instance with properties derived
-    /// from the map.
-    return TextLayerData(
-      id: layer.id,
-      flipX: layer.flipX,
-      flipY: layer.flipY,
-      enableInteraction: layer.enableInteraction,
-      offset: layer.offset,
-      rotation: layer.rotation,
-      scale: layer.scale,
-      text: map['text'] ?? '-',
-      fontScale: map['fontScale'] ?? 1.0,
-      textStyle: map['fontFamily'] != null
-          ? TextStyle(
-              fontFamily: fontFamily,
-              height: height,
-              wordSpacing: wordSpacing,
-              letterSpacing: letterSpacing,
-              decoration: decoration != null ? getDecoration(decoration) : null,
-              fontStyle: fontStyle != null
-                  ? FontStyle.values
-                      .firstWhere((element) => element.name == fontStyle)
-                  : null,
-              fontWeight: fontWeight != null
-                  ? FontWeight.values
-                      .firstWhere((element) => element.value == fontWeight)
-                  : null,
-            )
-          : null,
-      colorMode: LayerBackgroundMode.values
-          .firstWhere((element) => element.name == map['colorMode']),
-      color: Color(map['color']),
-      background: Color(map['background']),
-      colorPickerPosition: map['colorPickerPosition'] ?? 0,
-      align: TextAlign.values
-          .firstWhere((element) => element.name == map['align']),
-      customSecondaryColor: map['customSecondaryColor'] ?? false,
-    );
   }
 }

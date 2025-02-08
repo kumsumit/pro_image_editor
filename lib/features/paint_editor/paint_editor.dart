@@ -1,6 +1,5 @@
 // Dart imports:
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 // Flutter imports:
@@ -12,24 +11,27 @@ import '/core/constants/image_constants.dart';
 import '/core/mixins/converted_callbacks.dart';
 import '/core/mixins/converted_configs.dart';
 import '/core/mixins/standalone_editor.dart';
-import '/core/models/paint_editor/painted_model.dart';
 import '/core/models/transform_helper.dart';
+import '/core/platform/io/io_helper.dart';
+import '/features/paint_editor/widgets/paint_editor_appbar.dart';
+import '/features/paint_editor/widgets/paint_editor_bottombar.dart';
+import '/features/paint_editor/widgets/paint_editor_color_picker.dart';
 import '/pro_image_editor.dart';
 import '/shared/services/content_recorder/widgets/content_recorder.dart';
 import '/shared/styles/platform_text_styles.dart';
 import '/shared/widgets/auto_image.dart';
-import '/shared/widgets/bottom_sheets_header_row.dart';
 import '/shared/widgets/extended/extended_interactive_viewer.dart';
 import '/shared/widgets/layer/layer_stack.dart';
-import '/shared/widgets/platform/platform_popup_menu.dart';
+import '/shared/widgets/slider_bottom_sheet.dart';
 import '/shared/widgets/transform/transformed_content_generator.dart';
 import '../filter_editor/widgets/filtered_image.dart';
 import 'controllers/paint_controller.dart';
+import 'models/painted_model.dart';
 import 'services/paint_desktop_interaction_manager.dart';
 import 'widgets/paint_canvas.dart';
 
-export '/core/models/paint_editor/paint_bottom_bar_item.dart';
 export 'enums/paint_editor_enum.dart';
+export 'models/paint_bottom_bar_item.dart';
 export 'widgets/draw_paint_item.dart';
 
 /// The `PaintEditor` widget allows users to editing images with paint
@@ -133,29 +135,30 @@ class PaintEditor extends StatefulWidget
     File? file,
     String? assetPath,
     String? networkUrl,
+    EditorImage? editorImage,
     required PaintEditorInitConfigs initConfigs,
   }) {
-    if (byteArray != null) {
+    if (byteArray != null || editorImage?.byteArray != null) {
       return PaintEditor.memory(
-        byteArray,
+        byteArray ?? editorImage!.byteArray!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (file != null) {
+    } else if (file != null || editorImage?.file != null) {
       return PaintEditor.file(
-        file,
+        file ?? editorImage!.file!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (networkUrl != null) {
+    } else if (networkUrl != null || editorImage?.networkUrl != null) {
       return PaintEditor.network(
-        networkUrl,
+        networkUrl ?? editorImage!.networkUrl!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (assetPath != null) {
+    } else if (assetPath != null || editorImage?.assetPath != null) {
       return PaintEditor.asset(
-        assetPath,
+        assetPath ?? editorImage!.assetPath!,
         key: key,
         initConfigs: initConfigs,
       );
@@ -194,20 +197,20 @@ class PaintEditorState extends State<PaintEditor>
   late final StreamController<void> uiPickerStream;
 
   /// Update the appbar icons.
-  late final StreamController<void> _uiAppbarIconsStream;
+  late final StreamController<void> _uiAppbarStream;
 
   /// A ScrollController for controlling the scrolling behavior of the bottom
   /// navigation bar.
   late ScrollController _bottomBarScrollCtrl;
 
   /// A boolean flag representing whether the fill mode is enabled or disabled.
-  bool _fill = false;
+  bool _isFillMode = false;
 
   /// Controls high-performance for free-style drawing.
   bool _freeStyleHighPerformance = false;
 
   /// Get the fillBackground status.
-  bool get fillBackground => _fill;
+  bool get fillBackground => _isFillMode;
 
   /// Determines whether undo actions can be performed on the current state.
   bool get canUndo => paintCtrl.canUndo;
@@ -298,7 +301,7 @@ class PaintEditorState extends State<PaintEditor>
       strokeMultiplier: 1,
     );
 
-    _fill = paintEditorConfigs.initialFill;
+    _isFillMode = paintEditorConfigs.initialFill;
 
     initStreamControllers();
 
@@ -321,7 +324,7 @@ class PaintEditorState extends State<PaintEditor>
     paintCtrl.dispose();
     _bottomBarScrollCtrl.dispose();
     uiPickerStream.close();
-    _uiAppbarIconsStream.close();
+    _uiAppbarStream.close();
     screenshotCtrl.destroy();
     ServicesBinding.instance.keyboard.removeHandler(_onKeyEvent);
     super.dispose();
@@ -336,10 +339,10 @@ class PaintEditorState extends State<PaintEditor>
   /// Initializes stream controllers for managing UI updates.
   void initStreamControllers() {
     uiPickerStream = StreamController.broadcast();
-    _uiAppbarIconsStream = StreamController.broadcast();
+    _uiAppbarStream = StreamController.broadcast();
 
     uiPickerStream.stream.listen((_) => rebuildController.add(null));
-    _uiAppbarIconsStream.stream.listen((_) => rebuildController.add(null));
+    _uiAppbarStream.stream.listen((_) => rebuildController.add(null));
   }
 
   /// Handle keyboard events
@@ -357,66 +360,28 @@ class PaintEditorState extends State<PaintEditor>
   }
 
   /// Opens a bottom sheet to adjust the line weight when drawing.
-  void openLineWeightBottomSheet() {
+  void openLinWidthBottomSheet() {
     showModalBottomSheet(
       context: context,
       backgroundColor: paintEditorConfigs.style.lineWidthBottomSheetBackground,
       builder: (BuildContext context) {
-        return StatefulBuilder(builder: (context, setState) {
-          return Material(
-            color: Colors.transparent,
-            textStyle: platformTextStyle(context, designMode),
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    BottomSheetHeaderRow(
-                      title: i18n.paintEditor.lineWidth,
-                      theme: initConfigs.theme,
-                      textStyle:
-                          paintEditorConfigs.style.lineWidthBottomSheetTitle,
-                      closeButton:
-                          paintEditorConfigs.widgets.lineWidthCloseButton !=
-                                  null
-                              ? (fn) => paintEditorConfigs
-                                  .widgets.lineWidthCloseButton!(this, fn)
-                              : null,
-                    ),
-                    StatefulBuilder(builder: (context, setState) {
-                      if (paintEditorConfigs.widgets.sliderLineWidth != null) {
-                        return paintEditorConfigs.widgets.sliderLineWidth!(
-                          this,
-                          rebuildController.stream,
-                          paintCtrl.strokeWidth,
-                          (value) {
-                            setStrokeWidth(value);
-                            setState(() {});
-                          },
-                          (onChangedEnd) {},
-                        );
-                      }
-
-                      return Slider.adaptive(
-                        max: 40,
-                        min: 2,
-                        divisions: 19,
-                        value: paintCtrl.strokeWidth,
-                        onChanged: (value) {
-                          setStrokeWidth(value);
-                          setState(() {});
-                        },
-                      );
-                    }),
-                  ],
-                ),
-              ),
-            ),
-          );
-        });
+        return SliderBottomSheet<PaintEditorState>(
+          title: i18n.paintEditor.lineWidth,
+          headerTextStyle: paintEditorConfigs.style.lineWidthBottomSheetTitle,
+          min: 2,
+          max: 40,
+          divisions: 19,
+          closeButton: paintEditorConfigs.widgets.lineWidthCloseButton,
+          customSlider: paintEditorConfigs.widgets.sliderLineWidth,
+          state: this,
+          value: paintCtrl.strokeWidth,
+          designMode: designMode,
+          theme: theme,
+          rebuildController: rebuildController,
+          onValueChanged: (value) {
+            setStrokeWidth(value);
+          },
+        );
       },
     );
   }
@@ -427,62 +392,23 @@ class PaintEditorState extends State<PaintEditor>
       context: context,
       backgroundColor: paintEditorConfigs.style.opacityBottomSheetBackground,
       builder: (BuildContext context) {
-        return StatefulBuilder(builder: (context, setState) {
-          return Material(
-            color: Colors.transparent,
-            textStyle: platformTextStyle(context, designMode),
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    BottomSheetHeaderRow(
-                      title: i18n.paintEditor.changeOpacity,
-                      theme: initConfigs.theme,
-                      textStyle:
-                          paintEditorConfigs.style.opacityBottomSheetTitle,
-                      closeButton:
-                          paintEditorConfigs.widgets.changeOpacityCloseButton !=
-                                  null
-                              ? (fn) => paintEditorConfigs
-                                  .widgets.changeOpacityCloseButton!(this, fn)
-                              : null,
-                    ),
-                    StatefulBuilder(builder: (context, setState) {
-                      if (paintEditorConfigs.widgets.sliderChangeOpacity !=
-                          null) {
-                        return paintEditorConfigs.widgets.sliderChangeOpacity!(
-                          this,
-                          rebuildController.stream,
-                          paintCtrl.opacity,
-                          (value) {
-                            setOpacity(value);
-                            setState(() {});
-                          },
-                          (onChangedEnd) {},
-                        );
-                      }
-
-                      return Slider.adaptive(
-                        max: 1,
-                        min: 0,
-                        divisions: 100,
-                        value: paintCtrl.opacity,
-                        onChanged: (value) {
-                          setOpacity(value);
-                          setState(() {});
-                        },
-                      );
-                    }),
-                  ],
-                ),
-              ),
-            ),
-          );
-        });
+        return SliderBottomSheet<PaintEditorState>(
+          title: i18n.paintEditor.changeOpacity,
+          headerTextStyle: paintEditorConfigs.style.opacityBottomSheetTitle,
+          max: 1,
+          min: 0,
+          divisions: 100,
+          closeButton: paintEditorConfigs.widgets.changeOpacityCloseButton,
+          customSlider: paintEditorConfigs.widgets.sliderChangeOpacity,
+          state: this,
+          value: paintCtrl.opacity,
+          designMode: designMode,
+          theme: theme,
+          rebuildController: rebuildController,
+          onValueChanged: (value) {
+            setOpacity(value);
+          },
+        );
       },
     );
   }
@@ -492,7 +418,7 @@ class PaintEditorState extends State<PaintEditor>
   /// otherwise, they will be outlined.
   void setFill(bool fill) {
     paintCtrl.setFill(fill);
-    _uiAppbarIconsStream.add(null);
+    _uiAppbarStream.add(null);
     paintEditorCallbacks?.handleToggleFill(fill);
   }
 
@@ -501,14 +427,14 @@ class PaintEditorState extends State<PaintEditor>
   /// The opacity must be between 0 and 1.
   void setOpacity(double value) {
     paintCtrl.setOpacity(value);
-    _uiAppbarIconsStream.add(null);
+    _uiAppbarStream.add(null);
     paintEditorCallbacks?.handleOpacity(value);
   }
 
   /// Toggles the fill mode.
   void toggleFill() {
-    _fill = !_fill;
-    setFill(_fill);
+    _isFillMode = !_isFillMode;
+    setFill(_isFillMode);
     rebuildController.add(null);
   }
 
@@ -521,13 +447,14 @@ class PaintEditorState extends State<PaintEditor>
       mode == PaintMode.moveAndZoom,
     );
     _paintCanvas.currentState?.setState(() {});
+    setState(() {});
   }
 
   /// Undoes the last action performed in the paint editor.
   void undoAction() {
     if (canUndo) screenshotHistoryPosition--;
     paintCtrl.undo();
-    _uiAppbarIconsStream.add(null);
+    _uiAppbarStream.add(null);
     setState(() {});
     paintEditorCallbacks?.handleUndo();
   }
@@ -536,7 +463,7 @@ class PaintEditorState extends State<PaintEditor>
   void redoAction() {
     if (canRedo) screenshotHistoryPosition++;
     paintCtrl.redo();
-    _uiAppbarIconsStream.add(null);
+    _uiAppbarStream.add(null);
     setState(() {});
     paintEditorCallbacks?.handleRedo();
   }
@@ -720,212 +647,31 @@ class PaintEditorState extends State<PaintEditor>
           .call(this, rebuildController.stream);
     }
 
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: paintEditorConfigs.style.appBarBackground,
-      foregroundColor: paintEditorConfigs.style.appBarColor,
-      actions: _buildAction(constraints),
-    );
-  }
-
-  /// Builds an action bar depending on the allowed space
-  List<Widget> _buildAction(BoxConstraints constraints) {
-    const int defaultIconButtonSize = 48;
-    final List<StreamBuilder<void>> configButtons = _getConfigButtons();
-    final List<Widget> actionButtons = _getActionButtons();
-
-    // Taking into account the back button
-    final expandedIconButtonsSize =
-        (1 + configButtons.length + actionButtons.length) *
-            defaultIconButtonSize;
-
-    return [
-      IconButton(
-        tooltip: i18n.paintEditor.back,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        icon: Icon(paintEditorConfigs.icons.backButton),
-        onPressed: close,
-      ),
-      const Spacer(),
-      ...[
-        if (constraints.maxWidth >= expandedIconButtonsSize) ...[
-          ...configButtons,
-          if (constraints.maxWidth >= 640) const Spacer(),
-          ...actionButtons,
-        ] else ...[
-          ..._buildShortActionBar(
-            constraints,
-            actionButtons,
-            defaultIconButtonSize,
-          ),
-        ],
-      ],
-    ];
-  }
-
-  /// Builds an action bar with limited number of quick actions
-  List<Widget> _buildShortActionBar(
-    BoxConstraints constraints,
-    List<Widget> actionButtons,
-    int defaultIconButtonSize,
-  ) {
-    final shrunkIconButtonsSize =
-        (1 + actionButtons.length) * defaultIconButtonSize;
-    final bool hasEnoughSpace = constraints.maxWidth >= shrunkIconButtonsSize;
-
-    return [
-      if (hasEnoughSpace) ...[
-        ...actionButtons,
-      ] else ...[
-        _buildDoneBtn(),
-      ],
-      PlatformPopupBtn(
+    return ReactiveAppbar(
+      stream: _uiAppbarStream.stream,
+      builder: (context) => PaintEditorAppBar(
+        paintEditorConfigs: paintEditorConfigs,
+        i18n: i18n.paintEditor,
+        constraints: constraints,
+        onUndo: undoAction,
+        onRedo: redoAction,
+        onToggleFill: toggleFill,
+        onTapMenuFill: () {
+          _isFillMode = !_isFillMode;
+          setFill(_isFillMode);
+          if (designMode == ImageEditorDesignMode.cupertino) {
+            Navigator.pop(context);
+          }
+        },
+        onDone: done,
+        onClose: close,
+        canRedo: canRedo,
+        canUndo: canUndo,
+        isFillMode: _isFillMode,
+        onOpenOpacityBottomSheet: openOpacityBottomSheet,
+        onOpenLineWeightBottomSheet: openLinWidthBottomSheet,
         designMode: designMode,
-        title: i18n.paintEditor.smallScreenMoreTooltip,
-        options: [
-          if (paintEditorConfigs.canChangeLineWidth)
-            PopupMenuOption(
-              label: i18n.paintEditor.lineWidth,
-              icon: Icon(
-                paintEditorConfigs.icons.lineWeight,
-              ),
-              onTap: openLineWeightBottomSheet,
-            ),
-          if (paintEditorConfigs.canToggleFill)
-            PopupMenuOption(
-              label: i18n.paintEditor.toggleFill,
-              icon: Icon(
-                !_fill
-                    ? paintEditorConfigs.icons.noFill
-                    : paintEditorConfigs.icons.fill,
-              ),
-              onTap: () {
-                _fill = !_fill;
-                setFill(_fill);
-                if (designMode == ImageEditorDesignMode.cupertino) {
-                  Navigator.pop(context);
-                }
-              },
-            ),
-          if (paintEditorConfigs.canChangeOpacity)
-            PopupMenuOption(
-              label: i18n.paintEditor.changeOpacity,
-              icon: Icon(
-                paintEditorConfigs.icons.changeOpacity,
-              ),
-              onTap: openOpacityBottomSheet,
-            ),
-          if (!hasEnoughSpace) ...[
-            if (canUndo)
-              PopupMenuOption(
-                label: i18n.paintEditor.undo,
-                icon: Icon(
-                  paintEditorConfigs.icons.undoAction,
-                ),
-                onTap: undoAction,
-              ),
-            if (canRedo)
-              PopupMenuOption(
-                label: i18n.paintEditor.redo,
-                icon: Icon(
-                  paintEditorConfigs.icons.redoAction,
-                ),
-                onTap: redoAction,
-              ),
-          ]
-        ],
-      )
-    ];
-  }
-
-  /// Builds and returns a list of IconButton to change the line width /
-  /// toggle fill or un-fill / change the opacity.
-  List<StreamBuilder<void>> _getConfigButtons() => [
-        if (paintEditorConfigs.canChangeLineWidth)
-          StreamBuilder(
-              stream: _uiAppbarIconsStream.stream,
-              builder: (context, snapshot) {
-                return IconButton(
-                  tooltip: i18n.paintEditor.lineWidth,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  icon: Icon(
-                    paintEditorConfigs.icons.lineWeight,
-                    color: Colors.white,
-                  ),
-                  onPressed: openLineWeightBottomSheet,
-                );
-              }),
-        if (paintEditorConfigs.canToggleFill)
-          StreamBuilder(
-              stream: _uiAppbarIconsStream.stream,
-              builder: (context, snapshot) {
-                return IconButton(
-                  tooltip: i18n.paintEditor.toggleFill,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  icon: Icon(
-                    !_fill
-                        ? paintEditorConfigs.icons.noFill
-                        : paintEditorConfigs.icons.fill,
-                    color: Colors.white,
-                  ),
-                  onPressed: toggleFill,
-                );
-              }),
-        if (paintEditorConfigs.canChangeOpacity)
-          StreamBuilder(
-              stream: _uiAppbarIconsStream.stream,
-              builder: (context, snapshot) {
-                return IconButton(
-                  tooltip: i18n.paintEditor.changeOpacity,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  icon: Icon(
-                    paintEditorConfigs.icons.changeOpacity,
-                    color: Colors.white,
-                  ),
-                  onPressed: openOpacityBottomSheet,
-                );
-              }),
-      ];
-
-  /// Builds and returns a list of IconButton to undo / redo / apply changes.
-  List<Widget> _getActionButtons() => [
-        StreamBuilder(
-            stream: _uiAppbarIconsStream.stream,
-            builder: (context, snapshot) {
-              return IconButton(
-                tooltip: i18n.paintEditor.undo,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                icon: Icon(
-                  paintEditorConfigs.icons.undoAction,
-                  color: canUndo ? Colors.white : Colors.white.withAlpha(80),
-                ),
-                onPressed: undoAction,
-              );
-            }),
-        StreamBuilder(
-            stream: _uiAppbarIconsStream.stream,
-            builder: (context, snapshot) {
-              return IconButton(
-                tooltip: i18n.paintEditor.redo,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                icon: Icon(
-                  paintEditorConfigs.icons.redoAction,
-                  color: canRedo ? Colors.white : Colors.white.withAlpha(80),
-                ),
-                onPressed: redoAction,
-              );
-            }),
-        _buildDoneBtn(),
-      ];
-
-  /// Builds and returns an IconButton for applying changes.
-  Widget _buildDoneBtn() {
-    return IconButton(
-      tooltip: i18n.paintEditor.done,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      icon: Icon(paintEditorConfigs.icons.applyChanges),
-      iconSize: 28,
-      onPressed: done,
+      ),
     );
   }
 
@@ -946,110 +692,114 @@ class PaintEditorState extends State<PaintEditor>
               alignment: Alignment.center,
               fit: StackFit.expand,
               children: _fakeHeroBytes != null
-                  ? [
-                      Hero(
-                        tag: configs.heroTag,
-                        child: AutoImage(
-                          EditorImage(byteArray: _fakeHeroBytes),
-                          configs: configs,
-                        ),
-                      ),
-                    ]
-                  : [
-                      ExtendedInteractiveViewer(
-                        key: _interactiveViewer,
-                        enableZoom: _enableZoom,
-                        boundaryMargin: paintEditorConfigs.boundaryMargin,
-                        minScale: paintEditorConfigs.editorMinScale,
-                        maxScale: paintEditorConfigs.editorMaxScale,
-                        enableInteraction: paintMode == PaintMode.moveAndZoom,
-                        onInteractionStart: (details) {
-                          _freeStyleHighPerformance = (paintEditorConfigs
-                                      .freeStyleHighPerformanceMoving ??
-                                  !isDesktop) ||
-                              (paintEditorConfigs
-                                      .freeStyleHighPerformanceScaling ??
-                                  !isDesktop);
-
-                          callbacks.paintEditorCallbacks?.onEditorZoomScaleStart
-                              ?.call(details);
-                          setState(() {});
-                        },
-                        onInteractionUpdate: callbacks
-                            .paintEditorCallbacks?.onEditorZoomScaleUpdate,
-                        onInteractionEnd: (details) {
-                          _freeStyleHighPerformance = false;
-                          callbacks.paintEditorCallbacks?.onEditorZoomScaleEnd
-                              ?.call(details);
-                          setState(() {});
-                        },
-                        child: ContentRecorder(
-                          autoDestroyController: false,
-                          controller: screenshotCtrl,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            fit: StackFit.expand,
-                            children: [
-                              if (!widget.paintOnly)
-                                TransformedContentGenerator(
-                                  configs: configs,
-                                  transformConfigs: initialTransformConfigs ??
-                                      TransformConfigs.empty(),
-                                  child: FilteredImage(
-                                    width: getMinimumSize(
-                                            mainImageSize, editorBodySize)
-                                        .width,
-                                    height: getMinimumSize(
-                                            mainImageSize, editorBodySize)
-                                        .height,
-                                    configs: configs,
-                                    image: editorImage,
-                                    filters: appliedFilters,
-                                    tuneAdjustments: appliedTuneAdjustments,
-                                    blurFactor: appliedBlurFactor,
-                                  ),
-                                )
-                              else
-                                SizedBox(
-                                  width: configs
-                                      .imageGeneration.maxOutputSize.width,
-                                  height: configs
-                                      .imageGeneration.maxOutputSize.height,
-                                ),
-                              if (layers != null)
-                                LayerStack(
-                                  configs: configs,
-                                  layers: layers!,
-                                  transformHelper: TransformHelper(
-                                    mainBodySize: getMinimumSize(
-                                        mainBodySize, editorBodySize),
-                                    mainImageSize: getMinimumSize(
-                                        mainImageSize, editorBodySize),
-                                    editorBodySize: editorBodySize,
-                                    transformConfigs: initialTransformConfigs,
-                                  ),
-                                ),
-                              _buildPainter(),
-                              if (paintEditorConfigs
-                                      .widgets.bodyItemsRecorded !=
-                                  null)
-                                ...paintEditorConfigs
-                                        .widgets.bodyItemsRecorded!(
-                                    this, rebuildController.stream),
-                            ],
-                          ),
-                        ),
-                      ),
-                      _buildColorPicker(),
-                      if (paintEditorConfigs.widgets.bodyItems != null)
-                        ...paintEditorConfigs.widgets.bodyItems!(
-                            this, rebuildController.stream),
-                    ],
+                  ? _buildFakeHero()
+                  : _buildInteractiveContent(),
             ),
           ),
         );
       }),
     );
+  }
+
+  List<Widget> _buildFakeHero() {
+    return [
+      Hero(
+        tag: configs.heroTag,
+        child: AutoImage(
+          EditorImage(byteArray: _fakeHeroBytes),
+          configs: configs,
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildInteractiveContent() {
+    return [
+      ExtendedInteractiveViewer(
+        key: _interactiveViewer,
+        enableZoom: _enableZoom,
+        boundaryMargin: paintEditorConfigs.boundaryMargin,
+        minScale: paintEditorConfigs.editorMinScale,
+        maxScale: paintEditorConfigs.editorMaxScale,
+        enableInteraction: paintMode == PaintMode.moveAndZoom,
+        onInteractionStart: (details) {
+          _freeStyleHighPerformance =
+              (paintEditorConfigs.freeStyleHighPerformanceMoving ??
+                      !isDesktop) ||
+                  (paintEditorConfigs.freeStyleHighPerformanceScaling ??
+                      !isDesktop);
+
+          callbacks.paintEditorCallbacks?.onEditorZoomScaleStart?.call(details);
+          setState(() {});
+        },
+        onInteractionUpdate:
+            callbacks.paintEditorCallbacks?.onEditorZoomScaleUpdate,
+        onInteractionEnd: (details) {
+          _freeStyleHighPerformance = false;
+          callbacks.paintEditorCallbacks?.onEditorZoomScaleEnd?.call(details);
+          setState(() {});
+        },
+        child: ContentRecorder(
+          autoDestroyController: false,
+          controller: screenshotCtrl,
+          child: Stack(
+            alignment: Alignment.center,
+            fit: StackFit.expand,
+            children: [
+              if (!widget.paintOnly)
+                TransformedContentGenerator(
+                  configs: configs,
+                  transformConfigs:
+                      initialTransformConfigs ?? TransformConfigs.empty(),
+                  child: FilteredImage(
+                    width: getMinimumSize(mainImageSize, editorBodySize).width,
+                    height:
+                        getMinimumSize(mainImageSize, editorBodySize).height,
+                    configs: configs,
+                    image: editorImage,
+                    filters: appliedFilters,
+                    tuneAdjustments: appliedTuneAdjustments,
+                    blurFactor: appliedBlurFactor,
+                  ),
+                )
+              else
+                SizedBox(
+                  width: configs.imageGeneration.maxOutputSize.width,
+                  height: configs.imageGeneration.maxOutputSize.height,
+                ),
+
+              /// Build layers
+              if (layers != null)
+                LayerStack(
+                  configs: configs,
+                  layers: layers!,
+                  transformHelper: TransformHelper(
+                    mainBodySize: getMinimumSize(mainBodySize, editorBodySize),
+                    mainImageSize:
+                        getMinimumSize(mainImageSize, editorBodySize),
+                    editorBodySize: editorBodySize,
+                    transformConfigs: initialTransformConfigs,
+                  ),
+                ),
+              _buildPainter(),
+              if (paintEditorConfigs.widgets.bodyItemsRecorded != null)
+                ...paintEditorConfigs.widgets.bodyItemsRecorded!(
+                    this, rebuildController.stream),
+            ],
+          ),
+        ),
+      ),
+
+      /// Build Color picker
+      PaintEditorColorPicker(
+        state: this,
+        configs: configs,
+        rebuildController: rebuildController,
+      ),
+      if (paintEditorConfigs.widgets.bodyItems != null)
+        ...paintEditorConfigs.widgets.bodyItems!(
+            this, rebuildController.stream),
+    ];
   }
 
   /// Builds the bottom navigation bar of the paint editor.
@@ -1062,98 +812,15 @@ class PaintEditorState extends State<PaintEditor>
 
     if (paintModes.length <= 1) return const SizedBox.shrink();
 
-    double minWidth = min(MediaQuery.of(context).size.width, 600);
-    double maxWidth =
-        max((paintModes.length + (_enableZoom ? 1 : 0)) * 80, minWidth);
-    return Theme(
-      data: theme,
-      child: Scrollbar(
-        controller: _bottomBarScrollCtrl,
-        scrollbarOrientation: ScrollbarOrientation.top,
-        thickness: isDesktop ? null : 0,
-        child: BottomAppBar(
-          height: kToolbarHeight,
-          color: paintEditorConfigs.style.bottomBarBackground,
-          padding: EdgeInsets.zero,
-          child: Center(
-            child: SingleChildScrollView(
-              controller: _bottomBarScrollCtrl,
-              scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minWidth: minWidth,
-                  maxWidth: MediaQuery.of(context).size.width > 660
-                      ? maxWidth
-                      : double.infinity,
-                ),
-                child: StatefulBuilder(builder: (context, setStateBottomBar) {
-                  Color getColor(PaintMode mode) {
-                    return paintMode == mode
-                        ? paintEditorConfigs.style.bottomBarActiveItemColor
-                        : paintEditorConfigs.style.bottomBarInactiveItemColor;
-                  }
-
-                  return Wrap(
-                    direction: Axis.horizontal,
-                    alignment: WrapAlignment.spaceAround,
-                    runAlignment: WrapAlignment.spaceAround,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: <Widget>[
-                      if (_enableZoom) ...[
-                        FlatIconTextButton(
-                          label: Text(
-                            i18n.paintEditor.moveAndZoom,
-                            style: TextStyle(
-                              fontSize: 10.0,
-                              color: getColor(PaintMode.moveAndZoom),
-                            ),
-                          ),
-                          icon: Icon(
-                            paintEditorConfigs.icons.moveAndZoom,
-                            color: getColor(PaintMode.moveAndZoom),
-                          ),
-                          onPressed: () {
-                            setMode(PaintMode.moveAndZoom);
-                            setStateBottomBar(() {});
-                          },
-                        ),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          height: kBottomNavigationBarHeight - 14,
-                          width: 1,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
-                            color: paintEditorConfigs
-                                .style.bottomBarInactiveItemColor,
-                          ),
-                        )
-                      ],
-                      ...List.generate(
-                        paintModes.length,
-                        (index) {
-                          PaintModeBottomBarItem item = paintModes[index];
-                          Color color = getColor(item.mode);
-                          return FlatIconTextButton(
-                            label: Text(
-                              item.label,
-                              style: TextStyle(fontSize: 10.0, color: color),
-                            ),
-                            icon: Icon(item.icon, color: color),
-                            onPressed: () {
-                              setMode(item.mode);
-                              setStateBottomBar(() {});
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                }),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return PaintEditorBottombar(
+      configs: configs.paintEditor,
+      paintMode: paintMode,
+      i18n: i18n.paintEditor,
+      theme: theme,
+      enableZoom: _enableZoom,
+      paintModes: paintModes,
+      setMode: setMode,
+      bottomBarScrollCtrl: _bottomBarScrollCtrl,
     );
   }
 
@@ -1176,57 +843,13 @@ class PaintEditorState extends State<PaintEditor>
         rebuildController.add(null);
       },
       onCreated: () {
-        _uiAppbarIconsStream.add(null);
+        _uiAppbarStream.add(null);
         uiPickerStream.add(null);
         paintEditorCallbacks?.handleDrawingDone();
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           takeScreenshot();
         });
       },
-    );
-  }
-
-  /// Builds the color picker widget for selecting colors while paint.
-  /// Returns a [Widget] representing the color picker.
-  Widget _buildColorPicker() {
-    if (paintEditorConfigs.widgets.colorPicker != null) {
-      return paintEditorConfigs.widgets.colorPicker!.call(
-            this,
-            rebuildController.stream,
-            paintCtrl.color,
-            colorChanged,
-          ) ??
-          const SizedBox.shrink();
-    }
-
-    return Positioned(
-      top: 10,
-      right: 0,
-      child: StreamBuilder(
-        stream: uiPickerStream.stream,
-        builder: (context, snapshot) {
-          return BarColorPicker(
-            configs: configs,
-            length: min(
-              350,
-              MediaQuery.of(context).size.height -
-                  MediaQuery.of(context).viewInsets.bottom -
-                  kToolbarHeight -
-                  kBottomNavigationBarHeight -
-                  MediaQuery.of(context).padding.top -
-                  30,
-            ),
-            horizontal: false,
-            thumbColor: Colors.white,
-            cornerRadius: 10,
-            pickMode: PickMode.color,
-            initialColor: paintEditorConfigs.style.initialColor,
-            colorListener: (int value) {
-              colorChanged(Color(value));
-            },
-          );
-        },
-      ),
     );
   }
 }

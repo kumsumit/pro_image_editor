@@ -1,7 +1,7 @@
 // Flutter imports:
 import 'package:flutter/widgets.dart';
 
-import '/core/models/tune_editor/tune_adjustment_matrix.dart';
+import '../../tune_editor/models/tune_adjustment_matrix.dart';
 import '../types/filter_matrix.dart';
 
 /// A widget for applying color filters to its child widget.
@@ -44,8 +44,8 @@ class ColorFilterGeneratorState extends State<ColorFilterGenerator> {
 
   @override
   void initState() {
-    _generateFilteredWidget();
     super.initState();
+    _generateFilteredWidget();
   }
 
   /// Generates a filtered widget by applying a series of color filters and

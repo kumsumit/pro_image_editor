@@ -9,10 +9,10 @@ import '/core/mixins/converted_configs.dart';
 import '/core/mixins/editor_configs_mixin.dart';
 import '/core/models/editor_callbacks/pro_image_editor_callbacks.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
+import '/core/models/layers/layer.dart';
 import '/features/paint_editor/enums/paint_editor_enum.dart';
 import '/features/paint_editor/widgets/draw_paint_item.dart';
 import '/plugins/rounded_background_text/src/rounded_background_text.dart';
-import '../../../core/models/layers/layer.dart';
 import '../../styles/platform_text_styles.dart';
 import 'interaction_helper/layer_interaction_helper_widget.dart';
 
@@ -138,6 +138,7 @@ class _LayerWidgetState extends State<LayerWidget>
 
   @override
   void initState() {
+    super.initState();
     switch (widget.layerData.runtimeType) {
       case const (TextLayer):
         _layerType = _LayerType.text;
@@ -155,20 +156,20 @@ class _LayerWidgetState extends State<LayerWidget>
         _layerType = _LayerType.unknown;
         break;
     }
-
-    super.initState();
   }
 
   /// Handles a secondary tap up event, typically for showing a context menu.
   void _onSecondaryTapUp(TapUpDetails details) {
     if (_checkHitIsOutsideInCanvas()) return;
     final Offset clickPosition = details.globalPosition;
+    double spacing = 14.0;
 
     widget.onContextMenuToggled?.call(true);
 
     // Show a popup menu at the click position
     showMenu(
       context: context,
+      useRootNavigator: true,
       position: RelativeRect.fromLTRB(
         clickPosition.dx,
         clickPosition.dy,
@@ -176,21 +177,40 @@ class _LayerWidgetState extends State<LayerWidget>
         clickPosition.dy + 1.0, // Adding a small value to avoid zero height
       ),
       items: <PopupMenuEntry<String>>[
+        if (_layerType == _LayerType.text &&
+            widget.layerData.interaction.enableEdit)
+          PopupMenuItem<String>(
+            value: 'edit',
+            child: Row(
+              spacing: spacing,
+              children: [
+                Icon(layerInteraction.icons.edit),
+                Text(i18n.layerInteraction.edit),
+              ],
+            ),
+          ),
         PopupMenuItem<String>(
           value: 'remove',
           child: Row(
+            spacing: spacing,
             children: [
-              const Icon(Icons.delete_outline),
-              const SizedBox(width: 4),
+              Icon(layerInteraction.icons.remove),
               Text(i18n.layerInteraction.remove),
             ],
           ),
         ),
       ],
     ).then((String? selectedValue) {
-      if (selectedValue != null) {
-        widget.onRemoveTap?.call();
+      switch (selectedValue) {
+        case 'edit':
+          widget.onEditTap?.call();
+          break;
+        case 'remove':
+          widget.onRemoveTap?.call();
+          break;
+        default:
       }
+
       widget.onContextMenuToggled?.call(false);
     });
   }
@@ -262,56 +282,51 @@ class _LayerWidgetState extends State<LayerWidget>
       child: Transform(
         transform: transformMatrix,
         alignment: Alignment.center,
-        child: IgnorePointer(
-          ignoring: !widget.layerData.enableInteraction,
-          child: LayerInteractionHelperWidget(
-            layerData: widget.layerData,
-            configs: configs,
-            callbacks: callbacks,
-            selected: widget.selected,
-            onEditLayer: widget.onEditTap,
-            isInteractive:
-                widget.isInteractive && widget.layerData.enableInteraction,
-            onScaleRotateDown: (details) {
-              widget.onScaleRotateDown
-                  ?.call(details, context.size ?? Size.zero);
+        child: LayerInteractionHelperWidget(
+          layerData: widget.layerData,
+          configs: configs,
+          callbacks: callbacks,
+          selected: widget.selected,
+          onEditLayer: widget.onEditTap,
+          isInteractive: widget.isInteractive,
+          onScaleRotateDown: (details) {
+            widget.onScaleRotateDown?.call(details, context.size ?? Size.zero);
+          },
+          onScaleRotateUp: widget.onScaleRotateUp,
+          onRemoveLayer: widget.onRemoveTap,
+          child: MouseRegion(
+            hitTestBehavior: HitTestBehavior.translucent,
+            cursor: _showMoveCursor && widget.layerData.interaction.enableMove
+                ? layerInteraction.style.hoverCursor
+                : MouseCursor.defer,
+            onEnter: (event) {
+              if (_layerType != _LayerType.canvas) {
+                setState(() {
+                  _showMoveCursor = true;
+                });
+              }
             },
-            onScaleRotateUp: widget.onScaleRotateUp,
-            onRemoveLayer: widget.onRemoveTap,
-            child: MouseRegion(
-              hitTestBehavior: HitTestBehavior.translucent,
-              cursor: _showMoveCursor
-                  ? layerInteraction.style.hoverCursor
-                  : MouseCursor.defer,
-              onEnter: (event) {
-                if (_layerType != _LayerType.canvas) {
-                  setState(() {
-                    _showMoveCursor = true;
-                  });
-                }
-              },
-              onExit: (event) {
-                if (_layerType == _LayerType.canvas) {
-                  (widget.layerData as PaintLayer).item.hit = false;
-                } else {
-                  setState(() {
-                    _showMoveCursor = false;
-                  });
-                }
-              },
-              child: GestureDetector(
+            onExit: (event) {
+              if (_layerType == _LayerType.canvas) {
+                (widget.layerData as PaintLayer).item.hit = false;
+              } else {
+                setState(() {
+                  _showMoveCursor = false;
+                });
+              }
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onSecondaryTapUp: isDesktop ? _onSecondaryTapUp : null,
+              onTap: _onTap,
+              child: Listener(
                 behavior: HitTestBehavior.translucent,
-                onSecondaryTapUp: isDesktop ? _onSecondaryTapUp : null,
-                onTap: _onTap,
-                child: Listener(
-                  behavior: HitTestBehavior.translucent,
-                  onPointerDown: _onPointerDown,
-                  onPointerUp: _onPointerUp,
-                  child: Padding(
-                    padding: EdgeInsets.all(widget.selected ? 7.0 : 0),
-                    child: FittedBox(
-                      child: _buildContent(),
-                    ),
+                onPointerDown: _onPointerDown,
+                onPointerUp: _onPointerUp,
+                child: Padding(
+                  padding: EdgeInsets.all(widget.selected ? 7.0 : 0),
+                  child: FittedBox(
+                    child: _buildContent(),
                   ),
                 ),
               ),

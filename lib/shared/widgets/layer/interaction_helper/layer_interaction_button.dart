@@ -45,7 +45,6 @@ class LayerInteractionButton extends StatelessWidget {
     this.onScaleRotateDown,
     this.onScaleRotateUp,
     this.onTap,
-    required this.toggleTooltipVisibility,
     required this.icon,
     required this.cursor,
     required this.buttonRadius,
@@ -68,12 +67,6 @@ class LayerInteractionButton extends StatelessWidget {
   /// This callback is triggered when the user releases the button after a scale
   /// or rotate gesture, allowing for finalizing interactions.
   final Function(PointerUpEvent)? onScaleRotateUp;
-
-  /// Callback for toggling the visibility of the tooltip.
-  ///
-  /// This function can be used to show or hide the tooltip based on user
-  /// interactions.
-  final Function(bool) toggleTooltipVisibility;
 
   /// Callback for handling tap events on the button.
   ///
@@ -126,13 +119,13 @@ class LayerInteractionButton extends StatelessWidget {
       angle: rotation,
       child: MouseRegion(
         cursor: cursor,
-        child: Listener(
-          onPointerDown: onScaleRotateDown,
-          onPointerUp: onScaleRotateUp,
-          child: GestureDetector(
-            onTap: onTap,
-            child: Tooltip(
-              message: tooltip,
+        child: Tooltip(
+          message: tooltip,
+          child: Listener(
+            onPointerDown: onScaleRotateDown,
+            onPointerUp: onScaleRotateUp,
+            child: GestureDetector(
+              onTap: onTap,
               child: Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(

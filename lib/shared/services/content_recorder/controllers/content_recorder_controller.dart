@@ -4,95 +4,113 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:image/image.dart' as img;
 import 'package:mime/mime.dart';
 
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/core/models/multi_threading/thread_capture_model.dart';
 import '/core/models/multi_threading/thread_request_model.dart';
-import '/core/utils/decode_image.dart';
-import '/core/utils/unique_id_generator.dart';
-import '../managers/isolate/isolate_manager.dart';
-import '../managers/web_worker/web_worker_manager_dummy.dart'
-    if (dart.library.js_interop) '../managers/web_worker/web_worker_manager.dart';
-import '../utils/dart_ui_remove_transparent_image_areas.dart';
-import '../utils/encode_image.dart';
+import '/shared/utils/decode_image.dart';
+import '/shared/utils/unique_id_generator.dart';
+import '../services/image_converter_service.dart';
+import '../services/image_render_service.dart';
+import '../services/isolate_manager.dart';
+import '../services/thread_fallback_manager.dart';
+import '../services/thread_manager.dart';
+import '../services/web_worker/web_worker_manager_dummy.dart'
+    if (dart.library.js_interop) '../services/web_worker/web_worker_manager.dart';
+import '../utils/converters/convert_flutter_ui_to_image.dart';
+import '../utils/encoder/encode_image.dart';
 
-/// A controller class responsible for capturing and processing images
-/// using an isolated thread for performance improvements.
+/// Manages the recording and rendering of widgets into image data,
+/// leveraging multi-threading for efficient processing.
 class ContentRecorderController {
-  /// Constructor to initialize the controller and set up the isolate if not
-  /// running on the web.
+  /// Initializes the controller with the specified configuration.
+  /// Optionally enables thumbnail generation and skips initialization.
   ContentRecorderController({
-    required ProImageEditorConfigs configs,
+    required ImageGenerationConfigs configs,
+    this.enableThumbnailGeneration = false,
     bool ignoreGeneration = false,
   }) : _configs = configs {
     containerKey = GlobalKey();
     recorderKey = GlobalKey();
     recorderStream = StreamController();
 
-    if (!ignoreGeneration) _initMultiThreading();
+    _initializeMultiThreading(ignoreGeneration);
   }
 
-  /// A key to identify the container widget for rendering the image.
+  /// A flag indicating whether thumbnail generation is enabled.
+  final bool enableThumbnailGeneration;
+
+  /// The key used to identify the container widget for rendering.
   late final GlobalKey containerKey;
 
-  /// A key to identify the recorder widget for rendering the image.
+  /// The key used to identify the recorder widget for rendering.
   late final GlobalKey recorderKey;
 
-  final ProImageEditorConfigs _configs;
+  /// A service to handle image conversion tasks.
+  late final ImageConverterService _imageConverterService;
 
-  /// Generate only a thumbnail as final image.
-  bool generateOnlyThumbnail = false;
+  /// A service to manage image rendering operations.
+  late final ImageRenderService _imageRenderService;
 
-  /// Instance of ProImageEditorWebWorker used for web worker communication.
-  final WebWorkerManager _webWorkerManager = WebWorkerManager();
+  /// Manages threads for multi-threaded image generation.
+  late final ThreadManager _threadManager;
 
-  /// Instance of ProImageEditorIsolate used for isolate communication.
-  final IsolateManager _isolateManager = IsolateManager();
+  /// Configuration settings for image generation.
+  final ImageGenerationConfigs _configs;
 
-  /// Send widgets to the recorder widget which will draw them.
+  /// A stream for sending widgets to the recorder for drawing.
   late final StreamController<Widget?> recorderStream;
 
-  /// A helper to ensure the widget is painted.
+  /// Ensures that the widget has completed rendering before proceeding.
   Completer<bool> recordReadyHelper = Completer();
 
-  /// Initializes the isolate and sets up communication ports.
-  void _initMultiThreading() async {
-    if (!kIsWeb) {
-      _isolateManager.init(_configs);
+  /// Sets up the multi-threading environment, using isolates or web workers.
+  void _initializeMultiThreading(bool ignoreGeneration) async {
+    if (ignoreGeneration) {
+      _threadManager = ThreadFallbackManager(_configs);
+    } else if (!kIsWeb) {
+      _threadManager = IsolateManager(_configs);
     } else {
-      _webWorkerManager.init(_configs);
+      _threadManager = WebWorkerManager(_configs);
     }
+
+    _imageConverterService = ImageConverterService(
+      configs: _configs,
+      threadManager: _threadManager,
+    );
+    _imageRenderService = ImageRenderService(_configs);
   }
 
-  /// Destroys the isolate and closes the receive port if not running on the
-  /// web.
+  /// Cleans up resources, destroys threads, and closes the recorder stream.
   Future<void> destroy() async {
     await recorderStream.close();
     if (!recordReadyHelper.isCompleted) {
       recordReadyHelper.complete(true);
     }
 
-    if (!kIsWeb) {
-      _isolateManager.destroy();
-    } else {
-      _webWorkerManager.destroy();
-    }
+    _threadManager.destroy();
   }
 
-  /// Captures an image using the provided configuration and optionally a
-  /// specific completer ID and pixel ratio.
-  /// The method determines if the task should be processed in an isolate or on
-  /// the main thread based on the platform.
-  ///
-  /// [onImageCaptured] - Optional callback to handle the captured image.
-  /// [id] - Optional unique identifier for the completer.
-  /// [pixelRatio] - Optional pixel ratio for image rendering.
-  /// [image] - Optional pre-rendered image.
-  Future<Uint8List?> _capture({
+  /// Converts a given `ui.Image` into a `Uint8List` format, which can be used
+  /// for storage or further processing. Accepts an optional `id` to uniquely
+  /// identify the conversion task.
+  Future<Uint8List?> convertRawImageData({
+    required ui.Image image,
+    String? id,
+  }) {
+    return _imageConverterService.convert(
+      image: image,
+      id: id ?? generateUniqueId(),
+    );
+  }
+
+  /// Captures image content based on the provided `ImageInfos` and optional
+  /// parameters like output format and an existing raw image. It supports
+  /// notifying callbacks when an image is captured and handles specific
+  /// behaviors like screenshots in state history on the web.
+  Future<Uint8List?> _captureImageContent({
     required ImageInfos imageInfos,
     Function(ui.Image?)? onImageCaptured,
     bool stateHistoryScreenshot = false,
@@ -102,279 +120,35 @@ class ContentRecorderController {
   }) async {
     /// If we're just capturing a screenshot for the state history in the web
     /// platform, but web worker is not supported, we return null.
-    if (kIsWeb &&
-        stateHistoryScreenshot &&
-        !_webWorkerManager.supportWebWorkers) {
+    if (kIsWeb && stateHistoryScreenshot && (!_threadManager.isSupported)) {
       return null;
     }
 
-    outputFormat ??= _configs.imageGeneration.outputFormat;
-    image ??= await _getRenderedImage(imageInfos: imageInfos);
+    outputFormat ??= _configs.outputFormat;
+    image ??= await getRawRenderedImage(imageInfos: imageInfos);
     id ??= generateUniqueId();
     onImageCaptured?.call(image);
+
     if (image == null) return null;
 
-    return await chooseCaptureMode(
+    return await _imageConverterService.convert(
       image: image,
       id: id,
       format: outputFormat,
     );
   }
 
-  /// Selects the appropriate capture mode based on the platform and
-  /// configuration.
-  ///
-  /// This function determines the capture mode based on the platform and
-  /// configuration settings specified in [_configs]. If the configuration
-  /// allows, the image generation may be offloaded to a separate thread or
-  /// web worker for better performance. If an error occurs, it falls back
-  /// to the main thread.
-  Future<Uint8List?> chooseCaptureMode({
-    required ui.Image image,
-    required String id,
-    OutputFormat? format,
-  }) async {
-    format ??= _configs.imageGeneration.outputFormat;
-
-    if (_configs.imageGeneration.generateInsideSeparateThread) {
-      try {
-        if (!kIsWeb) {
-          // Run in dart native the thread isolated.
-          return await _captureWithNativeIsolated(
-            image: image,
-            id: id,
-            format: format,
-          );
-        } else {
-          // Run in web worker
-          return await _captureWithWebWorker(
-            image: image,
-            id: id,
-            format: format,
-          );
-        }
-      } catch (e) {
-        // Fallback to the main thread.
-        debugPrint('Fallback to main thread: $e');
-        return await _captureWithMainThread(image: image);
-      }
-    } else {
-      return await _captureWithMainThread(image: image);
-    }
-  }
-
-  /// Captures an image using an isolated thread and processes it according to
-  /// the provided configuration.
-  ///
-  /// [image] - The image to be processed.
-  /// [id] - The unique identifier for the completer.
-  Future<Uint8List?> _captureWithNativeIsolated({
-    required ui.Image image,
-    required String id,
-    required OutputFormat format,
-  }) async {
-    return await _isolateManager.send(
-      await _generateSendImageData(
-        id: id,
-        image: image,
-        format: format,
-      ),
-    );
-  }
-
-  /// Captures an image using an web worker and processes it according to the
-  /// provided configuration.
-  ///
-  /// [image] - The image to be processed.
-  /// [id] - The unique identifier for the completer.
-  Future<Uint8List?> _captureWithWebWorker({
-    required ui.Image image,
-    required String id,
-    required OutputFormat format,
-  }) async {
-    if (!_webWorkerManager.supportWebWorkers) {
-      return await _captureWithMainThread(image: image);
-    } else {
-      return await _webWorkerManager.send(
-        await _generateSendImageData(
-          id: id,
-          image: image,
-          format: format,
-        ),
-      );
-    }
-  }
-
-  /// Captures an image on the main thread and processes it according to the
-  /// provided configuration.
-  ///
-  /// [image] - The image to be processed.
-  Future<Uint8List?> _captureWithMainThread({
-    required ui.Image image,
-  }) async {
-    if (_configs.imageGeneration.captureOnlyDrawingBounds) {
-      image = await dartUiRemoveTransparentImgAreas(image) ?? image;
-    }
-
-    return await _encodeImage(image);
-  }
-
-  /// Converts a Flutter ui.Image to img.Image suitable for processing.
-  ///
-  /// [uiImage] - The image to be converted.
-  Future<img.Image> _convertFlutterUiToImage(ui.Image uiImage) async {
-    final uiBytes =
-        await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
-
-    final image = img.Image.fromBytes(
-      width: uiImage.width,
-      height: uiImage.height,
-      bytes: uiBytes!.buffer,
-      numChannels: 4,
-    );
-
-    return image;
-  }
-
-  /// Get the rendered image from the widget tree using the specified pixel
-  /// ratio.
-  Future<ui.Image?> _getRenderedImage({
-    required ImageInfos imageInfos,
-    bool? useThumbnailSize,
-    GlobalKey? widgetKey,
-  }) async {
-    try {
-      widgetKey ??= containerKey;
-
-      RenderObject? findRenderObject =
-          widgetKey.currentContext?.findRenderObject();
-      if (findRenderObject == null) return null;
-
-      // If the render object's paint information is dirty we waiting until
-      // it's painted or 500ms are ago.
-      int retryHelper = 0;
-      while (!findRenderObject.attached && retryHelper < 25) {
-        await Future.delayed(const Duration(milliseconds: 20));
-        retryHelper++;
-      }
-
-      RenderRepaintBoundary boundary =
-          findRenderObject as RenderRepaintBoundary;
-      BuildContext? context = widgetKey.currentContext;
-
-      double outputRatio = imageInfos.pixelRatio;
-      if (!_configs.imageGeneration.captureOnlyDrawingBounds &&
-          context != null &&
-          context.mounted) {
-        outputRatio =
-            max(imageInfos.pixelRatio, MediaQuery.of(context).devicePixelRatio);
-      }
-
-      useThumbnailSize ??= generateOnlyThumbnail;
-      bool isOutputSizeTooLarge = _isOutputSizeTooLarge(
-        imageInfos.renderedSize,
-        outputRatio,
-        useThumbnailSize,
-      );
-      if (isOutputSizeTooLarge) {
-        outputRatio = max(
-          _maxOutputDimension(useThumbnailSize).width / boundary.size.width,
-          _maxOutputDimension(useThumbnailSize).height / boundary.size.height,
-        );
-      }
-
-      double pixelRatio =
-          _configs.imageGeneration.customPixelRatio ?? outputRatio;
-
-      ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
-
-      if (_configs.imageGeneration.captureOnlyBackgroundImageArea) {
-        double cropRectRatio = !imageInfos.isRotated
-            ? imageInfos.cropRectSize.aspectRatio
-            : 1 / imageInfos.cropRectSize.aspectRatio;
-
-        Size convertedImgSize = Size(
-          image.width.toDouble(),
-          image.height.toDouble(),
-        );
-
-        double convertedImgWidth = convertedImgSize.width;
-        double convertedImgHeight = convertedImgSize.height;
-
-        if (convertedImgSize.aspectRatio > cropRectRatio) {
-          // Fit to height
-          convertedImgSize =
-              Size(convertedImgHeight * cropRectRatio, convertedImgHeight);
-        } else {
-          // Fit to width
-          convertedImgSize =
-              Size(convertedImgWidth, convertedImgWidth / cropRectRatio);
-        }
-
-        double cropWidth = convertedImgSize.width;
-        double cropHeight = convertedImgSize.height;
-        double cropX = max(0, image.width.toDouble() - cropWidth) / 2;
-        double cropY = max(0, image.height.toDouble() - cropHeight) / 2;
-
-        ui.PictureRecorder recorder = ui.PictureRecorder();
-        Canvas(recorder).drawImageRect(
-          image,
-          Rect.fromLTWH(cropX, cropY, cropWidth, cropHeight),
-          Rect.fromLTWH(0, 0, cropWidth, cropHeight),
-          Paint(),
-        );
-
-        image = await recorder.endRecording().toImage(
-              cropWidth.ceil(),
-              cropHeight.ceil(),
-            );
-      }
-
-      return image;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Retrieves the original image based on the provided image information.
-  ///
-  /// This method asynchronously fetches the original image without using the
-  /// thumbnail size.
-  /// It calls the `_getRenderedImage` method with the `useThumbnailSize`
-  /// parameter set to false.
-  Future<ui.Image> getOriginalImage({required ImageInfos imageInfos}) async {
-    return (await _getRenderedImage(
-      imageInfos: imageInfos,
-      useThumbnailSize: false,
-    ))!;
-  }
-
-  /// Retrieves the maximum output dimension for image generation from the
-  /// configuration.
-  Size _maxOutputDimension(bool useThumbnailSize) => !useThumbnailSize
-      ? _configs.imageGeneration.maxOutputSize
-      : _configs.imageGeneration.maxThumbnailSize;
-
-  /// Checks if the output size exceeds the maximum allowable dimensions.
-  bool _isOutputSizeTooLarge(
-    Size renderedSize,
-    double outputRatio,
-    bool useThumbnailSize,
-  ) {
-    Size outputSize = renderedSize * outputRatio;
-
-    return outputSize.width > _maxOutputDimension(useThumbnailSize).width ||
-        outputSize.height > _maxOutputDimension(useThumbnailSize).height;
-  }
-
-  /// Capture an invisible widget.
-  Future<Uint8List?> captureFromWidget(
+  /// Captures the visual representation of a widget, rendering it into an image
+  /// and optionally applying target dimensions, output formats, or additional
+  /// processing for state history screenshots. Ensures the widget is fully
+  /// rendered before capture.
+  Future<Uint8List?> _captureWidget(
     Widget widget, {
     required ImageInfos imageInfos,
     Size? targetSize,
     OutputFormat? format,
     Function(ui.Image?)? onImageCaptured,
-    bool stateHistoryScreenshot = false,
+    bool enableStateHistoryScreenshot = false,
     String? id,
   }) async {
     recordReadyHelper = Completer();
@@ -393,7 +167,7 @@ class ContentRecorderController {
     if (!recordReadyHelper.isCompleted) {
       await recordReadyHelper.future;
     }
-    ui.Image? image = await _getRenderedImage(
+    ui.Image? image = await getRawRenderedImage(
       imageInfos: imageInfos,
       useThumbnailSize: false,
       widgetKey: recorderKey,
@@ -401,59 +175,61 @@ class ContentRecorderController {
 
     recorderStream.add(null);
 
-    return _capture(
+    return _captureImageContent(
       image: image,
       imageInfos: imageInfos,
       id: id,
       onImageCaptured: onImageCaptured,
-      stateHistoryScreenshot: stateHistoryScreenshot,
+      stateHistoryScreenshot: enableStateHistoryScreenshot,
       outputFormat: format,
     );
   }
 
-  /// Capture an image of the current editor state in an isolate.
-  ///
-  /// This method captures the current state of the image editor as a
-  /// screenshot.
-  /// It sets all previously unprocessed screenshots to broken before
-  /// capturing a new one.
-  ///
-  /// - `screenshotCtrl`: The controller to capture the screenshot.
-  /// - `configs`: Configuration for the image editor.
-  /// - `pixelRatio`: The pixel ratio to use for capturing the screenshot.
-  void captureImage({
+  /// Handles the process of capturing an image from the provided configuration
+  /// or widget. If multi-threading is enabled, the capture leverages a separate
+  /// isolate or worker to improve performance. The method also tracks the state
+  /// of ongoing captures for synchronization.
+  Future<Uint8List?> capture({
     required ImageInfos imageInfos,
-    required List<ThreadCaptureState> screenshots,
+    List<ThreadCaptureState>? screenshots,
     Size? targetSize,
     Widget? widget,
+    OutputFormat? outputFormat,
   }) async {
-    if (!_configs.imageGeneration.generateImageInBackground ||
-        !_configs.imageGeneration.generateInsideSeparateThread) {
-      return;
+    if (!_configs.generateImageInBackground ||
+        !_configs.generateInsideSeparateThread) {
+      return null;
+    }
+    ThreadCaptureState isolateCaptureState = ThreadCaptureState();
+
+    if (screenshots != null) {
+      /// Set every screenshot to broken which didn't read the ui image before
+      /// changes happen.
+      screenshots
+          .where((el) => !el.processedRenderedImage)
+          .forEach((screenshot) {
+        screenshot.broken = true;
+      });
+      screenshots.add(isolateCaptureState);
     }
 
-    /// Set every screenshot to broken which didn't read the ui image before
-    /// changes happen.
-    screenshots.where((el) => !el.processedRenderedImage).forEach((screenshot) {
-      screenshot.broken = true;
-    });
-    ThreadCaptureState isolateCaptureState = ThreadCaptureState();
-    screenshots.add(isolateCaptureState);
     Uint8List? bytes = widget == null
-        ? await _capture(
+        ? await _captureImageContent(
             id: isolateCaptureState.id,
             imageInfos: imageInfos,
             stateHistoryScreenshot: true,
+            outputFormat: outputFormat,
             onImageCaptured: (img) {
               isolateCaptureState.processedRenderedImage = true;
             },
           )
-        : await captureFromWidget(
+        : await _captureWidget(
             widget,
             id: isolateCaptureState.id,
             imageInfos: imageInfos,
             targetSize: targetSize,
-            stateHistoryScreenshot: true,
+            enableStateHistoryScreenshot: true,
+            format: outputFormat,
             onImageCaptured: (img) {
               isolateCaptureState.processedRenderedImage = true;
             },
@@ -462,23 +238,14 @@ class ContentRecorderController {
     if (bytes == null) {
       isolateCaptureState.broken = true;
     }
+
+    return bytes;
   }
 
-  /// Captures the final screenshot based on the provided parameters.
-  ///
-  /// This method handles the screenshot capture process, either by using an
-  /// existing background screenshot, creating a new screenshot, or validating
-  /// an existing image's format and size. It ensures the screenshot meets the
-  /// required format and size, and handles errors by attempting a new capture.
-  ///
-  /// - Parameters:
-  ///   - imageInfos: Information about the image being captured.
-  ///   - backgroundScreenshot: An optional existing screenshot to use.
-  ///   - widget: An optional widget to capture a screenshot from.
-  ///   - context: The build context for the widget.
-  ///   - originalImageBytes: Optional bytes of the original image.
-  ///
-  /// - Returns: The captured screenshot as a `Uint8List?`.
+  /// Generates a final screenshot by either processing a previously captured
+  /// image or initiating a new capture. The method ensures the output meets the
+  /// required format, size, and quality constraints while supporting retries
+  /// when errors occur.
   Future<Uint8List?> captureFinalScreenshot({
     required ImageInfos imageInfos,
     required ThreadCaptureState? backgroundScreenshot,
@@ -489,32 +256,27 @@ class ContentRecorderController {
   }) async {
     Uint8List? bytes;
 
-    bool activeScreenshotGeneration =
+    bool isGenerationActive =
         backgroundScreenshot != null && !backgroundScreenshot.broken;
-    String id = activeScreenshotGeneration
-        ? backgroundScreenshot.id
-        : generateUniqueId();
+    String id =
+        isGenerationActive ? backgroundScreenshot.id : generateUniqueId();
 
     try {
-      if (!kIsWeb) {
-        _isolateManager.destroyAllActiveTasks(id);
-      } else {
-        _webWorkerManager.destroyAllActiveTasks(id);
-      }
+      _threadManager.destroyAllActiveTasks(id);
 
       if (originalImageBytes == null) {
-        if (activeScreenshotGeneration) {
-          // Get screenshot from isolated generated thread.
+        if (isGenerationActive) {
+          // Await the image data from the thread.
           bytes = await backgroundScreenshot.completer.future;
         } else {
           // Capture a new screenshot if the current screenshot is broken or
           // didn't exists.
           bytes = widget == null
-              ? await _capture(
+              ? await _captureImageContent(
                   id: id,
                   imageInfos: imageInfos,
                 )
-              : await captureFromWidget(
+              : await _captureWidget(
                   widget,
                   id: id,
                   targetSize: targetSize,
@@ -524,74 +286,25 @@ class ContentRecorderController {
       } else {
         // If the user didn't change anything just ensure the output-format
         // is correct.
-        bytes = originalImageBytes;
-
-        String contentType =
-            lookupMimeType('', headerBytes: bytes) ?? 'Unknown';
-        List<String> sp = contentType.split('/');
-        bool formatIsCorrect = sp.length > 1 &&
-            (_configs.imageGeneration.outputFormat.name == sp[1] ||
-                (sp[1] == 'jpeg' &&
-                    _configs.imageGeneration.outputFormat == OutputFormat.jpg));
-
-        double outputRatio = imageInfos.pixelRatio;
-        if (!_configs.imageGeneration.captureOnlyDrawingBounds &&
-            context != null &&
-            context.mounted) {
-          outputRatio = max(
-              imageInfos.pixelRatio, MediaQuery.of(context).devicePixelRatio);
-        }
-        bool isOutputSizeTooLarge = _isOutputSizeTooLarge(
-          imageInfos.renderedSize,
-          outputRatio,
-          generateOnlyThumbnail,
+        bytes = await convertImageFormat(
+          imageInfos: imageInfos,
+          imageBytes: originalImageBytes,
+          context: context,
+          id: id,
+          targetSize: targetSize,
+          widget: widget,
         );
-        if (!formatIsCorrect || isOutputSizeTooLarge) {
-          final ui.Image image = await decodeImageFromList(originalImageBytes);
-          if (_configs.imageGeneration.generateInsideSeparateThread) {
-            if (kIsWeb || isOutputSizeTooLarge) {
-              /// currently in the web flutter decode the image wrong so we need
-              /// to recapture it.
-              /// bytes = await _webWorkerManager.send(
-              ///   await _generateSendEncodeData(
-              ///     id: id,
-              ///     image: image,
-              ///   ),
-              /// );
-              bytes = widget == null
-                  ? await _capture(
-                      id: id,
-                      imageInfos: imageInfos,
-                    )
-                  : await captureFromWidget(
-                      widget,
-                      id: id,
-                      targetSize: targetSize,
-                      imageInfos: imageInfos,
-                    );
-            } else {
-              bytes = await _isolateManager.send(
-                await _generateSendEncodeData(
-                  id: id,
-                  image: image,
-                ),
-              );
-            }
-          } else {
-            bytes = await _encodeImage(image);
-          }
-        }
       }
     } catch (e) {
       debugPrint(e.toString());
 
       // Take a new screenshot when something went wrong.
       bytes = widget == null
-          ? await _capture(
+          ? await _captureImageContent(
               id: id,
               imageInfos: imageInfos,
             )
-          : await captureFromWidget(
+          : await _captureWidget(
               widget,
               id: id,
               targetSize: targetSize,
@@ -601,97 +314,119 @@ class ContentRecorderController {
     return bytes;
   }
 
-  /// Adds an empty screenshot to the provided list of screenshots.
-  ///
-  /// This method creates a `ThreadCaptureState` marked as broken and adds it
-  /// to the list of screenshots.
-  ///
-  /// - Parameters:
-  ///   - screenshots: The list of screenshots to add the empty screenshot to.
+  /// Converts the format of an image and ensures its size adheres to the
+  /// defined constraints. The method recaptures or re-encodes the image
+  /// if the format or size is incompatible with the configuration.
+  /// Multi-threaded or main-thread processing is selected based on platform
+  /// and configuration settings.
+  Future<Uint8List?> convertImageFormat({
+    required ImageInfos imageInfos,
+    required Uint8List imageBytes,
+    required BuildContext? context,
+    required String id,
+    Size? targetSize,
+    Widget? widget,
+  }) async {
+    Uint8List? bytes = imageBytes;
+
+    /// Check content type
+    String contentType = lookupMimeType('', headerBytes: bytes) ?? 'Unknown';
+
+    /// Check if the image format is already same like the output format.
+    List<String> sp = contentType.split('/');
+    bool isFormatSame = sp.length > 1 &&
+        (_configs.outputFormat.name == sp[1] ||
+            (sp[1] == 'jpeg' && _configs.outputFormat == OutputFormat.jpg));
+
+    /// Check if the output size is too large.
+    double outputRatio = imageInfos.pixelRatio;
+    if (!_configs.captureOnlyDrawingBounds &&
+        context != null &&
+        context.mounted) {
+      outputRatio =
+          max(imageInfos.pixelRatio, MediaQuery.devicePixelRatioOf(context));
+    }
+    bool isOutputSizeTooLarge = _imageRenderService.checkOutputSizeIsTooLarge(
+      imageInfos.renderedSize,
+      outputRatio,
+      enableThumbnailGeneration,
+    );
+    if (!isFormatSame || isOutputSizeTooLarge) {
+      final ui.Image image = await decodeImageFromList(bytes);
+      if (_configs.generateInsideSeparateThread) {
+        /// Recapture the image if the output format is incorrect or the output
+        /// size is too large.
+        if (kIsWeb || isOutputSizeTooLarge) {
+          /// Due to a known issue with image decoding in Flutter web, we need
+          /// to recapture the image to ensure accuracy.
+          bytes = widget == null
+              ? await _captureImageContent(
+                  id: id,
+                  imageInfos: imageInfos,
+                )
+              : await _captureWidget(
+                  widget,
+                  id: id,
+                  targetSize: targetSize,
+                  imageInfos: imageInfos,
+                );
+        } else {
+          /// Send the image to the separate thread for encoding.
+          bytes = await _threadManager.send(
+            await _generateSendEncodeData(
+              id: id,
+              image: image,
+            ),
+          );
+        }
+      } else {
+        /// Encode the image on the main thread.
+        bytes = await encodeImageFromThreadRequest(
+          await _generateSendEncodeData(image: image, id: 'id'),
+        );
+      }
+    }
+
+    return bytes;
+  }
+
+  /// Retrieves the raw rendered dart ui image from the widget tree based on the
+  /// provided `ImageInfos`. This method supports capturing images at
+  /// different pixel ratios and optional thumbnail generation.
+  Future<ui.Image?> getRawRenderedImage({
+    required ImageInfos imageInfos,
+    bool? useThumbnailSize,
+    GlobalKey? widgetKey,
+  }) async {
+    return _imageRenderService.getRawRenderedImage(
+      imageInfos: imageInfos,
+      containerKey: containerKey,
+      widgetKey: widgetKey,
+      useThumbnailSize: useThumbnailSize ?? enableThumbnailGeneration,
+    );
+  }
+
+  /// Adds a placeholder screenshot entry to the provided list of
+  /// `ThreadCaptureState` objects. The placeholder is marked as broken and can
+  /// be used to track incomplete or failed captures in multi-threaded
+  /// processing.
   void addEmptyScreenshot({
     required List<ThreadCaptureState> screenshots,
   }) {
-    ThreadCaptureState isolateCaptureState = ThreadCaptureState()
-      ..broken = true;
-    screenshots.add(isolateCaptureState);
+    screenshots.add(ThreadCaptureState()..broken = true);
   }
 
-  /// Encodes the provided image into the desired format.
-  ///
-  /// This method takes a `ui.Image` and encodes it based on the current
-  /// configuration settings, such as output format, quality, and other
-  /// parameters.
-  ///
-  /// - Parameters:
-  ///   - image: The `ui.Image` to encode.
-  ///
-  /// - Returns: The encoded image as a `Uint8List`.
-  Future<Uint8List> _encodeImage(ui.Image image) async {
-    return await encodeImage(
-      image: await _convertFlutterUiToImage(image),
-      outputFormat: _configs.imageGeneration.outputFormat,
-      singleFrame: _configs.imageGeneration.singleFrame,
-      jpegQuality: _configs.imageGeneration.jpegQuality,
-      jpegChroma: _configs.imageGeneration.jpegChroma,
-      pngFilter: _configs.imageGeneration.pngFilter,
-      pngLevel: _configs.imageGeneration.pngLevel,
-    );
-  }
-
-  /// Generates the image data for sending to a separate thread.
-  ///
-  /// This method creates an `ImageConvertThreadRequest` with the necessary
-  /// information to convert the image in a separate thread, based on the
-  /// current configuration settings.
-  ///
-  /// - Parameters:
-  ///   - image: The `ui.Image` to convert.
-  ///   - id: The unique identifier for the request.
-  ///
-  /// - Returns: The `ImageConvertThreadRequest` with the image data.
-  Future<ImageConvertThreadRequest> _generateSendImageData({
-    required ui.Image image,
-    required String id,
-    required OutputFormat format,
-  }) async {
-    return ImageConvertThreadRequest(
-      id: id,
-      generateOnlyImageBounds:
-          _configs.imageGeneration.captureOnlyDrawingBounds,
-      outputFormat: format,
-      jpegChroma: _configs.imageGeneration.jpegChroma,
-      jpegQuality: _configs.imageGeneration.jpegQuality,
-      pngFilter: _configs.imageGeneration.pngFilter,
-      pngLevel: _configs.imageGeneration.pngLevel,
-      singleFrame: _configs.imageGeneration.singleFrame,
-      image: await _convertFlutterUiToImage(image),
-    );
-  }
-
-  /// Generates the encode data for sending to a separate thread.
-  ///
-  /// This method creates a `ThreadRequest` with the necessary information to
-  /// encode the image in a separate thread, based on the current configuration
-  /// settings.
-  ///
-  /// - Parameters:
-  ///   - image: The `ui.Image` to encode.
-  ///   - id: The unique identifier for the request.
-  ///
-  /// - Returns: The `ThreadRequest` with the encode data.
+  /// Prepares a `ThreadRequest` object with all the required data to encode
+  /// an image using the current configuration. This data is used for
+  /// processing in a separate isolate or web worker.
   Future<ThreadRequest> _generateSendEncodeData({
     required ui.Image image,
     required String id,
   }) async {
-    return ThreadRequest(
+    return ThreadRequest.fromConfigs(
       id: id,
-      image: await _convertFlutterUiToImage(image),
-      outputFormat: _configs.imageGeneration.outputFormat,
-      singleFrame: _configs.imageGeneration.singleFrame,
-      jpegQuality: _configs.imageGeneration.jpegQuality,
-      jpegChroma: _configs.imageGeneration.jpegChroma,
-      pngFilter: _configs.imageGeneration.pngFilter,
-      pngLevel: _configs.imageGeneration.pngLevel,
+      image: await convertFlutterUiToImage(image),
+      configs: _configs,
     );
   }
 }

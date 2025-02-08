@@ -2,8 +2,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
-import '/core/utils/unique_id_generator.dart';
 import '/shared/services/content_recorder/controllers/content_recorder_controller.dart';
 
 /// Generates a high-quality image from the provided [ui.Image].
@@ -32,19 +32,14 @@ Future<Uint8List?> generateHighQualityImage(
   ),
 }) async {
   var recorder = ContentRecorderController(
-    configs: ProImageEditorConfigs(
-      imageGeneration: configs.copyWith(
-        processorConfigs: configs.processorConfigs.copyWith(
-          processorMode: ProcessorMode.minimum,
-        ),
+    configs: configs.copyWith(
+      processorConfigs: configs.processorConfigs.copyWith(
+        processorMode: ProcessorMode.minimum,
       ),
     ),
   );
 
-  var bytes = await recorder.chooseCaptureMode(
-    image: image,
-    id: generateUniqueId(),
-  );
+  var bytes = await recorder.convertRawImageData(image: image);
   await recorder.destroy();
 
   if (context != null && context.mounted && bytes != null) {

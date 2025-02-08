@@ -1,8 +1,10 @@
 // Flutter imports:
 import 'package:flutter/widgets.dart';
+import '/core/models/layers/layer.dart';
 
 import '/features/main_editor/main_editor.dart';
-import '/shared/widgets/custom_widgets/reactive_custom_widget.dart';
+import '/shared/widgets/layer/models/layer_item_interaction.dart';
+import '/shared/widgets/reactive_widgets/reactive_custom_widget.dart';
 
 /// {@template removeLayerArea}
 /// A function that returns a [Widget] used as a remove area in the
@@ -171,7 +173,6 @@ typedef CustomSlider<T> = ReactiveWidget Function(
 typedef LayerInteractionTapButton = ReactiveWidget? Function(
   Stream<void> rebuildStream,
   Function() onTap,
-  Function(bool) toggleTooltipVisibility,
   double rotation,
 );
 
@@ -195,9 +196,28 @@ typedef LayerInteractionScaleRotateButton = ReactiveWidget? Function(
   Stream<void> rebuildStream,
   Function(PointerDownEvent) onScaleRotateDown,
   Function(PointerUpEvent) onScaleRotateUp,
-  Function(bool) toggleTooltipVisibility,
   double rotation,
 );
+
+/// A typedef for a function that builds a reactive widget for a layer item.
+///
+/// This function receives a stream of rebuild signals, the layer data,
+/// and the interactions available for the layer item.
+/// It is responsible for building a reactive widget that responds to
+/// changes in the rebuild stream and updates accordingly.
+typedef LayerInteractionItem = ReactiveWidget Function(
+  Stream<void> rebuildStream,
+  Layer layer,
+  LayerItemInteractions interactions,
+);
+
+/// A typedef for a function that builds a widget for the layer border.
+///
+/// This function receives the layer widget and the layer data as
+/// parameters. It is responsible for building a widget that
+/// represents the border around the layer.
+typedef LayerInteractionBorder = Widget Function(
+    Widget layerWidget, Layer layerData);
 
 /// {@template customBodyItem}
 /// Add custom widgets at a specific position inside the body, which will not

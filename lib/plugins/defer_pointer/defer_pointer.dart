@@ -6,6 +6,7 @@ import 'dart:collection';
 // Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import '/shared/utils/unique_id_generator.dart';
 
 part 'deferred_pointer_handler_link.dart';
 part 'deferred_pointer_handler.dart';

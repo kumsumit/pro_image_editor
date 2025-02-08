@@ -1,7 +1,7 @@
 // Project imports:
 import '/core/models/custom_widgets/utils/custom_widgets_typedef.dart';
-import '/shared/widgets/custom_widgets/reactive_custom_appbar.dart';
-import '/shared/widgets/custom_widgets/reactive_custom_widget.dart';
+import '/shared/widgets/reactive_widgets/reactive_custom_appbar.dart';
+import '/shared/widgets/reactive_widgets/reactive_custom_widget.dart';
 
 /// An abstract class representing a customizable standalone editor widget.
 ///

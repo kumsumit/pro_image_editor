@@ -5,7 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 // Project imports:
-import '/core/utils/debounce.dart';
+import '../utils/debounce.dart';
 
 /// A widget that detects changes in screen size and notifies listeners.
 ///
@@ -55,8 +55,8 @@ class _ScreenResizeDetectorState extends State<ScreenResizeDetector> {
 
   @override
   void initState() {
-    _resizeDebounce$ = Debounce(const Duration(milliseconds: 50));
     super.initState();
+    _resizeDebounce$ = Debounce(const Duration(milliseconds: 50));
   }
 
   @override

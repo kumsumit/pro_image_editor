@@ -94,11 +94,11 @@ class _CustomWidgetsExampleState extends State<CustomWidgetsExample>
 
   @override
   void initState() {
+    super.initState();
     preCacheImage(networkUrl: _url);
     _bottomBarScrollCtrl = ScrollController();
     _paintBottomBarScrollCtrl = ScrollController();
     _cropBottomBarScrollCtrl = ScrollController();
-    super.initState();
   }
 
   @override
@@ -198,9 +198,7 @@ class _CustomWidgetsExampleState extends State<CustomWidgetsExample>
           ),
           layerInteraction: LayerInteractionConfigs(
             widgets: LayerInteractionWidgets(
-              editIcon:
-                  (rebuildStream, onTap, toggleTooltipVisibility, rotation) =>
-                      ReactiveWidget(
+              editButton: (rebuildStream, onTap, rotation) => ReactiveWidget(
                 builder: (_) {
                   return Positioned(
                     top: 0,
@@ -234,9 +232,7 @@ class _CustomWidgetsExampleState extends State<CustomWidgetsExample>
                 },
                 stream: rebuildStream,
               ),
-              removeIcon:
-                  (rebuildStream, onTap, toggleTooltipVisibility, rotation) =>
-                      ReactiveWidget(
+              removeButton: (rebuildStream, onTap, rotation) => ReactiveWidget(
                 builder: (_) {
                   return Positioned(
                     top: 0,
@@ -270,8 +266,8 @@ class _CustomWidgetsExampleState extends State<CustomWidgetsExample>
                 },
                 stream: rebuildStream,
               ),
-              rotateScaleIcon: (rebuildStream, onScaleRotateDown,
-                      onScaleRotateUp, toggleTooltipVisibility, rotation) =>
+              rotateScaleButton: (rebuildStream, onScaleRotateDown,
+                      onScaleRotateUp, rotation) =>
                   ReactiveWidget(
                 builder: (_) {
                   return Positioned(
@@ -392,7 +388,7 @@ class _CustomWidgetsExampleState extends State<CustomWidgetsExample>
             Icons.line_weight_rounded,
             color: Colors.white,
           ),
-          onPressed: paintEditor.openLineWeightBottomSheet,
+          onPressed: paintEditor.openLinWidthBottomSheet,
         ),
         IconButton(
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -798,7 +794,7 @@ class _CustomWidgetsExampleState extends State<CustomWidgetsExample>
           scrollDirection: Axis.horizontal,
           child: ConstrainedBox(
             constraints:
-                BoxConstraints(minWidth: MediaQuery.of(context).size.width),
+                BoxConstraints(minWidth: MediaQuery.sizeOf(context).width),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(
@@ -852,7 +848,7 @@ class _CustomWidgetsExampleState extends State<CustomWidgetsExample>
             scrollDirection: Axis.horizontal,
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                minWidth: min(MediaQuery.of(context).size.width, 500),
+                minWidth: min(MediaQuery.sizeOf(context).width, 500),
                 maxWidth: 500,
               ),
               child: Builder(builder: (context) {

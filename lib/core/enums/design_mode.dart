@@ -26,19 +26,3 @@ enum ImageEditorDesignMode {
   /// Represents the Cupertino Design style.
   cupertino,
 }
-
-// TODO: Remove in version 8.0.0
-/// Old version of `ImageEditorDesignMode`.
-///
-/// Deprecated: Use `ImageEditorDesignMode` instead.
-@Deprecated(
-  'Use ImageEditorDesignMode instead. This will be removed in a '
-  'future release.',
-)
-enum ImageEditorDesignModeE {
-  /// Represents the Material Design style.
-  material,
-
-  /// Represents the Cupertino Design style.
-  cupertino,
-}

@@ -1,6 +1,5 @@
 // Dart imports:
 import 'dart:async';
-import 'dart:io';
 
 // Flutter imports:
 import 'package:flutter/foundation.dart';
@@ -11,14 +10,17 @@ import 'package:flutter/services.dart';
 import '/core/mixins/converted_callbacks.dart';
 import '/core/mixins/converted_configs.dart';
 import '/core/mixins/standalone_editor.dart';
-import '/core/models/crop_rotate_editor/transform_factors.dart';
 import '/core/models/editor_image.dart';
 import '/core/models/init_configs/blur_editor_init_configs.dart';
 import '/core/models/transform_helper.dart';
+import '/core/platform/io/io_helper.dart';
+import '/features/blur_editor/widgets/blur_editor_bottombar.dart';
 import '/shared/services/content_recorder/widgets/content_recorder.dart';
 import '/shared/widgets/layer/layer_stack.dart';
 import '/shared/widgets/transform/transformed_content_generator.dart';
+import '../crop_rotate_editor/models/transform_factors.dart';
 import '../filter_editor/widgets/filtered_image.dart';
+import 'widgets/blur_editor_appbar.dart';
 
 /// The `BlurEditor` widget allows users to apply blur to images.
 ///
@@ -101,33 +103,34 @@ class BlurEditor extends StatefulWidget
   /// Either [byteArray], [file], [networkUrl], or [assetPath] must be provided.
   factory BlurEditor.autoSource({
     Key? key,
-    required BlurEditorInitConfigs initConfigs,
     Uint8List? byteArray,
     File? file,
     String? assetPath,
     String? networkUrl,
+    EditorImage? editorImage,
+    required BlurEditorInitConfigs initConfigs,
   }) {
-    if (byteArray != null) {
+    if (byteArray != null || editorImage?.byteArray != null) {
       return BlurEditor.memory(
-        byteArray,
+        byteArray ?? editorImage!.byteArray!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (file != null) {
+    } else if (file != null || editorImage?.file != null) {
       return BlurEditor.file(
-        file,
+        file ?? editorImage!.file!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (networkUrl != null) {
+    } else if (networkUrl != null || editorImage?.networkUrl != null) {
       return BlurEditor.network(
-        networkUrl,
+        networkUrl ?? editorImage!.networkUrl!,
         key: key,
         initConfigs: initConfigs,
       );
-    } else if (assetPath != null) {
+    } else if (assetPath != null || editorImage?.assetPath != null) {
       return BlurEditor.asset(
-        assetPath,
+        assetPath ?? editorImage!.assetPath!,
         key: key,
         initConfigs: initConfigs,
       );
@@ -155,12 +158,18 @@ class BlurEditorState extends State<BlurEditor>
   /// Update the image with the applied blur and the slider value.
   late final StreamController<void> _uiBlurStream;
 
+  late final ValueNotifier<double> _blurFactor =
+      ValueNotifier(appliedBlurFactor);
+
   /// Represents the selected blur state.
-  late double blurFactor;
+  double get blurFactor => _blurFactor.value;
+  set blurFactor(double value) {
+    _blurFactor.value = value;
+  }
 
   @override
   void initState() {
-    blurFactor = appliedBlurFactor;
+    super.initState();
     _uiBlurStream = StreamController.broadcast();
     _uiBlurStream.stream.listen((_) => rebuildController.add(null));
 
@@ -168,7 +177,6 @@ class BlurEditorState extends State<BlurEditor>
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       blurEditorCallbacks?.onAfterViewInit?.call();
     });
-    super.initState();
   }
 
   @override
@@ -247,26 +255,11 @@ class BlurEditorState extends State<BlurEditor>
           .call(this, rebuildController.stream);
     }
 
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: blurEditorConfigs.style.appBarBackgroundColor,
-      foregroundColor: blurEditorConfigs.style.appBarForegroundColor,
-      actions: [
-        IconButton(
-          tooltip: i18n.blurEditor.back,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(blurEditorConfigs.icons.backButton),
-          onPressed: close,
-        ),
-        const Spacer(),
-        IconButton(
-          tooltip: i18n.blurEditor.done,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(blurEditorConfigs.icons.applyChanges),
-          iconSize: 28,
-          onPressed: done,
-        ),
-      ],
+    return BlurEditorAppBar(
+      blurEditorConfigs: blurEditorConfigs,
+      i18n: i18n.blurEditor,
+      close: close,
+      done: done,
     );
   }
 
@@ -345,38 +338,13 @@ class BlurEditorState extends State<BlurEditor>
           .call(this, rebuildController.stream);
     }
 
-    return SafeArea(
-      child: Container(
-        color: blurEditorConfigs.style.background,
-        height: 100,
-        child: Align(
-          alignment: Alignment.center,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: RepaintBoundary(
-              child: StreamBuilder(
-                  stream: _uiBlurStream.stream,
-                  builder: (context, snapshot) {
-                    return blurEditorConfigs.widgets.slider?.call(
-                          this,
-                          rebuildController.stream,
-                          blurFactor,
-                          _onChanged,
-                          _onChangedEnd,
-                        ) ??
-                        Slider(
-                          min: 0,
-                          max: blurEditorConfigs.maxBlur,
-                          divisions: 100,
-                          value: blurFactor,
-                          onChanged: _onChanged,
-                          onChangeEnd: _onChangedEnd,
-                        );
-                  }),
-            ),
-          ),
-        ),
-      ),
+    return BlurEditorBottombar(
+      blurEditorConfigs: blurEditorConfigs,
+      blurFactor: _blurFactor,
+      rebuildController: rebuildController,
+      blurEditorState: this,
+      onChanged: _onChanged,
+      onChangedEnd: _onChangedEnd,
     );
   }
 }

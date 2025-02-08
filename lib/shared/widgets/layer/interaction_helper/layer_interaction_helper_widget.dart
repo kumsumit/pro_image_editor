@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 
 import '/core/mixins/converted_configs.dart';
 import '/core/mixins/editor_configs_mixin.dart';
+import '/core/models/custom_widgets/utils/custom_widgets_typedef.dart';
 import '/core/models/editor_callbacks/pro_image_editor_callbacks.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
+import '/core/models/layers/layer.dart';
 import '/plugins/defer_pointer/defer_pointer.dart';
-import '../../../../core/models/layers/layer.dart';
+import '/shared/widgets/reactive_widgets/reactive_custom_widget.dart';
+import '../models/layer_item_interaction.dart';
 import 'layer_interaction_border_painter.dart';
 import 'layer_interaction_button.dart';
 
@@ -137,8 +140,6 @@ class _LayerInteractionHelperWidgetState
     with ImageEditorConvertedConfigs, SimpleConfigsAccessState {
   final _rebuildStream = StreamController.broadcast();
 
-  bool _tooltipVisible = true;
-
   @override
   void dispose() {
     _rebuildStream.close();
@@ -151,67 +152,107 @@ class _LayerInteractionHelperWidgetState
     super.setState(fn);
   }
 
-  void toggleTooltipVisibility(bool state) {
-    setState(() => _tooltipVisible = state);
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (!widget.isInteractive) {
+    String layerId = widget.layerData.id;
+    var deferManager = DeferManager.maybeOf(context);
+
+    if (!widget.isInteractive ||
+        (!widget.selected && deferManager?.selectedLayerId != '')) {
       // Return the child widget directly if the layer is not interactive.
       return widget.child;
     } else if (!widget.selected) {
       // Use a defer pointer if the layer is not selected, preventing
       // interaction.
-      return DeferPointer(child: widget.child);
+      return DeferPointer(
+        key: ValueKey('Defer-${deferManager?.id ?? ''}-$layerId'),
+        child: widget.child,
+      );
     }
+
+    List<LayerInteractionItem> children =
+        layerInteraction.widgets.children ?? _buildDefaultInteractions();
+
     return TooltipVisibility(
-      visible: _tooltipVisible && layerInteraction.style.showTooltips,
+      visible: layerInteraction.style.showTooltips,
       child: DeferPointer(
         child: Stack(
+          fit: StackFit.passthrough,
+          alignment: Alignment.center,
           children: [
-            Container(
-              margin: EdgeInsets.all(
-                layerInteraction.style.buttonRadius +
-                    layerInteraction.style.strokeWidth * 2,
-              ),
-              child: CustomPaint(
-                foregroundPainter: LayerInteractionBorderPainter(
-                  theme: layerInteraction.style,
-                  borderStyle: layerInteraction.style.borderStyle,
+            layerInteraction.widgets.border
+                    ?.call(widget.child, widget.layerData) ??
+                Container(
+                  margin: EdgeInsets.all(
+                    layerInteraction.style.buttonRadius +
+                        layerInteraction.style.strokeWidth * 2,
+                  ),
+                  child: CustomPaint(
+                    foregroundPainter: LayerInteractionBorderPainter(
+                      style: layerInteraction.style,
+                    ),
+                    child: widget.child,
+                  ),
                 ),
-                child: widget.child,
+            ...children.map(
+              (item) => item.call(
+                _rebuildStream.stream,
+                widget.layerData,
+                LayerItemInteractions(
+                  edit: widget.onEditLayer ?? () {},
+                  remove: widget.onRemoveLayer ?? () {},
+                  scaleRotateDown: (event) {
+                    widget.onScaleRotateDown?.call(event);
+                  },
+                  scaleRotateUp: (event) {
+                    widget.onScaleRotateUp?.call(event);
+                  },
+                ),
               ),
             ),
-            _buildRemoveIcon(),
-            if (widget.layerData.runtimeType == TextLayer ||
-                (widget.layerData.runtimeType == WidgetLayer &&
-                    widget.callbacks.stickerEditorCallbacks?.onTapEditSticker !=
-                        null))
-              _buildEditIcon(),
-            _buildRotateScaleIcon(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRotateScaleIcon() {
-    return layerInteraction.widgets.rotateScaleIcon?.call(
+  List<LayerInteractionItem> _buildDefaultInteractions() {
+    bool isLayerEditable = widget.layerData.interaction.enableEdit &&
+            widget.layerData.runtimeType == TextLayer ||
+        (widget.layerData.runtimeType == WidgetLayer &&
+            widget.callbacks.stickerEditorCallbacks?.onTapEditSticker != null);
+
+    return [
+      if (isLayerEditable)
+        (rebuildStream, layer, interactions) => ReactiveWidget(
+              stream: rebuildStream,
+              builder: (_) => _buildEditButton(interactions),
+            ),
+      (rebuildStream, layer, interactions) => ReactiveWidget(
+            stream: rebuildStream,
+            builder: (_) => _buildRemoveButton(interactions),
+          ),
+      (rebuildStream, layer, interactions) => ReactiveWidget(
+            stream: rebuildStream,
+            builder: (_) => _buildRotateScaleIcon(interactions),
+          ),
+    ];
+  }
+
+  Widget _buildRotateScaleIcon(LayerItemInteractions interactions) {
+    return layerInteraction.widgets.rotateScaleButton?.call(
           _rebuildStream.stream,
           (value) => widget.onScaleRotateDown?.call(value),
           (value) => widget.onScaleRotateUp?.call(value),
-          toggleTooltipVisibility,
           -widget.layerData.rotation,
         ) ??
         Positioned(
           bottom: 0,
           right: 0,
           child: LayerInteractionButton(
-            toggleTooltipVisibility: toggleTooltipVisibility,
             rotation: -widget.layerData.rotation,
-            onScaleRotateDown: widget.onScaleRotateDown,
-            onScaleRotateUp: widget.onScaleRotateUp,
+            onScaleRotateDown: interactions.scaleRotateDown,
+            onScaleRotateUp: interactions.scaleRotateUp,
             buttonRadius: layerInteraction.style.buttonRadius,
             cursor: layerInteraction.style.rotateScaleCursor,
             icon: layerInteraction.icons.rotateScale,
@@ -222,20 +263,18 @@ class _LayerInteractionHelperWidgetState
         );
   }
 
-  Widget _buildEditIcon() {
-    return layerInteraction.widgets.editIcon?.call(
+  Widget _buildEditButton(LayerItemInteractions interactions) {
+    return layerInteraction.widgets.editButton?.call(
           _rebuildStream.stream,
           () => widget.onEditLayer?.call(),
-          toggleTooltipVisibility,
           -widget.layerData.rotation,
         ) ??
         Positioned(
           top: 0,
           right: 0,
           child: LayerInteractionButton(
-            toggleTooltipVisibility: toggleTooltipVisibility,
             rotation: -widget.layerData.rotation,
-            onTap: widget.onEditLayer,
+            onTap: interactions.edit,
             buttonRadius: layerInteraction.style.buttonRadius,
             cursor: layerInteraction.style.editCursor,
             icon: layerInteraction.icons.edit,
@@ -246,20 +285,18 @@ class _LayerInteractionHelperWidgetState
         );
   }
 
-  Widget _buildRemoveIcon() {
-    return layerInteraction.widgets.removeIcon?.call(
+  Widget _buildRemoveButton(LayerItemInteractions interactions) {
+    return layerInteraction.widgets.removeButton?.call(
           _rebuildStream.stream,
           () => widget.onRemoveLayer?.call(),
-          toggleTooltipVisibility,
           -widget.layerData.rotation,
         ) ??
         Positioned(
           top: 0,
           left: 0,
           child: LayerInteractionButton(
-            toggleTooltipVisibility: toggleTooltipVisibility,
             rotation: -widget.layerData.rotation,
-            onTap: widget.onRemoveLayer,
+            onTap: interactions.remove,
             buttonRadius: layerInteraction.style.buttonRadius,
             cursor: layerInteraction.style.removeCursor,
             icon: layerInteraction.icons.remove,

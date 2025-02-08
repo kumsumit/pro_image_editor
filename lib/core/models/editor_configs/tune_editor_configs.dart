@@ -1,7 +1,7 @@
+import '/features/tune_editor/models/tune_adjustment_item.dart';
 import '../custom_widgets/tune_editor_widgets.dart';
 import '../icons/tune_editor_icons.dart';
 import '../styles/tune_editor_style.dart';
-import '../tune_editor/tune_adjustment_item.dart';
 import 'utils/editor_safe_area.dart';
 
 export '../custom_widgets/tune_editor_widgets.dart';

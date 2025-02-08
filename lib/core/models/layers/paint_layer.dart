@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../shared/services/import_export/utils/key_minifier.dart';
-import '../../utils/parser/double_parser.dart';
-import '../paint_editor/painted_model.dart';
+import '/features/paint_editor/models/painted_model.dart';
+import '/shared/services/import_export/utils/key_minifier.dart';
+import '/shared/utils/parser/double_parser.dart';
 import 'layer.dart';
 
 /// A class representing a layer with custom paint content.
@@ -37,7 +37,9 @@ class PaintLayer extends Layer {
     super.id,
     super.flipX,
     super.flipY,
-    super.enableInteraction,
+    super.interaction,
+    super.isDeleted,
+    super.meta,
   });
 
   /// Factory constructor for creating a PaintLayer instance from a
@@ -55,10 +57,12 @@ class PaintLayer extends Layer {
       id: layer.id,
       flipX: layer.flipX,
       flipY: layer.flipY,
-      enableInteraction: layer.enableInteraction,
+      interaction: layer.interaction,
       offset: layer.offset,
       rotation: layer.rotation,
       scale: layer.scale,
+      isDeleted: layer.isDeleted,
+      meta: layer.meta,
       opacity: safeParseDouble(map[keyConverter('opacity')], fallback: 1.0),
       rawSize: Size(
         safeParseDouble(map[keyConverter('rawSize')]?['w'], fallback: 0),
@@ -110,44 +114,5 @@ class PaintLayer extends Layer {
         },
       if (paintLayer.opacity != opacity) 'opacity': opacity,
     };
-  }
-}
-
-// TODO: Remove in version 8.0.0
-/// **DEPRECATED:** Use [PaintLayer] instead.
-@Deprecated('Use PaintLayer instead')
-class PaintLayerData extends PaintLayer {
-  /// Creates an instance of PaintLayerData.
-  PaintLayerData({
-    required super.item,
-    required super.rawSize,
-    required super.opacity,
-    super.offset,
-    super.rotation,
-    super.scale,
-    super.id,
-    super.flipX,
-    super.flipY,
-    super.enableInteraction,
-  });
-
-  /// Factory constructor for creating a PaintLayerData instance from a
-  /// Layer and a map.
-  factory PaintLayerData.fromMap(Layer layer, Map<String, dynamic> map) {
-    return PaintLayerData(
-      id: layer.id,
-      flipX: layer.flipX,
-      flipY: layer.flipY,
-      enableInteraction: layer.enableInteraction,
-      offset: layer.offset,
-      rotation: layer.rotation,
-      scale: layer.scale,
-      opacity: safeParseDouble(map['opacity'], fallback: 1.0),
-      rawSize: Size(
-        safeParseDouble(map['rawSize']?['w'], fallback: 0),
-        safeParseDouble(map['rawSize']?['h'], fallback: 0),
-      ),
-      item: PaintedModel.fromMap(map['item'] ?? {}),
-    );
   }
 }

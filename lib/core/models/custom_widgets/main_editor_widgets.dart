@@ -3,8 +3,8 @@ import 'package:flutter/widgets.dart';
 
 // Project imports:
 import '/features/main_editor/main_editor.dart';
-import '/shared/widgets/custom_widgets/reactive_custom_appbar.dart';
-import '/shared/widgets/custom_widgets/reactive_custom_widget.dart';
+import '/shared/widgets/reactive_widgets/reactive_custom_appbar.dart';
+import '/shared/widgets/reactive_widgets/reactive_custom_widget.dart';
 import 'utils/custom_widgets_typedef.dart';
 
 /// A custom widget for the main editor interface in an image editor.

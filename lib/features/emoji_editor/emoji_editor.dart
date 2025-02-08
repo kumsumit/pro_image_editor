@@ -58,6 +58,7 @@ class EmojiEditorState extends State<EmojiEditor>
 
   @override
   void initState() {
+    super.initState();
     _textStyle = emojiEditorConfigs.style.textStyle;
 
     _controller = EmojiTextEditingController(emojiTextStyle: _textStyle);
@@ -66,7 +67,6 @@ class EmojiEditorState extends State<EmojiEditor>
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       callbacks.emojiEditorCallbacks?.onAfterViewInit?.call();
     });
-    super.initState();
   }
 
   @override
@@ -208,7 +208,7 @@ class EmojiEditorState extends State<EmojiEditor>
       }
       return Padding(
         padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
         child: EmojiPicker(
           key: _emojiPickerKey,
           onEmojiSelected: (category, emoji) => {

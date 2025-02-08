@@ -1,24 +1,24 @@
 import 'package:example/features/stickers_example.dart';
 import 'package:flutter/material.dart';
 
-import '../../features/crop_to_main_editor.dart';
-import '../../features/custom_widgets_example.dart';
-import '../../features/default_example.dart';
-import '../../features/design_examples/design_example.dart';
-import '../../features/firebase_supabase_example.dart';
-import '../../features/frame_example.dart';
-import '../../features/generation_configs_example.dart';
-import '../../features/google_font_example.dart';
-import '../../features/image_format_convert_example.dart';
-import '../../features/import_export_example.dart';
-import '../../features/movable_background_image.dart';
-import '../../features/pick_image_example.dart';
-import '../../features/reorder_layer_example.dart';
-import '../../features/round_cropper_example.dart';
-import '../../features/selectable_layer_example.dart';
-import '../../features/signature_drawing_example.dart';
-import '../../features/standalone_example.dart';
-import '../../features/zoom_example.dart';
+import '/features/crop_to_main_editor.dart';
+import '/features/custom_widgets_example.dart';
+import '/features/default_example.dart';
+import '/features/design_examples/design_example.dart';
+import '/features/firebase_supabase_example.dart';
+import '/features/frame_example.dart';
+import '/features/generation_configs_example.dart';
+import '/features/google_font_example.dart';
+import '/features/image_format_convert_example.dart';
+import '/features/import_export_example.dart';
+import '/features/movable_background_image.dart';
+import '/features/pick_image_example.dart';
+import '/features/reorder_layer_example.dart';
+import '/features/round_cropper_example.dart';
+import '/features/selectable_layer_example.dart';
+import '/features/signature_drawing_example.dart';
+import '/features/standalone_example.dart';
+import '/features/zoom_example.dart';
 import '../models/example_model.dart';
 
 /// A predefined list of examples for the image editor application.

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
-import '/shared/services/content_recorder/controllers/content_recorder_controller.dart';
+import '/shared/widgets/extended/repaint/extended_repaint_boundary.dart';
+import '../controllers/content_recorder_controller.dart';
 
 /// A widget that records an invisible child widget.
 class RecordInvisibleWidget extends StatefulWidget {
@@ -36,7 +37,7 @@ class _RecordInvisibleWidgetState extends State<RecordInvisibleWidget> {
           return Stack(
             children: [
               if (snapshot.data != null)
-                RepaintBoundary(
+                ExtendedRepaintBoundary(
                   key: widget.controller.recorderKey,
                   child: snapshot.data,
                 ),

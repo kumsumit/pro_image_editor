@@ -16,9 +16,7 @@ class ExportEditorConfigs {
     this.exportTuneAdjustments = true,
     this.exportEmoji = true,
     this.exportBlur = true,
-    this.exportSticker,
     this.exportWidgets = true,
-    this.serializeSticker = true,
     this.enableMinify = true,
   });
 
@@ -86,32 +84,4 @@ class ExportEditorConfigs {
   /// Warning: Exporting widgets may result in a significantly increased file
   /// size if no `exportConfigs` are added to the `WidgetLayer`.
   final bool exportWidgets;
-
-  // TODO: Remove in version 8.0.0
-  /// Whether to export the stickers.
-  ///
-  /// Defaults to `true`.
-  ///
-  /// Warning: Exporting stickers may result in increased file size.
-  @Deprecated('Use exportWidgets instead')
-  final bool? exportSticker;
-
-  // TODO: Remove in version 8.0.0
-  /// **DEPRECATED:**
-  /// Controls whether stickers should be serialized.
-  ///
-  /// When enabled, each sticker widget is converted to a `Uint8List` and
-  /// included in the export history.
-  /// **Note:** Enabling this flag with a large number of stickers can
-  /// significantly increase the size of the JSON file.
-  ///
-  /// Defaults to `true`.
-  ///
-  /// **Warning:** Disabling sticker serialization may result in the loss of
-  /// stickers during export.
-  @Deprecated(
-    'The parameter is no longer used. Instead, add `exportConfigs` to the '
-    '`WidgetLayer`',
-  )
-  final bool serializeSticker;
 }
