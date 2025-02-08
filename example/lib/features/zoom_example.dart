@@ -42,7 +42,6 @@ class _ZoomExampleState extends State<ZoomExample>
   @override
   Widget build(BuildContext context) {
     if (!isPreCached) return const PrepareImageWidget();
-
     return ProImageEditor.asset(
       kImageEditorExampleAssetPath,
       key: editorKey,
