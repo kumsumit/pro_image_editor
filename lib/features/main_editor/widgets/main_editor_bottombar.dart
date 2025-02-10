@@ -34,6 +34,8 @@ class MainEditorBottombar extends StatelessWidget {
     required this.sizesManager,
     required this.bottomBarKey,
     required this.theme,
+    required this.foregroundColor,
+    required this.openSizeEditor,
     required this.openPaintEditor,
     required this.openTextEditor,
     required this.openCropRotateEditor,
@@ -58,6 +60,12 @@ class MainEditorBottombar extends StatelessWidget {
 
   /// The theme data for styling the bottom bar.
   final ThemeData theme;
+
+  /// The Foreground color for the AppBar.
+  final Color foregroundColor;
+
+   /// Callback for opening the size editor.
+  final Function() openSizeEditor;
 
   /// Callback for opening the paint editor.
   final Function() openPaintEditor;
@@ -84,10 +92,9 @@ class MainEditorBottombar extends StatelessWidget {
   final Function() openStickerEditor;
 
   final double _bottomIconSize = 22.0;
-  Color get _foregroundColor => configs.mainEditor.style.bottomBarColor;
   TextStyle get _bottomTextStyle => TextStyle(
         fontSize: 10.0,
-        color: _foregroundColor,
+        color: foregroundColor,
       );
 
   @override
@@ -103,7 +110,7 @@ class MainEditorBottombar extends StatelessWidget {
             thickness: isDesktop ? null : 0,
             child: BottomAppBar(
               height: kBottomNavigationBarHeight,
-              color: configs.mainEditor.style.bottomBarBackground,
+              color: Colors.transparent,
               padding: EdgeInsets.zero,
               child: Center(
                 child: SingleChildScrollView(
@@ -115,8 +122,8 @@ class MainEditorBottombar extends StatelessWidget {
                           sizesManager.lastScreenSize.width != 0
                               ? sizesManager.lastScreenSize.width
                               : constraints.maxWidth,
-                          600),
-                      maxWidth: 600,
+                          650),
+                      maxWidth: 650,
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12.0),
@@ -139,6 +146,13 @@ class MainEditorBottombar extends StatelessWidget {
   /// Builds a list of editor action buttons dynamically
   List<Widget> _buildEditorButtons() {
     return [
+       if (configs.paintEditor.enabled)
+        _buildActionButton(
+          key: const ValueKey('open-size-editor-btn'),
+          label: configs.i18n.sizeEditor.bottomNavigationBarText,
+          icon: configs.sizeEditor.icons.bottomNavBar,
+          onPressed: openSizeEditor,
+        ),
       if (configs.paintEditor.enabled)
         _buildActionButton(
           key: const ValueKey('open-paint-editor-btn'),
@@ -208,7 +222,7 @@ class MainEditorBottombar extends StatelessWidget {
     return FlatIconTextButton(
       key: key,
       label: Text(label, style: _bottomTextStyle),
-      icon: Icon(icon, size: _bottomIconSize, color: _foregroundColor),
+      icon: Icon(icon, size: _bottomIconSize, color: foregroundColor),
       onPressed: onPressed,
     );
   }

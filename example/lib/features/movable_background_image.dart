@@ -362,7 +362,7 @@ class _MovableBackgroundImageExampleState
                 uiOverlayStyle: SystemUiOverlayStyle(
                   statusBarColor: Colors.black,
                 ),
-                background: Colors.transparent,
+                // background: Colors.transparent,
               ),
             ),
             paintEditor: const PaintEditorConfigs(

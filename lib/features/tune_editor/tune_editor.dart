@@ -382,7 +382,7 @@ class TuneEditorState extends State<TuneEditor>
               controller: screenshotCtrl,
               child: Scaffold(
                 backgroundColor: tuneEditorConfigs.style.background,
-                appBar: _buildAppBar(),
+                // appBar: _buildAppBar(),
                 body: _buildBody(),
                 bottomNavigationBar: _buildBottomNavBar(),
               ),

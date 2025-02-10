@@ -83,14 +83,15 @@ class _GroundedDesignExampleState extends State<GroundedDesignExample>
                     editor: editor,
                     configs: editor.configs,
                     callbacks: editor.callbacks,
+                    foregroundColor: editor.configs.theme!.primaryColor,
                   );
                 },
                 stream: rebuildStream,
               ),
             ),
             style: const MainEditorStyle(
-              background: Color(0xFF000000),
-              bottomBarBackground: Color(0xFF161616),
+              // background: Color(0xFF000000),
+              // bottomBarBackground: Color(0xFF161616),
             ),
           ),
           paintEditor: PaintEditorConfigs(
@@ -107,6 +108,7 @@ class _GroundedDesignExampleState extends State<GroundedDesignExample>
                 return ReactiveWidget(
                   builder: (context) {
                     return GroundedPaintBar(
+                        foregroundColor: editorState.configs.theme!.primaryColor,
                         configs: editorState.configs,
                         callbacks: editorState.callbacks,
                         editor: editorState,
@@ -170,6 +172,7 @@ class _GroundedDesignExampleState extends State<GroundedDesignExample>
                 return ReactiveWidget(
                   builder: (context) {
                     return GroundedTextBar(
+                        foregroundColor: editorState.configs.theme!.primaryColor,
                         configs: editorState.configs,
                         callbacks: editorState.callbacks,
                         editor: editorState,
@@ -235,6 +238,7 @@ class _GroundedDesignExampleState extends State<GroundedDesignExample>
                   callbacks: cropRotateEditor.callbacks,
                   editor: cropRotateEditor,
                   selectedRatioColor: kImageEditorPrimaryColor,
+                  foregroundColor: cropRotateEditor.configs.theme!.primaryColor,
                 ),
               ),
             ),
@@ -267,6 +271,7 @@ class _GroundedDesignExampleState extends State<GroundedDesignExample>
                       configs: editorState.configs,
                       callbacks: editorState.callbacks,
                       editor: editorState,
+                      foregroundColor: editorState.configs.theme!.primaryColor,
                     );
                   },
                   stream: rebuildStream,
@@ -288,6 +293,7 @@ class _GroundedDesignExampleState extends State<GroundedDesignExample>
                       configs: editorState.configs,
                       callbacks: editorState.callbacks,
                       editor: editorState,
+                      foregroundColor: editorState.configs.theme!.primaryColor,
                     );
                   },
                   stream: rebuildStream,
@@ -308,6 +314,7 @@ class _GroundedDesignExampleState extends State<GroundedDesignExample>
                       configs: editorState.configs,
                       callbacks: editorState.callbacks,
                       editor: editorState,
+                      foregroundColor: editorState.configs.theme!.primaryColor,
                     );
                   },
                   stream: rebuildStream,

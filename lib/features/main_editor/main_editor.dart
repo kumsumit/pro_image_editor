@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pro_image_editor/plugins/gradient_painter.dart';
+import 'package:pro_image_editor/plugins/gradient_utils.dart';
 import 'package:share_plus/share_plus.dart';
 
 // Package imports:
@@ -99,13 +101,14 @@ class ProImageEditor extends StatefulWidget
   /// The `callbacks` parameter is required and specifies the callbacks to
   /// handle events and interactions within the image editor.
   /// {@endtemplate}
-  const ProImageEditor._({
+  ProImageEditor._({
     super.key,
     required this.callbacks,
     this.byteArray,
     this.assetPath,
     this.networkUrl,
     this.file,
+    this.gradientBackground = false,
     this.configs = const ProImageEditorConfigs(),
   }) : assert(
           byteArray != null ||
@@ -149,12 +152,14 @@ class ProImageEditor extends StatefulWidget
     Key? key,
     required ProImageEditorCallbacks callbacks,
     ProImageEditorConfigs configs = const ProImageEditorConfigs(),
+    bool gradientBackground = false,
   }) {
     return ProImageEditor._(
       key: key,
       byteArray: byteArray,
       configs: configs,
       callbacks: callbacks,
+      gradientBackground: gradientBackground,
     );
   }
 
@@ -177,12 +182,14 @@ class ProImageEditor extends StatefulWidget
     Key? key,
     ProImageEditorConfigs configs = const ProImageEditorConfigs(),
     required ProImageEditorCallbacks callbacks,
+    gradientBackground = false,
   }) {
     return ProImageEditor._(
       key: key,
       file: file,
       configs: configs,
       callbacks: callbacks,
+      gradientBackground: gradientBackground,
     );
   }
 
@@ -205,12 +212,14 @@ class ProImageEditor extends StatefulWidget
     Key? key,
     ProImageEditorConfigs configs = const ProImageEditorConfigs(),
     required ProImageEditorCallbacks callbacks,
+    bool gradientBackground = false,
   }) {
     return ProImageEditor._(
       key: key,
       assetPath: assetPath,
       configs: configs,
       callbacks: callbacks,
+      gradientBackground: gradientBackground,
     );
   }
 
@@ -234,12 +243,14 @@ class ProImageEditor extends StatefulWidget
     Key? key,
     ProImageEditorConfigs configs = const ProImageEditorConfigs(),
     required ProImageEditorCallbacks callbacks,
+    bool gradientBackground = false,
   }) {
     return ProImageEditor._(
       key: key,
       networkUrl: networkUrl,
       configs: configs,
       callbacks: callbacks,
+      gradientBackground: gradientBackground,
     );
   }
   @override
@@ -258,6 +269,9 @@ class ProImageEditor extends StatefulWidget
 
   /// File object representing the image file.
   final File? file;
+
+  // Gradient Background
+  final bool gradientBackground;
 
   @override
   State<ProImageEditor> createState() => ProImageEditorState();
@@ -423,18 +437,18 @@ class ProImageEditorState extends State<ProImageEditor>
 
     if (helperLines.hitVibration) {
       Vibration.hasVibrator().then((hasVibrator) {
-        if(hasVibrator != null){
-        layerInteractionManager.deviceCanVibrate = hasVibrator;
+        if (hasVibrator != null) {
+          layerInteractionManager.deviceCanVibrate = hasVibrator;
         }
         if (layerInteractionManager.deviceCanVibrate) {
-        
           Vibration.hasCustomVibrationsSupport()
               .then((hasCustomVibrationsSupport) {
-                  if( hasCustomVibrationsSupport != null){
-            layerInteractionManager.deviceCanCustomVibrate =
-                hasCustomVibrationsSupport;}
+            if (hasCustomVibrationsSupport != null) {
+              layerInteractionManager.deviceCanCustomVibrate =
+                  hasCustomVibrationsSupport;
+            }
           });
-          }
+        }
       });
     }
 
@@ -1377,6 +1391,52 @@ class ProImageEditorState extends State<ProImageEditor>
     mainEditorCallbacks?.handleUpdateUI();
   }
 
+  /// Opens the size editor.
+  ///
+  /// This method opens the Size Editor page, allowing the user to make size
+  /// adjustments (such as brightness, contrast, etc.) to the current image.
+  ///
+  /// If tune adjustments are made, they are added to the editor's history
+  /// and the UI is updated accordingly. If the operation is canceled or no
+  /// adjustments are made, the current state remains unchanged.
+  void openSizeEditor({
+    bool enableHero = true,
+  }) async {
+    if (!mounted) return;
+    List<TuneAdjustmentMatrix>? tuneAdjustments = await openPage(
+      HeroMode(
+        enabled: enableHero,
+        child: TuneEditor.autoSource(
+          key: tuneEditor,
+          editorImage: editorImage,
+          initConfigs: TuneEditorInitConfigs(
+            theme: _theme,
+            configs: configs,
+            callbacks: callbacks,
+            transformConfigs: stateManager.transformConfigs,
+            layers: activeLayers,
+            mainImageSize: sizesManager.decodedImageSize,
+            mainBodySize: sizesManager.bodySize,
+            convertToUint8List: false,
+            appliedBlurFactor: stateManager.activeBlur,
+            appliedFilters: stateManager.activeFilters,
+            appliedTuneAdjustments: stateManager.activeTuneAdjustments,
+          ),
+        ),
+      ),
+    );
+
+    if (tuneAdjustments == null) return;
+
+    addHistory(
+      tuneAdjustments: tuneAdjustments,
+      heroScreenshotRequired: true,
+    );
+
+    setState(() {});
+    mainEditorCallbacks?.handleUpdateUI();
+  }
+
   /// Opens the filter editor.
   ///
   /// This method allows the user to apply filters to the current image and
@@ -1733,8 +1793,8 @@ class ProImageEditorState extends State<ProImageEditor>
     Uint8List? bytes = await captureEditorImage();
     final directory = await getApplicationDocumentsDirectory();
     final newDirectory = Directory('${directory.path}/filex/images');
-    if(! await newDirectory.exists()){
-       await newDirectory.create(recursive: true);
+    if (!await newDirectory.exists()) {
+      await newDirectory.create(recursive: true);
     }
     await newDirectory.createTemp();
     final fileName = '${newDirectory.path}/${_getFormattedDateTime()}.jpg';
@@ -1953,9 +2013,12 @@ class ProImageEditorState extends State<ProImageEditor>
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.blue.shade800,
             brightness: Brightness.dark,
-          ),
+          ),appBarTheme: const AppBarTheme(
+      elevation: 0,
+      color: Colors.transparent,
+      shadowColor: Colors.transparent,
+    ),
         );
-
     return RecordInvisibleWidget(
       controller: _controllers.screenshot,
       child: ExtendedPopScope(
@@ -2000,13 +2063,7 @@ class ProImageEditorState extends State<ProImageEditor>
               child: SafeArea(
                 child: LayoutBuilder(builder: (context, constraints) {
                   sizesManager.editorSize = constraints.biggest;
-                  return Scaffold(
-                    backgroundColor: mainEditorConfigs.style.background,
-                    resizeToAvoidBottomInset: false,
-                    appBar: _buildAppBar(),
-                    body: _buildBody(),
-                    bottomNavigationBar: _buildBottomNavBar(),
-                  );
+                  return _buildGradientEditor();
                 }),
               ),
             ),
@@ -2016,7 +2073,7 @@ class ProImageEditorState extends State<ProImageEditor>
     );
   }
 
-  PreferredSizeWidget? _buildAppBar() {
+  PreferredSizeWidget? _buildAppBar(Color foregroundColor) {
     if (mainEditorConfigs.widgets.appBar != null) {
       return mainEditorConfigs.widgets.appBar!
           .call(this, _rebuildController.stream);
@@ -2034,7 +2091,46 @@ class ProImageEditorState extends State<ProImageEditor>
             doneEditing: doneEditing,
             isInitialized: _isInitialized,
             stateManager: stateManager,
+            foregroundColor: foregroundColor,
           );
+  }
+
+  Future<List<Color>> _extractColors() async {
+    final bytes = await editorImage.safeByteArray(context);
+    return extractColors(bytes);
+  }
+
+  Widget _buildGradientEditor() {
+    return FutureBuilder(
+        future: _extractColors(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData &&
+              snapshot.data != null &&
+              snapshot.data!.length == 4) {
+            final luminance = snapshot.data![1].computeLuminance();
+            final foregroundColor =
+                luminance > 0.5 ? Colors.black : Colors.white;
+            SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+              systemNavigationBarColor: Colors.transparent,
+              statusBarIconBrightness:
+                  luminance > 0.5 ? Brightness.dark : Brightness.light,
+              systemNavigationBarIconBrightness:
+                  luminance > 0.5 ? Brightness.dark : Brightness.light,
+            ));
+            return CustomPaint(
+                size: const Size(double.infinity, double.infinity),
+                painter: GradientPainter(snapshot.data!),
+                child: Scaffold(
+                  backgroundColor:Colors.transparent,
+                  resizeToAvoidBottomInset: false,
+                  appBar:  _buildAppBar(foregroundColor),
+                  body: _buildBody(),
+                  bottomNavigationBar: _buildBottomNavBar(foregroundColor),
+                ));
+          } else {
+            return const Center(child:CircularProgressIndicator());
+          }
+        });
   }
 
   Widget _buildBody() {
@@ -2098,7 +2194,7 @@ class ProImageEditorState extends State<ProImageEditor>
     );
   }
 
-  Widget? _buildBottomNavBar() {
+  Widget? _buildBottomNavBar(Color foregroundColor) {
     if (mainEditorConfigs.widgets.bottomBar != null) {
       return mainEditorConfigs.widgets.bottomBar!
           .call(this, _rebuildController.stream, _bottomBarKey);
@@ -2113,6 +2209,8 @@ class ProImageEditorState extends State<ProImageEditor>
             sizesManager: sizesManager,
             bottomBarKey: _bottomBarKey,
             theme: _theme,
+            foregroundColor: foregroundColor,
+            openSizeEditor: openSizeEditor,
             openPaintEditor: openPaintEditor,
             openTextEditor: openTextEditor,
             openCropRotateEditor: openCropRotateEditor,
@@ -2173,12 +2271,11 @@ class ProImageEditorState extends State<ProImageEditor>
 
   Widget _buildImage() {
     return MainEditorBackgroundImage(
-      backgroundImageColorFilterKey: _backgroundImageColorFilterKey,
-      configs: configs,
-      editorImage: editorImage,
-      isInitialized: _isInitialized,
-      sizesManager: sizesManager,
-      stateManager: stateManager,
-    );
+        backgroundImageColorFilterKey: _backgroundImageColorFilterKey,
+        configs: configs,
+        editorImage: editorImage,
+        isInitialized: _isInitialized,
+        sizesManager: sizesManager,
+        stateManager: stateManager);
   }
 }

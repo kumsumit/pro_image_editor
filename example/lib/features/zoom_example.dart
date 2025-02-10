@@ -43,6 +43,7 @@ class _ZoomExampleState extends State<ZoomExample>
   Widget build(BuildContext context) {
     if (!isPreCached) return const PrepareImageWidget();
     return ProImageEditor.asset(
+      gradientBackground: true,
       kImageEditorExampleAssetPath,
       key: editorKey,
       callbacks: ProImageEditorCallbacks(

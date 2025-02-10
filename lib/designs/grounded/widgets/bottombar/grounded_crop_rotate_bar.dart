@@ -20,6 +20,7 @@ class GroundedCropRotateBar extends StatefulWidget with SimpleConfigsAccess {
   const GroundedCropRotateBar({
     super.key,
     required this.configs,
+    required this.foregroundColor,
     required this.callbacks,
     required this.editor,
     required this.selectedRatioColor,
@@ -36,6 +37,9 @@ class GroundedCropRotateBar extends StatefulWidget with SimpleConfigsAccess {
 
   /// The color used for highlighting the selected aspect ratio.
   final Color selectedRatioColor;
+
+  /// The foregroundColor for the Icon.
+  final Color foregroundColor;
 
   @override
   State<GroundedCropRotateBar> createState() => _GroundedCropRotateBarState();
@@ -79,6 +83,7 @@ class _GroundedCropRotateBarState extends State<GroundedCropRotateBar>
         ),
         GroundedBottomBar(
           configs: configs,
+          foregroundColor: widget.foregroundColor,
           done: widget.editor.done,
           close: widget.editor.close,
           undo: widget.editor.undoAction,

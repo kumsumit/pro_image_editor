@@ -313,7 +313,7 @@ class _FrameExampleState extends State<FrameExample>
               ),
             ),
             style: const MainEditorStyle(
-              background: Colors.transparent,
+              // background: Colors.transparent,
               uiOverlayStyle:
                   SystemUiOverlayStyle(statusBarColor: Colors.black),
             ),

@@ -22,6 +22,7 @@ class GroundedStickerEditor extends StatefulWidget {
     super.key,
     required this.configs,
     required this.callbacks,
+    required this.foregroundColor,
   });
 
   /// The configuration for the image editor.
@@ -29,6 +30,9 @@ class GroundedStickerEditor extends StatefulWidget {
 
   /// The callbacks from the image editor.
   final ProImageEditorCallbacks callbacks;
+
+  /// The foregroundColor for the Icon.
+  final Color foregroundColor;
 
   @override
   State<GroundedStickerEditor> createState() => _GroundedStickerEditorState();
@@ -63,7 +67,7 @@ class _GroundedStickerEditorState extends State<GroundedStickerEditor> {
 
   @override
   Widget build(BuildContext context) {
-    Color foreGroundColor = widget.configs.mainEditor.style.appBarColor;
+    // Color foreGroundColor = widget.configs.mainEditor.style.appBarColor;
     return FrostedGlassEffect(
       radius: BorderRadius.zero,
       child: Scaffold(
@@ -102,7 +106,7 @@ class _GroundedStickerEditorState extends State<GroundedStickerEditor> {
                       },
                       icon: Icon(
                         widget.configs.mainEditor.icons.closeEditor,
-                        color: foreGroundColor,
+                        color: widget.foregroundColor,
                       ),
                     ),
                     Expanded(

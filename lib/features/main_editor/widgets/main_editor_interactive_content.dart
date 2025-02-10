@@ -200,7 +200,7 @@ class MainEditorInteractiveContent extends StatelessWidget {
                 ? CropLayerPainter(
                     opacity:
                         configs.mainEditor.style.outsideCaptureAreaLayerOpacity,
-                    backgroundColor: configs.mainEditor.style.background,
+                    backgroundColor: Colors.transparent,
                     imgRatio: stateManager.transformConfigs.isNotEmpty
                         ? stateManager
                             .transformConfigs.cropRect.size.aspectRatio

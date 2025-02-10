@@ -34,6 +34,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pro-Image-Editor',
       theme: ThemeData(
+          appBarTheme: const AppBarTheme(
+      elevation: 0,
+      color: Colors.transparent,
+      shadowColor: Colors.transparent,
+    ),
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.blue.shade800,
           brightness: Brightness.dark,

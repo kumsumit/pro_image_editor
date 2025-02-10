@@ -19,6 +19,7 @@ class GroundedPaintBar extends StatefulWidget with SimpleConfigsAccess {
   const GroundedPaintBar({
     super.key,
     required this.configs,
+    required this.foregroundColor,
     required this.callbacks,
     required this.editor,
     required this.i18nColor,
@@ -27,6 +28,9 @@ class GroundedPaintBar extends StatefulWidget with SimpleConfigsAccess {
 
   /// The editor state that holds paint-related information.
   final PaintEditorState editor;
+
+  /// The foregroundColor for the Icon.
+  final Color foregroundColor;
 
   @override
   final ProImageEditorConfigs configs;
@@ -50,11 +54,13 @@ class GroundedPaintBar extends StatefulWidget with SimpleConfigsAccess {
 class _GroundedPaintBarState extends State<GroundedPaintBar>
     with ImageEditorConvertedConfigs, SimpleConfigsAccessState {
   late final ScrollController _bottomBarScrollCtrl;
+  late final Color _foreGroundColorAccent;
 
   @override
   void initState() {
     super.initState();
     _bottomBarScrollCtrl = ScrollController();
+    _foreGroundColorAccent = widget.foregroundColor.withValues(alpha: 0.6);
   }
 
   @override
@@ -63,8 +69,8 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
     super.dispose();
   }
 
-  Color get _foreGroundColor => paintEditorConfigs.style.appBarColor;
-  Color get _foreGroundColorAccent => _foreGroundColor.withValues(alpha: 0.6);
+  // Color get _foreGroundColor => paintEditorConfigs.style.appBarColor;
+  // Color get _foreGroundColorAccent => foreGroundColor.withValues(alpha: 0.6);
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +85,7 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
         ),
         GroundedBottomBar(
           configs: configs,
+          foregroundColor: widget.foregroundColor,
           undo: widget.editor.undoAction,
           redo: widget.editor.redoAction,
           done: widget.editor.done,
@@ -185,7 +192,7 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
         ),
         icon: Icon(
           Icons.color_lens_outlined,
-          color: _foreGroundColor,
+          color: widget.foregroundColor,
         ),
         onPressed: () {
           widget.showColorPicker(widget.editor.activeColor);
@@ -201,7 +208,7 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
         ),
         icon: Icon(
           paintEditorConfigs.icons.lineWeight,
-          color: _foreGroundColor,
+          color: widget.foregroundColor,
         ),
         onPressed: () {
           widget.editor.openLinWidthBottomSheet();
@@ -217,7 +224,7 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
         ),
         icon: Icon(
           paintEditorConfigs.icons.changeOpacity,
-          color: _foreGroundColor,
+          color: widget.foregroundColor,
         ),
         onPressed: () {
           widget.editor.openOpacityBottomSheet();
@@ -249,7 +256,7 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
                     widget.editor.fillBackground
                         ? paintEditorConfigs.icons.fill
                         : paintEditorConfigs.icons.noFill,
-                    color: _foreGroundColor,
+                    color: widget.foregroundColor,
                   ),
                   onPressed: () {
                     widget.editor.toggleFill();

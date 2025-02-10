@@ -1,4 +1,5 @@
 // Flutter imports:
+// import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '/core/constants/editor_style_constants.dart';
 
@@ -8,30 +9,30 @@ import 'sub_editor_page_style.dart';
 class MainEditorStyle {
   /// Creates a new instance of [MainEditorStyle].
   const MainEditorStyle({
-    this.background = kImageEditorBackground,
-    this.bottomBarColor = kImageEditorBottomBarColor,
-    this.bottomBarBackground = kImageEditorBottomBarBackground,
-    this.appBarColor = kImageEditorAppBarColor,
-    this.appBarBackground = kImageEditorAppBarBackground,
+    // this.background = Colors.transparent,
+    // this.bottomBarColor = kImageEditorBottomBarColor,
+    // this.bottomBarBackground = Colors.transparent,
+    // this.appBarColor = kImageEditorAppBarColor,
+    // this.appBarBackground = Colors.transparent,
     this.uiOverlayStyle = kImageEditorUiOverlayStyle,
     this.outsideCaptureAreaLayerOpacity = 0.5,
     this.subEditorPage = const SubEditorPageStyle(),
   });
 
-  /// Background color for the image editor in the overview.
-  final Color background;
+  // /// Background color for the image editor in the overview.
+  // final Color background;
 
-  /// Color of the bottom bar.
-  final Color bottomBarColor;
+  // /// Color of the bottom bar.
+  // final Color bottomBarColor;
 
-  /// Background color of the bottom bar.
-  final Color bottomBarBackground;
+  // /// Background color of the bottom bar.
+  // final Color bottomBarBackground;
 
-  /// Color of the app bar.
-  final Color appBarColor;
+  // /// Color of the app bar.
+  // final Color appBarColor;
 
-  /// Background color of the app bar.
-  final Color appBarBackground;
+  // /// Background color of the app bar.
+  // final Color appBarBackground;
 
   /// UI overlay style, defining the appearance of system status bars.
   final SystemUiOverlayStyle uiOverlayStyle;
@@ -52,21 +53,21 @@ class MainEditorStyle {
   ///
   /// Returns a new [MainEditorStyle] instance with the overridden properties.
   MainEditorStyle copyWith({
-    Color? background,
-    Color? bottomBarColor,
-    Color? bottomBarBackground,
-    Color? appBarColor,
-    Color? appBarBackground,
+    // Color? background,
+    // Color? bottomBarColor,
+    // Color? bottomBarBackground,
+    // Color? appBarColor,
+    // Color? appBarBackground,
     SystemUiOverlayStyle? uiOverlayStyle,
     double? outsideCaptureAreaLayerOpacity,
     SubEditorPageStyle? subEditorPage,
   }) {
     return MainEditorStyle(
-        background: background ?? this.background,
-        bottomBarColor: bottomBarColor ?? this.bottomBarColor,
-        bottomBarBackground: bottomBarBackground ?? this.bottomBarBackground,
-        appBarColor: appBarColor ?? this.appBarColor,
-        appBarBackground: appBarBackground ?? this.appBarBackground,
+        // background: background ?? this.background,
+        // bottomBarColor: bottomBarColor ?? this.bottomBarColor,
+        // bottomBarBackground: bottomBarBackground ?? this.bottomBarBackground,
+        // appBarColor: appBarColor ?? this.appBarColor,
+        // appBarBackground: appBarBackground ?? this.appBarBackground,
         uiOverlayStyle: uiOverlayStyle ?? this.uiOverlayStyle,
         subEditorPage: subEditorPage ?? this.subEditorPage,
         outsideCaptureAreaLayerOpacity: outsideCaptureAreaLayerOpacity ??

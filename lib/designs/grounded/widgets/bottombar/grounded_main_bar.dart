@@ -24,10 +24,14 @@ class GroundedMainBar extends StatefulWidget with SimpleConfigsAccess {
     required this.configs,
     required this.callbacks,
     required this.editor,
+    required this.foregroundColor,
   });
 
   /// The editor state that holds information about the current editing session.
   final ProImageEditorState editor;
+
+  /// The foregroundColor for the Icon.
+  final Color foregroundColor;
 
   @override
   final ProImageEditorConfigs configs;
@@ -46,20 +50,23 @@ class GroundedMainBar extends StatefulWidget with SimpleConfigsAccess {
 class GroundedMainBarState extends State<GroundedMainBar>
     with ImageEditorConvertedConfigs, SimpleConfigsAccessState {
   late final ScrollController _bottomBarScrollCtrl;
+  late final Color _foreGroundColorAccent;
 
-  Color get _foreGroundColor => mainEditorConfigs.style.appBarColor;
-  Color get _foreGroundColorAccent => _foreGroundColor.withValues(alpha: 0.6);
+  // Color get _foreGroundColor => mainEditorConfigs.style.appBarColor;
+  // Color get _foreGroundColorAccent => _foreGroundColor.withValues(alpha: 0.6);
 
-  late final _bottomTextStyle = TextStyle(
-    fontSize: 10.0,
-    color: _foreGroundColorAccent,
-  );
+  late final TextStyle _bottomTextStyle;
   final _bottomIconSize = 22.0;
 
   @override
   void initState() {
     super.initState();
     _bottomBarScrollCtrl = ScrollController();
+    _foreGroundColorAccent = widget.foregroundColor.withValues(alpha: 0.6);
+    _bottomTextStyle = TextStyle(
+      fontSize: 10.0,
+      color: _foreGroundColorAccent,
+    );
   }
 
   @override
@@ -70,6 +77,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
 
   void _openEmojiEditor() async {
     Layer? layer = await widget.editor.openPage(GroundedEmojiEditor(
+      foregroundColor: widget.foregroundColor,
       configs: configs,
       callbacks: callbacks,
     ));
@@ -80,6 +88,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
 
   void _openStickerEditor() async {
     Layer? layer = await widget.editor.openPage(GroundedStickerEditor(
+      foregroundColor: widget.foregroundColor,
       configs: configs,
       callbacks: callbacks,
     ));
@@ -100,6 +109,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
         ),
         GroundedBottomBar(
           configs: configs,
+          foregroundColor: widget.foregroundColor,
           undo: widget.editor.undoAction,
           redo: widget.editor.redoAction,
           done: widget.editor.doneEditing,
@@ -114,7 +124,8 @@ class GroundedMainBarState extends State<GroundedMainBar>
   Widget _buildFunctions(BoxConstraints constraints) {
     return BottomAppBar(
       height: kGroundedSubBarHeight,
-      color: mainEditorConfigs.style.bottomBarBackground,
+      // color: mainEditorConfigs.style.bottomBarBackground,
+      color: Colors.transparent,
       padding: EdgeInsets.zero,
       clipBehavior: Clip.none,
       child: AnimatedSwitcher(
@@ -168,7 +179,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
                             icon: Icon(
                               paintEditorConfigs.icons.bottomNavBar,
                               size: _bottomIconSize,
-                              color: _foreGroundColor,
+                              color: widget.foregroundColor,
                             ),
                             onPressed: widget.editor.openPaintEditor,
                           ),
@@ -180,7 +191,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
                             icon: Icon(
                               textEditorConfigs.icons.bottomNavBar,
                               size: _bottomIconSize,
-                              color: _foreGroundColor,
+                              color: widget.foregroundColor,
                             ),
                             onPressed: widget.editor.openTextEditor,
                           ),
@@ -193,7 +204,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
                             icon: Icon(
                               cropRotateEditorConfigs.icons.bottomNavBar,
                               size: _bottomIconSize,
-                              color: _foreGroundColor,
+                              color: widget.foregroundColor,
                             ),
                             onPressed: widget.editor.openCropRotateEditor,
                           ),
@@ -205,7 +216,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
                             icon: Icon(
                               tuneEditorConfigs.icons.bottomNavBar,
                               size: _bottomIconSize,
-                              color: _foreGroundColor,
+                              color: widget.foregroundColor,
                             ),
                             onPressed: widget.editor.openTuneEditor,
                           ),
@@ -218,7 +229,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
                             icon: Icon(
                               filterEditorConfigs.icons.bottomNavBar,
                               size: _bottomIconSize,
-                              color: _foreGroundColor,
+                              color: widget.foregroundColor,
                             ),
                             onPressed: widget.editor.openFilterEditor,
                           ),
@@ -230,7 +241,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
                             icon: Icon(
                               blurEditorConfigs.icons.bottomNavBar,
                               size: _bottomIconSize,
-                              color: _foreGroundColor,
+                              color: widget.foregroundColor,
                             ),
                             onPressed: widget.editor.openBlurEditor,
                           ),
@@ -243,7 +254,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
                             icon: Icon(
                               emojiEditorConfigs.icons.bottomNavBar,
                               size: _bottomIconSize,
-                              color: _foreGroundColor,
+                              color: widget.foregroundColor,
                             ),
                             onPressed: _openEmojiEditor,
                           ),
@@ -256,7 +267,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
                             icon: Icon(
                               stickerEditorConfigs.icons.bottomNavBar,
                               size: _bottomIconSize,
-                              color: _foreGroundColor,
+                              color: widget.foregroundColor,
                             ),
                             onPressed: _openStickerEditor,
                           ),

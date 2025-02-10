@@ -28,10 +28,14 @@ class GroundedTuneBar extends StatefulWidget with SimpleConfigsAccess {
     required this.configs,
     required this.callbacks,
     required this.editor,
+    required this.foregroundColor,
   });
 
   /// The editor state that holds filter and editing information.
   final TuneEditorState editor;
+
+  /// The foregroundColor for the Icon.
+  final Color foregroundColor;
 
   @override
   final ProImageEditorConfigs configs;
@@ -70,6 +74,7 @@ class _GroundedTuneBarState extends State<GroundedTuneBar>
         _buildFunctions(constraints),
         GroundedBottomBar(
           configs: configs,
+          foregroundColor: widget.foregroundColor,
           done: widget.editor.done,
           close: widget.editor.close,
           undo: tuneEditor.undo,
@@ -84,10 +89,12 @@ class _GroundedTuneBarState extends State<GroundedTuneBar>
   Widget _buildFunctions(BoxConstraints constraints) {
     var bottomTextStyle = const TextStyle(fontSize: 10.0, color: Colors.white);
     double bottomIconSize = 22.0;
-    return Container(
-      color: mainEditorConfigs.style.bottomBarBackground,
-      width: double.infinity,
-      child: FadeInUp(
+    return 
+    // Container(
+    //   color: mainEditorConfigs.style.bottomBarBackground,
+    //   width: double.infinity,
+    //   child:
+       FadeInUp(
         duration: kGroundedFadeInDuration,
         child: Column(
           children: [
@@ -161,7 +168,7 @@ class _GroundedTuneBarState extends State<GroundedTuneBar>
             ),
           ],
         ),
-      ),
+      // ),
     );
   }
 }

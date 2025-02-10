@@ -20,10 +20,14 @@ class GroundedFilterBar extends StatefulWidget with SimpleConfigsAccess {
     required this.configs,
     required this.callbacks,
     required this.editor,
+    required this.foregroundColor,
   });
 
   /// The editor state that holds filter and editing information.
   final FilterEditorState editor;
+
+  /// The foregroundColor for the Icon.
+  final Color foregroundColor;
 
   @override
   final ProImageEditorConfigs configs;
@@ -71,14 +75,14 @@ class _GroundedFilterBarState extends State<GroundedFilterBar>
           configs: configs,
           done: widget.editor.done,
           close: widget.editor.close,
+          foregroundColor: widget.foregroundColor,
         ),
       ],
     );
   }
 
   Widget _buildFunctions(BoxConstraints constraints) {
-    return Container(
-      color: mainEditorConfigs.style.bottomBarBackground,
+    return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
         children: [

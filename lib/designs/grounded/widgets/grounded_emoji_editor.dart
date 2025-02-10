@@ -24,6 +24,7 @@ class GroundedEmojiEditor extends StatefulWidget {
     super.key,
     required this.configs,
     required this.callbacks,
+    required this.foregroundColor,
   });
 
   /// The configuration for the image editor.
@@ -31,6 +32,9 @@ class GroundedEmojiEditor extends StatefulWidget {
 
   /// The callbacks from the image editor.
   final ProImageEditorCallbacks callbacks;
+
+  /// The foregroundColor for the Icon.
+  final Color foregroundColor;
 
   @override
   State<GroundedEmojiEditor> createState() => _GroundedEmojiEditorState();
@@ -63,7 +67,7 @@ class _GroundedEmojiEditorState extends State<GroundedEmojiEditor> {
 
   @override
   Widget build(BuildContext context) {
-    Color foreGroundColor = widget.configs.mainEditor.style.appBarColor;
+    // Color foreGroundColor = widget.configs.mainEditor.style.appBarColor;
     return FrostedGlassEffect(
       radius: BorderRadius.zero,
       child: Scaffold(
@@ -99,7 +103,7 @@ class _GroundedEmojiEditorState extends State<GroundedEmojiEditor> {
                       },
                       icon: Icon(
                         widget.configs.mainEditor.icons.closeEditor,
-                        color: foreGroundColor,
+                        color: widget.foregroundColor,
                       ),
                     ),
                     Expanded(

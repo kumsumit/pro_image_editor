@@ -178,10 +178,10 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
         ),
         mainEditor: const MainEditorConfigs(
           style: MainEditorStyle(
-            background: Color.fromARGB(255, 255, 169, 169),
-            appBarColor: Color.fromARGB(255, 126, 14, 6),
-            appBarBackground: Color.fromARGB(255, 255, 211, 77),
-            bottomBarBackground: Colors.purple,
+            // background: Color.fromARGB(255, 255, 169, 169),
+            // appBarColor: Color.fromARGB(255, 126, 14, 6),
+            // appBarBackground: Color.fromARGB(255, 255, 211, 77),
+            // bottomBarBackground: Colors.purple,
             uiOverlayStyle: SystemUiOverlayStyle(
               statusBarColor: Color.fromARGB(66, 60, 65, 41),
               statusBarIconBrightness: Brightness.light,

@@ -18,6 +18,7 @@ class GroundedTextBar extends StatefulWidget with SimpleConfigsAccess {
   const GroundedTextBar({
     super.key,
     required this.configs,
+    required this.foregroundColor,
     required this.callbacks,
     required this.editor,
     required this.i18nColor,
@@ -35,6 +36,9 @@ class GroundedTextBar extends StatefulWidget with SimpleConfigsAccess {
   /// The localized label for the color picker.
   final String i18nColor;
 
+  /// The foregroundColor for the Icon.
+  final Color foregroundColor;
+
   /// Function that shows the color picker when called.
   final Function(Color currentColor) showColorPicker;
 
@@ -45,14 +49,15 @@ class GroundedTextBar extends StatefulWidget with SimpleConfigsAccess {
 class _GroundedTextBarState extends State<GroundedTextBar>
     with ImageEditorConvertedConfigs, SimpleConfigsAccessState {
   late final ScrollController _bottomBarScrollCtrl;
-
-  Color get _foreGroundColor => textEditorConfigs.style.appBarColor;
-  Color get _foreGroundColorAccent => _foreGroundColor.withValues(alpha: 0.6);
+  late final Color _foreGroundColorAccent;
+  // Color get _foreGroundColor => textEditorConfigs.style.appBarColor;
+  // Color get _foreGroundColorAccent => _foreGroundColor.withValues(alpha: 0.6);
 
   @override
   void initState() {
     super.initState();
     _bottomBarScrollCtrl = ScrollController();
+    _foreGroundColorAccent = widget.foregroundColor.withValues(alpha: 0.6);
   }
 
   @override
@@ -76,6 +81,7 @@ class _GroundedTextBarState extends State<GroundedTextBar>
           ),
           GroundedBottomBar(
             configs: configs,
+            foregroundColor: widget.foregroundColor,
             done: widget.editor.done,
             close: widget.editor.close,
           ),
@@ -157,7 +163,7 @@ class _GroundedTextBarState extends State<GroundedTextBar>
         ),
         icon: Icon(
           Icons.color_lens_outlined,
-          color: _foreGroundColor,
+          color: widget.foregroundColor,
         ),
         onPressed: () {
           widget.showColorPicker(widget.editor.primaryColor);
@@ -177,7 +183,7 @@ class _GroundedTextBarState extends State<GroundedTextBar>
             TextAlign.right => textEditorConfigs.icons.alignRight,
             TextAlign.center || _ => textEditorConfigs.icons.alignCenter,
           },
-          color: _foreGroundColor,
+          color: widget.foregroundColor,
         ),
         onPressed: () {
           widget.editor.toggleTextAlign();
@@ -193,7 +199,7 @@ class _GroundedTextBarState extends State<GroundedTextBar>
         ),
         icon: Icon(
           textEditorConfigs.icons.backgroundMode,
-          color: _foreGroundColor,
+          color: widget.foregroundColor,
         ),
         onPressed: () {
           widget.editor.toggleBackgroundMode();

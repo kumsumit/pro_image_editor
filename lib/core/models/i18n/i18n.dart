@@ -5,6 +5,7 @@ import 'i18n_emoji_editor.dart';
 import 'i18n_filter_editor.dart';
 import 'i18n_layer_interaction.dart';
 import 'i18n_paint_editor.dart';
+import 'i18n_size_editor.dart';
 import 'i18n_sticker_editor.dart';
 import 'i18n_text_editor.dart';
 import 'i18n_tune_editor.dart';
@@ -142,6 +143,7 @@ class I18n {
   /// ```
   const I18n({
     this.layerInteraction = const I18nLayerInteraction(),
+    this.sizeEditor = const I18nSizeEditor(),
     this.paintEditor = const I18nPaintEditor(),
     this.textEditor = const I18nTextEditor(),
     this.cropRotateEditor = const I18nCropRotateEditor(),
@@ -159,6 +161,9 @@ class I18n {
     this.remove = 'Remove',
     this.doneLoadingMsg = 'Changes are being applied',
   });
+
+  /// Translations and messages specific to the paint editor.
+  final I18nSizeEditor sizeEditor;
 
   /// Translations and messages specific to the paint editor.
   final I18nPaintEditor paintEditor;
@@ -219,6 +224,7 @@ class I18n {
   /// [I18n] with some properties updated while keeping the
   /// others unchanged.
   I18n copyWith({
+    I18nSizeEditor? sizeEditor,
     I18nPaintEditor? paintEditor,
     I18nVarious? various,
     I18nLayerInteraction? layerInteraction,
@@ -238,6 +244,7 @@ class I18n {
     String? remove,
   }) {
     return I18n(
+      sizeEditor: sizeEditor ?? this.sizeEditor,
       paintEditor: paintEditor ?? this.paintEditor,
       various: various ?? this.various,
       layerInteraction: layerInteraction ?? this.layerInteraction,

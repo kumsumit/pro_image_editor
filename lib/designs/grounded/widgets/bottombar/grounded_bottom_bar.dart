@@ -15,6 +15,7 @@ class GroundedBottomBar extends StatefulWidget {
   const GroundedBottomBar({
     super.key,
     required this.configs,
+    required this.foregroundColor,
     this.undo,
     this.redo,
     required this.done,
@@ -25,6 +26,9 @@ class GroundedBottomBar extends StatefulWidget {
 
   /// Configuration settings for the image editor.
   final ProImageEditorConfigs configs;
+
+  /// The Foreground color for the Bottom Bar.
+  final Color foregroundColor;
 
   /// Function to handle undo action.
   final Function()? undo;
@@ -56,7 +60,7 @@ class GroundedBottomBar extends StatefulWidget {
 class _GroundedBottomBarState extends State<GroundedBottomBar> {
   @override
   Widget build(BuildContext context) {
-    Color foreGroundColor = widget.configs.mainEditor.style.appBarColor;
+    // Color foreGroundColor = widget.configs.mainEditor.style.appBarColor;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 12),
       color: const Color(0xFF222222),
@@ -68,7 +72,7 @@ class _GroundedBottomBarState extends State<GroundedBottomBar> {
             onPressed: widget.close,
             icon: Icon(
               widget.configs.mainEditor.icons.closeEditor,
-              color: foreGroundColor,
+              color: widget.foregroundColor,
             ),
           ),
           if (widget.redo != null)
@@ -80,8 +84,8 @@ class _GroundedBottomBarState extends State<GroundedBottomBar> {
                   icon: Icon(
                     widget.configs.mainEditor.icons.undoAction,
                     color: widget.enableUndo
-                        ? foreGroundColor
-                        : foreGroundColor.withAlpha(80),
+                        ? widget.foregroundColor
+                        : widget.foregroundColor.withAlpha(80),
                   ),
                 ),
                 const SizedBox(width: 3),
@@ -91,8 +95,8 @@ class _GroundedBottomBarState extends State<GroundedBottomBar> {
                   icon: Icon(
                     widget.configs.mainEditor.icons.redoAction,
                     color: widget.enableRedo
-                        ? foreGroundColor
-                        : foreGroundColor.withAlpha(80),
+                        ? widget.foregroundColor
+                        : widget.foregroundColor.withAlpha(80),
                   ),
                 ),
               ],
@@ -102,7 +106,7 @@ class _GroundedBottomBarState extends State<GroundedBottomBar> {
             onPressed: widget.done,
             icon: Icon(
               widget.configs.mainEditor.icons.doneIcon,
-              color: foreGroundColor,
+              color: widget.foregroundColor,
             ),
           ),
         ],
