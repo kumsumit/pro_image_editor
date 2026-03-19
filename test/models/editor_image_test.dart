@@ -10,14 +10,14 @@ import 'package:pro_image_editor/core/models/editor_image.dart';
 import 'package:pro_image_editor/core/platform/io/io_helper.dart';
 
 // Project imports:
-import '../fake/fake_image.dart';
+import '../mock/mock_image.dart';
 
 void main() {
   group('EditorImage', () {
     test('Constructor should initialize properties correctly', () async {
-      final Uint8List byteArray = fakeMemoryImage;
-      final File file = fakeFileImage;
-      const String networkUrl = fakeNetworkImage;
+      final Uint8List byteArray = mockMemoryImage;
+      final File file = mockFileImage;
+      const String networkUrl = mockNetworkImage;
       const String assetPath = 'assets/image.png';
 
       final EditorImage image = EditorImage(
@@ -34,22 +34,19 @@ void main() {
     });
 
     test('Constructor should throw an error if all properties are null', () {
-      expect(
-        EditorImage.new,
-        throwsA(isA<AssertionError>()),
-      );
+      expect(EditorImage.new, throwsA(isA<AssertionError>()));
     });
 
     test('hasBytes should return true when byteArray is not null', () async {
-      final Uint8List byteArray = fakeMemoryImage;
+      final Uint8List byteArray = mockMemoryImage;
       final EditorImage image = EditorImage(byteArray: byteArray);
       expect(image.hasBytes, isTrue);
     });
 
     test('type should return the correct EditorImageType', () async {
-      final Uint8List byteArray = fakeMemoryImage;
-      final File file = fakeFileImage;
-      const String networkUrl = fakeNetworkImage;
+      final Uint8List byteArray = mockMemoryImage;
+      final File file = mockFileImage;
+      const String networkUrl = mockNetworkImage;
       const String assetPath = 'assets/image.png';
 
       expect(
@@ -57,10 +54,7 @@ void main() {
         equals(EditorImageType.memory),
       );
 
-      expect(
-        EditorImage(file: file).type,
-        equals(EditorImageType.file),
-      );
+      expect(EditorImage(file: file).type, equals(EditorImageType.file));
 
       expect(
         EditorImage(networkUrl: networkUrl).type,
@@ -73,10 +67,11 @@ void main() {
       );
     });
 
-    testWidgets('safeByteArray should return the correct data',
-        (WidgetTester tester) async {
+    testWidgets('safeByteArray should return the correct data', (
+      WidgetTester tester,
+    ) async {
       final key = GlobalKey();
-      final Uint8List byteArray = Uint8List.fromList(fakeMemoryImage);
+      final Uint8List byteArray = Uint8List.fromList(mockMemoryImage);
 
       final EditorImage memoryImage = EditorImage(byteArray: byteArray);
 
@@ -91,9 +86,10 @@ void main() {
         ),
       );
 
-      final Uint8List memoryData =
-          await memoryImage.safeByteArray(key.currentContext!);
-      expect(memoryData, fakeMemoryImage);
+      final Uint8List memoryData = await memoryImage.safeByteArray(
+        key.currentContext!,
+      );
+      expect(memoryData, mockMemoryImage);
     });
   });
 }

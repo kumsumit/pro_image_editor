@@ -24,7 +24,6 @@ class GroundedEmojiEditor extends StatefulWidget {
     super.key,
     required this.configs,
     required this.callbacks,
-    required this.foregroundColor,
   });
 
   /// The configuration for the image editor.
@@ -32,9 +31,6 @@ class GroundedEmojiEditor extends StatefulWidget {
 
   /// The callbacks from the image editor.
   final ProImageEditorCallbacks callbacks;
-
-  /// The foregroundColor for the Icon.
-  final Color foregroundColor;
 
   @override
   State<GroundedEmojiEditor> createState() => _GroundedEmojiEditorState();
@@ -67,7 +63,7 @@ class _GroundedEmojiEditorState extends State<GroundedEmojiEditor> {
 
   @override
   Widget build(BuildContext context) {
-    // Color foreGroundColor = widget.configs.mainEditor.style.appBarColor;
+    Color foreGroundColor = widget.configs.mainEditor.style.appBarColor;
     return FrostedGlassEffect(
       radius: BorderRadius.zero,
       child: Scaffold(
@@ -83,8 +79,10 @@ class _GroundedEmojiEditorState extends State<GroundedEmojiEditor> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 3, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 3,
+                  horizontal: 12,
+                ),
                 color: const Color(0xFF222222),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -94,6 +92,7 @@ class _GroundedEmojiEditorState extends State<GroundedEmojiEditor> {
                       onPressed: () {
                         if (_activeSearch) {
                           setState(() {
+                            _emojiEditorKey.currentState?.externSearch('');
                             _searchCtrl.clear();
                             _activeSearch = false;
                           });
@@ -103,7 +102,7 @@ class _GroundedEmojiEditorState extends State<GroundedEmojiEditor> {
                       },
                       icon: Icon(
                         widget.configs.mainEditor.icons.closeEditor,
-                        color: widget.foregroundColor,
+                        color: foreGroundColor,
                       ),
                     ),
                     Expanded(
@@ -127,7 +126,7 @@ class _GroundedEmojiEditorState extends State<GroundedEmojiEditor> {
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -160,9 +159,7 @@ class _GroundedEmojiEditorState extends State<GroundedEmojiEditor> {
                     });
                   },
                   itemColor: const Color.fromARGB(255, 243, 243, 243),
-                  style: const TextStyle(
-                    color: Colors.white,
-                  ),
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
               CupertinoButton(
@@ -181,12 +178,13 @@ class _GroundedEmojiEditorState extends State<GroundedEmojiEditor> {
       return Container(
         constraints: const BoxConstraints(maxWidth: 400),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(100)),
+          color: const Color(0xFF222222),
+          borderRadius: BorderRadius.circular(100),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Icon(Icons.search),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(left: 12.0),

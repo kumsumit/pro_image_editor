@@ -28,7 +28,6 @@ class MainEditorAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.doneEditing,
     required this.isInitialized,
     required this.stateManager,
-    required this.foregroundColor,
   });
 
   /// Localization for tooltips and labels.
@@ -44,7 +43,7 @@ class MainEditorAppBar extends StatelessWidget implements PreferredSizeWidget {
   MainEditorConfigs get mainEditorConfigs => configs.mainEditor;
 
   /// Determines the foreground color for the AppBar.
-  final Color foregroundColor;
+  Color get foregroundColor => mainEditorConfigs.style.appBarColor;
 
   /// Indicates whether the editor has been fully initialized.
   final bool isInitialized;
@@ -65,7 +64,7 @@ class MainEditorAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       foregroundColor: foregroundColor,
-      backgroundColor: Colors.transparent,
+      backgroundColor: mainEditorConfigs.style.appBarBackground,
       leading: mainEditorConfigs.enableCloseButton
           ? IconButton(
               tooltip: i18n.cancel,

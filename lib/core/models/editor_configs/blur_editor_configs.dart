@@ -1,6 +1,7 @@
 import '../custom_widgets/blur_editor_widgets.dart';
 import '../icons/blur_editor_icons.dart';
 import '../styles/blur_editor_style.dart';
+import 'utils/base_sub_editor_configs.dart';
 import 'utils/editor_safe_area.dart';
 
 export '../custom_widgets/blur_editor_widgets.dart';
@@ -19,12 +20,12 @@ export '../styles/blur_editor_style.dart';
 ///   maxBlur: 5.0,
 /// );
 /// ```
-class BlurEditorConfigs {
+class BlurEditorConfigs implements BaseSubEditorConfigs {
   /// Creates an instance of BlurEditorConfigs with optional settings.
   ///
   /// By default, the editor is enabled, and max blur is 5.0.
   const BlurEditorConfigs({
-    this.enabled = true,
+    this.enableGesturePop = true,
     this.showLayers = true,
     this.maxBlur = 5.0,
     this.safeArea = const EditorSafeArea(),
@@ -33,8 +34,9 @@ class BlurEditorConfigs {
     this.widgets = const BlurEditorWidgets(),
   }) : assert(maxBlur > 0, 'maxBlur must be positive');
 
-  /// Indicates whether the blur editor is enabled.
-  final bool enabled;
+  /// {@macro enableGesturePop}
+  @override
+  final bool enableGesturePop;
 
   /// Show also layers in the editor.
   final bool showLayers;
@@ -61,7 +63,7 @@ class BlurEditorConfigs {
   /// [BlurEditorConfigs] with some properties updated while keeping the
   /// others unchanged.
   BlurEditorConfigs copyWith({
-    bool? enabled,
+    bool? enableGesturePop,
     bool? showLayers,
     double? maxBlur,
     EditorSafeArea? safeArea,
@@ -70,8 +72,8 @@ class BlurEditorConfigs {
     BlurEditorWidgets? widgets,
   }) {
     return BlurEditorConfigs(
+      enableGesturePop: enableGesturePop ?? this.enableGesturePop,
       safeArea: safeArea ?? this.safeArea,
-      enabled: enabled ?? this.enabled,
       showLayers: showLayers ?? this.showLayers,
       maxBlur: maxBlur ?? this.maxBlur,
       style: style ?? this.style,

@@ -1,5 +1,6 @@
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
+
+import '/plugins/emoji_picker_flutter/emoji_picker_flutter.dart';
 import '../services/emoji_state_manager.dart';
 
 /// Represents the bottom bar for the emoji editor.
@@ -8,8 +9,8 @@ class EmojiEditorBottomBar extends StatelessWidget {
   const EmojiEditorBottomBar(
     this.config,
     this.tabController,
-    this.categoryEmojis,
-    this.closeSkinToneOverlay, {
+    this.closeSkinToneOverlay,
+    this.categoryEmojis, {
     super.key,
   });
 
@@ -19,11 +20,11 @@ class EmojiEditorBottomBar extends StatelessWidget {
   /// The tab controller for navigating between emoji categories.
   final TabController tabController;
 
-  /// The list of emoji categories.
-  final List<CategoryEmoji> categoryEmojis;
-
   /// Callback function for closing the skin tone overlay.
   final VoidCallback closeSkinToneOverlay;
+
+  /// List of the category emojis
+  final List<CategoryEmoji> categoryEmojis;
 
   @override
   Widget build(BuildContext context) {
@@ -43,14 +44,16 @@ class EmojiEditorBottomBar extends StatelessWidget {
         ),
         onTap: (index) {
           closeSkinToneOverlay();
-          EmojiStateManager.of(context)
-              ?.setActiveCategory(categoryEmojis[index].category);
+          EmojiStateManager.of(
+            context,
+          )?.setActiveCategory(categoryEmojis[index].category);
         },
         tabs: categoryEmojis
             .asMap()
             .entries
             .map<Widget>(
-                (item) => _buildCategory(item.key, item.value.category))
+              (item) => _buildCategory(item.key, item.value.category),
+            )
             .toList(),
       ),
     );
@@ -61,10 +64,7 @@ class EmojiEditorBottomBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(6.0),
         child: Icon(
-          getIconForCategory(
-            config.categoryViewConfig.categoryIcons,
-            category,
-          ),
+          getIconForCategory(config.categoryViewConfig.categoryIcons, category),
           size: 20,
         ),
       ),

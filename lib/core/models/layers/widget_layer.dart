@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import '/core/constants/int_constants.dart';
 import '/core/platform/io/io_helper.dart';
 import '/shared/services/import_export/types/widget_loader.dart';
+import '/shared/utils/parser/double_parser.dart';
 import '/shared/utils/parser/int_parser.dart';
 import '../editor_image.dart';
 import 'layer.dart';
@@ -30,6 +32,7 @@ class WidgetLayer extends Layer {
   /// The [widget] parameter is required, and other properties are optional.
   WidgetLayer({
     required this.widget,
+    this.width,
     super.offset,
     super.rotation,
     super.scale,
@@ -38,8 +41,10 @@ class WidgetLayer extends Layer {
     super.flipY,
     super.interaction,
     this.exportConfigs = const WidgetLayerExportConfigs(),
-    super.isDeleted,
     super.meta,
+    super.boxConstraints,
+    super.key,
+    super.groupId,
   });
 
   /// Factory constructor for creating a WidgetLayer instance from a
@@ -56,11 +61,14 @@ class WidgetLayer extends Layer {
 
     /// Determines the position of the widget in the list.
     int widgetPosition = safeParseInt(
-        map[keyConverter('recordPosition')] ?? map['listPosition'],
-        fallback: -1);
+      map[keyConverter('recordPosition')] ?? map['listPosition'],
+      fallback: -1,
+    );
 
-    var exportConfigs =
-        WidgetLayerExportConfigs.fromMap(map[keyConverter('exportConfigs')]);
+    final layerWidth = map[keyConverter('width')];
+    var exportConfigs = WidgetLayerExportConfigs.fromMap(
+      map[keyConverter('exportConfigs')],
+    );
 
     /// Widget to display a widget or a placeholder if not found.
     Widget widget = kDebugMode
@@ -95,7 +103,7 @@ class WidgetLayer extends Layer {
     } else if (exportConfigs.fileUrl != null) {
       widget = ConstrainedBox(
         constraints: defaultConstraints,
-        child: Image.file(File(exportConfigs.fileUrl!)),
+        child: Image.file(File(exportConfigs.fileUrl!) as dynamic),
       );
       requirePrecache?.call(EditorImage(file: File(exportConfigs.fileUrl!)));
     } else if (widgetRecords.isNotEmpty &&
@@ -118,21 +126,30 @@ class WidgetLayer extends Layer {
       offset: layer.offset,
       rotation: layer.rotation,
       scale: layer.scale,
-      isDeleted: layer.isDeleted,
       meta: layer.meta,
+      groupId: layer.groupId,
       widget: widget,
+      width: layerWidth != null ? safeParseDouble(layerWidth) : null,
       exportConfigs: exportConfigs,
+      boxConstraints: layer.boxConstraints,
     );
   }
 
   /// The widget to display on the layer.
   Widget widget;
 
+  /// Optional layer width. If no value is set, it will fallback to the
+  /// `initWidth` inside of the `StickerEditorConfigs`.
+  double? width;
+
   /// Configuration settings for exporting a widget layer.
   ///
   /// This class holds the necessary configurations required for a custom
   /// widget import-loader.
   WidgetLayerExportConfigs exportConfigs;
+
+  @override
+  bool get isWidgetLayer => true;
 
   /// Converts this transform object to a Map suitable for representing a
   /// widget.
@@ -141,21 +158,38 @@ class WidgetLayer extends Layer {
   /// augmented with the specified [recordPosition] indicating the position of
   /// the widget in a list.
   @override
-  Map<String, dynamic> toMap([int? recordPosition]) {
+  Map<String, dynamic> toMap({
+    int? recordPosition,
+    int maxDecimalPlaces = kMaxSafeDecimalPlaces,
+    bool enableMinify = false,
+  }) {
     var exportConfigMap = exportConfigs.toMap();
 
     return {
-      ...super.toMap(),
-      if (recordPosition != null) 'recordPosition': recordPosition,
+      ...super.toMap(
+        maxDecimalPlaces: maxDecimalPlaces,
+        enableMinify: enableMinify,
+      ),
+      'recordPosition': ?recordPosition,
+      if (width != null) 'width': width,
       if (exportConfigMap.isNotEmpty) 'exportConfigs': exportConfigMap,
       'type': 'widget',
     };
   }
 
   @override
-  Map<String, dynamic> toMapFromReference(Layer layer) {
+  Map<String, dynamic> toMapFromReference(
+    Layer layer, {
+    int maxDecimalPlaces = kMaxSafeDecimalPlaces,
+    bool enableMinify = false,
+  }) {
     return {
-      ...super.toMapFromReference(layer),
+      ...super.toMapFromReference(
+        layer,
+        maxDecimalPlaces: maxDecimalPlaces,
+        enableMinify: enableMinify,
+      ),
+      if (layer is WidgetLayer && width != layer.width) 'width': width,
     };
   }
 
@@ -164,8 +198,10 @@ class WidgetLayer extends Layer {
   /// Each property of the new instance can be replaced by providing a value
   /// to the corresponding parameter of this method. Unprovided parameters
   /// will default to the current instance's values.
+  @override
   WidgetLayer copyWith({
     Widget? widget,
+    double? width,
     Offset? offset,
     double? rotation,
     double? scale,
@@ -173,16 +209,38 @@ class WidgetLayer extends Layer {
     bool? flipX,
     bool? flipY,
     LayerInteraction? interaction,
+    Map<String, dynamic>? meta,
+    BoxConstraints? boxConstraints,
+    WidgetLayerExportConfigs? exportConfigs,
+    String? groupId,
   }) {
     return WidgetLayer(
       widget: widget ?? this.widget,
       offset: offset ?? this.offset,
       rotation: rotation ?? this.rotation,
+      width: width ?? this.width,
       scale: scale ?? this.scale,
       id: id ?? this.id,
       flipX: flipX ?? this.flipX,
       flipY: flipY ?? this.flipY,
       interaction: interaction ?? this.interaction,
+      exportConfigs: exportConfigs ?? this.exportConfigs,
+      groupId: groupId ?? this.groupId,
+      meta: meta ?? this.meta,
+      boxConstraints: boxConstraints ?? this.boxConstraints,
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(
+        DiagnosticsProperty<WidgetLayerExportConfigs>(
+          'exportConfigs',
+          exportConfigs,
+        ),
+      )
+      ..add(DoubleProperty('width', width));
   }
 }

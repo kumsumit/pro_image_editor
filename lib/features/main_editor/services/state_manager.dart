@@ -1,12 +1,22 @@
+import '/core/models/editor_image.dart';
 import '/core/models/history/state_history.dart';
 import '/core/models/layers/layer.dart';
 import '/core/models/multi_threading/thread_capture_model.dart';
-import '/features/crop_rotate_editor/models/transform_factors.dart';
 import '/features/filter_editor/types/filter_matrix.dart';
 import '/features/tune_editor/models/tune_adjustment_matrix.dart';
+import '../../crop_rotate_editor/models/transform_configs.dart';
 
 /// A class for managing the state and history of image editing changes.
 class StateManager {
+  /// Creates an instance of [StateManager].
+  StateManager({
+    required this.onStateHistoryChange,
+    required this.activeBackgroundImage,
+  });
+
+  /// Optional callbacks for additional editor actions.
+  final Function()? onStateHistoryChange;
+
   /// Position in the state history.
   int _historyPointer = 0;
 
@@ -38,6 +48,34 @@ class StateManager {
   /// This list provides a record of changes applied to the image, allowing
   /// for undo/redo functionality.
   List<EditorStateHistory> get stateHistory => _stateHistory;
+
+  final Map<int, EditorImage> _backgroundImages = {};
+
+  /// The currently active background image in the editor.
+  EditorImage? activeBackgroundImage;
+
+  /// Updates the background images in the editor's history.
+  ///
+  /// Replaces the background image at the current history pointer with
+  /// [oldImage], and sets the next history entry to [newImage]. Also updates
+  /// the [activeBackgroundImage] to [newImage].
+  ///
+  /// Parameters:
+  /// - [oldImage]: The previous background image to store at the current
+  /// history pointer.
+  /// - [newImage]: The new background image to store at the next history
+  /// pointer.
+  void updateBackgroundImages({
+    required EditorImage oldImage,
+    required EditorImage newImage,
+  }) {
+    _backgroundImages[historyPointer - 1] ??= oldImage.copyWith();
+    _backgroundImages[historyPointer] = newImage.copyWith();
+    activeBackgroundImage = newImage.copyWith();
+    for (var item in screenshots) {
+      item.broken = true;
+    }
+  }
 
   /// A setter for updating the state history list.
   /// When a new list of editor states is assigned, it triggers
@@ -71,36 +109,44 @@ class StateManager {
     _activeFilters = [];
 
     _activeFilters = activeHistory
-        .lastWhere((item) => item.filters.isNotEmpty,
-            orElse: EditorStateHistory.new)
+        .lastWhere(
+          (item) => item.filters.isNotEmpty,
+          orElse: EditorStateHistory.new,
+        )
         .filters;
 
     _activeTuneAdjustments = activeHistory
-        .lastWhere((item) => item.tuneAdjustments.isNotEmpty,
-            orElse: EditorStateHistory.new)
+        .lastWhere(
+          (item) => item.tuneAdjustments.isNotEmpty,
+          orElse: EditorStateHistory.new,
+        )
         .tuneAdjustments;
 
     activeLayers = _stateHistory[historyPointer].layers;
-    /* activeHistory.where((item) => item.layers != null).forEach((entry) {
-      for (var layer in entry.layers!) {
-        _activeLayers.removeWhere((el) => el.id == layer.id);
-        if (!layer.isDeleted) {
-          _activeLayers.add(layer);
-        }
-      }
-    }); */
 
-    _transformConfigs = activeHistory
-            .lastWhere((item) => item.transformConfigs != null,
-                orElse: EditorStateHistory.new)
+    _transformConfigs =
+        activeHistory
+            .lastWhere(
+              (item) => item.transformConfigs != null,
+              orElse: EditorStateHistory.new,
+            )
             .transformConfigs ??
         TransformConfigs.empty();
 
-    _activeBlur = activeHistory
-            .lastWhere((item) => item.blur != null,
-                orElse: EditorStateHistory.new)
+    _activeBlur =
+        activeHistory
+            .lastWhere(
+              (item) => item.blur != null,
+              orElse: EditorStateHistory.new,
+            )
             .blur ??
         0.0;
+
+    onStateHistoryChange?.call();
+
+    if (_backgroundImages[historyPointer] != null) {
+      activeBackgroundImage = _backgroundImages[historyPointer]!.copyWith();
+    }
   }
 
   /// A list of active filters applied to the image.
@@ -153,8 +199,10 @@ class StateManager {
 
   /// Retrieves the currently active screenshot based on the position.
   ThreadCaptureState? get activeScreenshot {
-    return screenshots.length > _historyPointer - 1
-        ? screenshots[_historyPointer - 1]
+    var historyPos = _historyPointer - 1;
+
+    return screenshots.length > historyPos && historyPos >= 0
+        ? screenshots[historyPos]
         : null;
   }
 
@@ -182,6 +230,7 @@ class StateManager {
       while (_historyPointer < screenshots.length) {
         screenshots.removeLast();
       }
+      _backgroundImages.removeWhere((index, _) => index > _historyPointer);
     }
     _historyPointer = _stateHistory.length - 1;
   }
@@ -197,7 +246,7 @@ class StateManager {
   ///
   /// - `limit`: The maximum number of states to retain in the history. Must
   /// be 1 or greater.
-  void setHistoryLimit(int limit) {
+  void setHistoryLimit(int limit, bool enableScreenshotLimit) {
     if (limit <= 0) {
       throw ArgumentError('The state history limit must be 1 or greater!');
     }
@@ -205,10 +254,10 @@ class StateManager {
       if (_historyPointer > 0) {
         _historyPointer--;
         _stateHistory.removeAt(0);
-        screenshots.removeAt(0);
+        if (enableScreenshotLimit) screenshots.removeAt(0);
       } else {
         _stateHistory.removeLast();
-        screenshots.removeLast();
+        if (enableScreenshotLimit) screenshots.removeLast();
       }
     }
   }
@@ -229,11 +278,15 @@ class StateManager {
   /// 1. The history pointer is updated to point to the latest state.
   /// 2. The history list size is adjusted according to `historyLimit`.
   /// 3. Active editor components are refreshed.
-  void addHistory(EditorStateHistory history, {int historyLimit = 1000}) {
+  void addHistory(
+    EditorStateHistory history, {
+    int historyLimit = 1000,
+    bool enableScreenshotLimit = true,
+  }) {
     _cleanForwardChanges();
     _stateHistory.add(history);
     historyPointer = _stateHistory.length - 1;
-    setHistoryLimit(historyLimit);
+    setHistoryLimit(historyLimit, enableScreenshotLimit);
     updateActiveItems();
   }
 

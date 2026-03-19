@@ -24,6 +24,14 @@ class ImageFormatConvertExample extends StatefulWidget {
 
 class _ImageFormatConvertExampleState extends State<ImageFormatConvertExample>
     with ExampleHelperState<ImageFormatConvertExample> {
+  Future<Uint8List?> convertFormatWithoutEditor(Uint8List bytes) async {
+    var result = await ImageConverter.instance.convertFormat(
+      image: EditorImage(byteArray: bytes),
+      format: OutputFormat.jpg,
+    );
+    return result;
+  }
+
   // ignore: unused_element
   Future<void> _convertImage(Uint8List bytes) async {
     try {
@@ -65,7 +73,7 @@ class _ImageFormatConvertExampleState extends State<ImageFormatConvertExample>
       callbacks: ProImageEditorCallbacks(
         onImageEditingStarted: onImageEditingStarted,
         onImageEditingComplete: (bytes) async {
-          editedBytes = bytes;
+          editedBytes = await convertFormatWithoutEditor(bytes);
 
           /// For special formats like webp, you can uncomment the line below,
           /// and follow the instructions there.
@@ -73,7 +81,13 @@ class _ImageFormatConvertExampleState extends State<ImageFormatConvertExample>
 
           setGenerationTime();
         },
-        onCloseEditor: () => onCloseEditor(enablePop: !isDesktopMode(context)),
+        onCloseEditor: (editorMode) => onCloseEditor(
+          editorMode: editorMode,
+          enablePop: !isDesktopMode(context),
+        ),
+        mainEditorCallbacks: MainEditorCallbacks(
+          helperLines: HelperLinesCallbacks(onLineHit: vibrateLineHit),
+        ),
       ),
       configs: ProImageEditorConfigs(
         designMode: platformDesignMode,
@@ -82,7 +96,7 @@ class _ImageFormatConvertExampleState extends State<ImageFormatConvertExample>
         ),
         imageGeneration: const ImageGenerationConfigs(
           /// Choose the output format below
-          outputFormat: kIsWeb ? OutputFormat.png : OutputFormat.tiff,
+          outputFormat: OutputFormat.png,
           pngFilter: PngFilter.none,
           pngLevel: 6,
           jpegChroma: JpegChroma.yuv444,

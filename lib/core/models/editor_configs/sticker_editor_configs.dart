@@ -1,9 +1,10 @@
-// Flutter imports:
 import 'package:flutter/widgets.dart';
 
 import '/core/models/layers/layer.dart';
 import '../icons/sticker_editor_icons.dart';
 import '../styles/sticker_editor_style.dart';
+import 'utils/base_editor_layer_configs.dart';
+import 'utils/base_sub_editor_configs.dart';
 export '../icons/sticker_editor_icons.dart';
 export '../styles/sticker_editor_style.dart';
 
@@ -23,34 +24,40 @@ export '../styles/sticker_editor_style.dart';
 ///   },
 /// );
 /// ```
-class StickerEditorConfigs {
+class StickerEditorConfigs
+    implements BaseEditorLayerConfigs, BaseSubEditorConfigs {
   /// Creates an instance of StickerEditorConfigs with optional settings.
   ///
   /// By default, the editor is disabled (if not specified), and other
   /// properties are set to reasonable defaults.
   const StickerEditorConfigs({
-    this.buildStickers,
+    this.layerFractionalOffset = const Offset(-0.5, -0.5),
+    this.enableGesturePop = true,
+    this.builder,
     this.initWidth = 100,
     this.minScale = double.negativeInfinity,
     this.maxScale = double.infinity,
-    this.enabled = false,
     this.style = const StickerEditorStyle(),
     this.icons = const StickerEditorIcons(),
-  })  : assert(initWidth > 0, 'initWidth must be positive'),
-        assert(maxScale >= minScale,
-            'maxScale must be greater than or equal to minScale');
+  }) : assert(initWidth > 0, 'initWidth must be positive'),
+       assert(
+         maxScale >= minScale,
+         'maxScale must be greater than or equal to minScale',
+       );
 
-  /// Indicates whether the sticker editor is enabled.
-  ///
-  /// When set to `true`, the sticker editor is active and users can interact
-  /// with it.
-  /// If `false`, the editor is disabled and does not respond to user inputs.
-  final bool enabled;
+  /// {@macro layerFractionalOffset}
+  @override
+  final Offset layerFractionalOffset;
+
+  /// {@macro enableGesturePop}
+  @override
+  final bool enableGesturePop;
 
   /// The initial width of the stickers in the editor.
   ///
   /// Specifies the starting width of the stickers when they are first placed
-  /// in the editor. This value is in logical pixels.
+  /// in the editor. This value is in logical pixels and is normally used as
+  /// a fallback when no explicit width is provided.
   final double initWidth;
 
   /// A callback that builds the stickers.
@@ -59,7 +66,7 @@ class StickerEditorConfigs {
   /// returns a Widget. The function parameter `setLayer` is used to set a
   /// layer in the editor. This callback allows for customizing the appearance
   /// and behavior of stickers in the editor.
-  final BuildStickers? buildStickers;
+  final StickerBuilder? builder;
 
   /// The minimum scale factor from the layer.
   final double minScale;
@@ -80,18 +87,21 @@ class StickerEditorConfigs {
   /// [StickerEditorConfigs] with some properties updated while keeping the
   /// others unchanged.
   StickerEditorConfigs copyWith({
-    bool? enabled,
+    Offset? layerFractionalOffset,
+    bool? enableGesturePop,
     double? initWidth,
-    BuildStickers? buildStickers,
+    StickerBuilder? builder,
     double? minScale,
     double? maxScale,
     StickerEditorStyle? style,
     StickerEditorIcons? icons,
   }) {
     return StickerEditorConfigs(
-      enabled: enabled ?? this.enabled,
+      layerFractionalOffset:
+          layerFractionalOffset ?? this.layerFractionalOffset,
+      enableGesturePop: enableGesturePop ?? this.enableGesturePop,
       initWidth: initWidth ?? this.initWidth,
-      buildStickers: buildStickers ?? this.buildStickers,
+      builder: builder ?? this.builder,
       minScale: minScale ?? this.minScale,
       maxScale: maxScale ?? this.maxScale,
       style: style ?? this.style,
@@ -105,10 +115,20 @@ class StickerEditorConfigs {
 /// This typedef defines a function that builds a widget for stickers in an
 /// editor, allowing customization of how stickers are displayed and
 /// manipulated within the user interface.
-typedef BuildStickers = Widget Function(
-  Function(
-    Widget widget, {
-    WidgetLayerExportConfigs? exportConfigs,
-  }) setLayer,
-  ScrollController scrollController,
-);
+typedef BuildStickers =
+    Widget Function(
+      Function(Widget widget, {WidgetLayerExportConfigs? exportConfigs})
+      setLayer,
+      ScrollController scrollController,
+    );
+
+/// A typedef representing a function signature for building sticker widgets.
+///
+/// This typedef defines a function that builds a widget for stickers in an
+/// editor, allowing customization of how stickers are displayed and
+/// manipulated within the user interface.
+typedef StickerBuilder =
+    Widget Function(
+      Function(WidgetLayer widgetLayer) setLayer,
+      ScrollController scrollController,
+    );

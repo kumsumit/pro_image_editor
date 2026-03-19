@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '/features/crop_rotate_editor/enums/crop_mode.enum.dart';
+import '/features/crop_rotate_editor/enums/crop_tool_enum.dart';
 import '/features/crop_rotate_editor/models/aspect_ratio_item.dart';
 import '/features/crop_rotate_editor/models/rotate_direction.dart';
 import '../custom_widgets/crop_rotate_editor_widgets.dart';
 import '../icons/crop_rotate_editor_icons.dart';
 import '../styles/crop_rotate_editor_style.dart';
+import 'utils/base_sub_editor_configs.dart';
 import 'utils/editor_safe_area.dart';
 
+export '/features/crop_rotate_editor/enums/crop_tool_enum.dart';
 export '/features/crop_rotate_editor/models/rotate_direction.dart';
-export '/features/crop_rotate_editor/models/transform_factors.dart';
+export '/features/crop_rotate_editor/models/transform_configs.dart';
 export '../custom_widgets/crop_rotate_editor_widgets.dart';
 export '../icons/crop_rotate_editor_icons.dart';
 export '../styles/crop_rotate_editor_style.dart';
@@ -29,7 +33,7 @@ export '../styles/crop_rotate_editor_style.dart';
 ///   initAspectRatio: CropAspectRatios.custom,
 /// );
 /// ```
-class CropRotateEditorConfigs {
+class CropRotateEditorConfigs implements BaseSubEditorConfigs {
   /// Creates an instance of CropRotateEditorConfigs with optional settings.
   ///
   /// By default, all options are enabled, and the initial aspect ratio is set
@@ -37,27 +41,34 @@ class CropRotateEditorConfigs {
   const CropRotateEditorConfigs({
     this.desktopCornerDragArea = 7,
     this.mobileCornerDragArea = kMinInteractiveDimension,
-    this.enabled = true,
-    this.canRotate = true,
-    this.canFlip = true,
+    this.enableGesturePop = true,
+    this.tools = const [
+      CropRotateTool.rotate,
+      CropRotateTool.flip,
+      CropRotateTool.aspectRatio,
+      CropRotateTool.reset,
+    ],
+    this.invertMouseScroll = false,
+    this.invertDragDirection = false,
+    this.initialCropMode = CropMode.rectangular,
+    this.exportOvalMask = true,
+    this.enableTransformLayers = true,
+    this.enableProvideImageInfos = false,
     this.enableDoubleTap = true,
-    this.transformLayers = true,
-    this.canChangeAspectRatio = true,
-    this.canReset = true,
-    this.reverseMouseScroll = false,
-    this.reverseDragDirection = false,
-    this.roundCropper = false,
-    this.provideImageInfos = false,
+    this.enableFlipAnimation = true,
+    this.showLayers = true,
     this.initAspectRatio,
     this.rotateAnimationCurve = Curves.decelerate,
     this.scaleAnimationCurve = Curves.decelerate,
     this.cropDragAnimationCurve = Curves.decelerate,
+    this.flipAnimationCurve = Curves.decelerate,
     this.fadeInOutsideCropAreaAnimationCurve = Curves.decelerate,
     this.rotateDirection = RotateDirection.left,
     this.opacityOutsideCropAreaDuration = const Duration(milliseconds: 100),
     this.animationDuration = const Duration(milliseconds: 250),
-    this.fadeInOutsideCropAreaAnimationDuration =
-        const Duration(milliseconds: 350),
+    this.fadeInOutsideCropAreaAnimationDuration = const Duration(
+      milliseconds: 350,
+    ),
     this.cropDragAnimationDuration = const Duration(milliseconds: 400),
     this.maxScale = 7,
     this.mouseScaleFactor = 0.1,
@@ -69,61 +80,84 @@ class CropRotateEditorConfigs {
       AspectRatioItem(text: '4*3', value: 4.0 / 3.0),
       AspectRatioItem(text: '3*4', value: 3.0 / 4.0),
       AspectRatioItem(text: '16*9', value: 16.0 / 9.0),
-      AspectRatioItem(text: '9*16', value: 9.0 / 16.0)
+      AspectRatioItem(text: '9*16', value: 9.0 / 16.0),
     ],
     this.safeArea = const EditorSafeArea(),
     this.style = const CropRotateEditorStyle(),
     this.icons = const CropRotateEditorIcons(),
     this.widgets = const CropRotateEditorWidgets(),
     this.maxWidthFactor,
-  })  : assert(maxScale >= 1, 'maxScale must be greater than or equal to 1'),
-        assert(desktopCornerDragArea > 0,
-            'desktopCornerDragArea must be positive'),
-        assert(!roundCropper || !canChangeAspectRatio,
-            'In roundCropper mode, canChangeAspectRatio must be disabled.'),
-        assert(!roundCropper || initAspectRatio == 1,
-            'In roundCropper mode, initAspectRatio must be 1.'),
-        assert(
-            mobileCornerDragArea > 0, 'mobileCornerDragArea must be positive'),
-        assert(
-            maxWidthFactor == null ||
-                (maxWidthFactor > 0 && maxWidthFactor <= 1),
-            'maxWidthFactor must be greater than 0 and less than 1'),
-        assert(doubleTapScaleFactor > 1,
-            'doubleTapScaleFactor must be greater than 1');
+  }) : assert(maxScale >= 1, 'maxScale must be greater than or equal to 1'),
+       assert(
+         desktopCornerDragArea > 0,
+         'desktopCornerDragArea must be positive',
+       ),
+       assert(
+         mobileCornerDragArea > 0,
+         'mobileCornerDragArea must be positive',
+       ),
+       assert(
+         maxWidthFactor == null || (maxWidthFactor > 0 && maxWidthFactor <= 1),
+         'maxWidthFactor must be greater than 0 and less than 1',
+       ),
+       assert(
+         doubleTapScaleFactor > 1,
+         'doubleTapScaleFactor must be greater than 1',
+       );
 
-  /// Indicates whether the editor is enabled.
-  final bool enabled;
+  /// {@macro enableGesturePop}
+  @override
+  final bool enableGesturePop;
 
-  /// Indicating whether the image can be rotated.
-  final bool canRotate;
-
-  /// Indicating whether the image can be flipped.
-  final bool canFlip;
-
-  /// Indicating whether the aspect ratio of the image can be changed.
-  final bool canChangeAspectRatio;
-
-  /// Indicating whether the editor can be reset.
-  final bool canReset;
+  /// Show the layers from the main-editor.
+  final bool showLayers;
 
   /// Layers will also be transformed like the crop-rotate image.
-  final bool transformLayers;
+  final bool enableTransformLayers;
 
   /// Enables double-tap zoom functionality when set to true.
   final bool enableDoubleTap;
 
-  /// Determines if the mouse scroll direction should be reversed.
-  final bool reverseMouseScroll;
+  /// Enables flip-animation when set to true.
+  final bool enableFlipAnimation;
 
-  /// Determines if the drag direction should be reversed.
-  final bool reverseDragDirection;
+  /// Determines if the mouse scroll direction should be inverted.
+  final bool invertMouseScroll;
 
-  /// The cropper is round and not rectangular, which is optimal for cutting
-  /// profile images.
+  /// Determines if the drag direction should be inverted.
+  final bool invertDragDirection;
+
+  /// The initial crop mode to be used when the crop/rotate editor is opened.
   ///
-  /// The round cropper only supports an aspect ratio of 1.
-  final bool roundCropper;
+  /// This determines the default cropping behavior or aspect ratio that will be
+  /// presented to the user before any manual adjustments are made.
+  final CropMode initialCropMode;
+
+  /// Controls whether the oval mask is applied to the exported image when
+  /// [initialCropMode] is set to [CropMode.oval].
+  ///
+  /// When `true` (default), the exported image is clipped to an oval/circle
+  /// shape. When `false`, the raw rectangular crop is exported without any
+  /// oval masking, while the oval UI is still shown inside the crop editor.
+  final bool exportOvalMask;
+
+  /// Defines which crop-rotate tools are available in the editor.
+  ///
+  /// The order of the tools in this list determines the order in the UI.
+  /// Simply include the tools you want and leave out the ones you don’t.
+  ///
+  /// Example:
+  /// ```dart
+  /// PaintEditorConfigs(
+  ///   tools: [
+  ///      CropRotateTool.rotate,
+  ///      CropRotateTool.flip,
+  ///      CropRotateTool.aspectRatio,
+  ///      CropRotateTool.reset,
+  ///   ],
+  /// )
+  /// ```
+  final List<CropRotateTool> tools;
 
   /// A boolean flag that determines whether the `imageInfos` parameter
   /// should be included in the `onDone` callback.
@@ -131,7 +165,7 @@ class CropRotateEditorConfigs {
   /// When set to `true`, the `imageInfos` parameter will be provided in the
   /// `onDone` callback of the crop editor, containing detailed information
   /// about the edited image. If set to `false`, `imageInfos` will be `null`.
-  final bool provideImageInfos;
+  final bool enableProvideImageInfos;
 
   /// The initial aspect ratio for cropping.
   ///
@@ -182,6 +216,9 @@ class CropRotateEditorConfigs {
   /// The curve used for the rotation animation.
   final Curve rotateAnimationCurve;
 
+  /// The curve used for the flip animation.
+  final Curve flipAnimationCurve;
+
   /// The curve used for the scale animation, which is triggered when the
   /// image needs to resize due to rotation.
   final Curve scaleAnimationCurve;
@@ -223,27 +260,29 @@ class CropRotateEditorConfigs {
   /// [CropRotateEditorConfigs] with some properties updated while keeping the
   /// others unchanged.
   CropRotateEditorConfigs copyWith({
-    bool? enabled,
-    bool? canRotate,
-    bool? canFlip,
-    bool? canChangeAspectRatio,
-    bool? canReset,
-    bool? transformLayers,
+    bool? enableGesturePop,
+    bool? showLayers,
+    bool? enableTransformLayers,
     bool? enableDoubleTap,
-    bool? reverseMouseScroll,
-    bool? reverseDragDirection,
-    bool? roundCropper,
-    bool? provideImageInfos,
+    bool? enableFlipAnimation,
+    bool? invertMouseScroll,
+    bool? invertDragDirection,
+    CropMode? initialCropMode,
+    bool? exportOvalMask,
+    List<CropRotateTool>? tools,
+    bool? enableProvideImageInfos,
     double? initAspectRatio,
     double? maxScale,
     double? mouseScaleFactor,
     double? doubleTapScaleFactor,
+    double? maxWidthFactor,
     List<AspectRatioItem>? aspectRatios,
     Duration? animationDuration,
     Duration? cropDragAnimationDuration,
     Duration? fadeInOutsideCropAreaAnimationDuration,
     Duration? opacityOutsideCropAreaDuration,
     Curve? rotateAnimationCurve,
+    Curve? flipAnimationCurve,
     Curve? scaleAnimationCurve,
     Curve? cropDragAnimationCurve,
     Curve? fadeInOutsideCropAreaAnimationCurve,
@@ -256,42 +295,46 @@ class CropRotateEditorConfigs {
     CropRotateEditorWidgets? widgets,
   }) {
     return CropRotateEditorConfigs(
-      safeArea: safeArea ?? this.safeArea,
-      provideImageInfos: provideImageInfos ?? this.provideImageInfos,
-      enabled: enabled ?? this.enabled,
-      canRotate: canRotate ?? this.canRotate,
-      canFlip: canFlip ?? this.canFlip,
-      canChangeAspectRatio: canChangeAspectRatio ?? this.canChangeAspectRatio,
-      canReset: canReset ?? this.canReset,
-      transformLayers: transformLayers ?? this.transformLayers,
+      enableGesturePop: enableGesturePop ?? this.enableGesturePop,
+      showLayers: showLayers ?? this.showLayers,
+      enableTransformLayers:
+          enableTransformLayers ?? this.enableTransformLayers,
       enableDoubleTap: enableDoubleTap ?? this.enableDoubleTap,
-      reverseMouseScroll: reverseMouseScroll ?? this.reverseMouseScroll,
-      reverseDragDirection: reverseDragDirection ?? this.reverseDragDirection,
-      roundCropper: roundCropper ?? this.roundCropper,
+      enableFlipAnimation: enableFlipAnimation ?? this.enableFlipAnimation,
+      invertMouseScroll: invertMouseScroll ?? this.invertMouseScroll,
+      invertDragDirection: invertDragDirection ?? this.invertDragDirection,
+      initialCropMode: initialCropMode ?? this.initialCropMode,
+      exportOvalMask: exportOvalMask ?? this.exportOvalMask,
+      tools: tools ?? this.tools,
+      enableProvideImageInfos:
+          enableProvideImageInfos ?? this.enableProvideImageInfos,
       initAspectRatio: initAspectRatio ?? this.initAspectRatio,
       maxScale: maxScale ?? this.maxScale,
       mouseScaleFactor: mouseScaleFactor ?? this.mouseScaleFactor,
       doubleTapScaleFactor: doubleTapScaleFactor ?? this.doubleTapScaleFactor,
+      maxWidthFactor: maxWidthFactor ?? this.maxWidthFactor,
       aspectRatios: aspectRatios ?? this.aspectRatios,
       animationDuration: animationDuration ?? this.animationDuration,
       cropDragAnimationDuration:
           cropDragAnimationDuration ?? this.cropDragAnimationDuration,
       fadeInOutsideCropAreaAnimationDuration:
           fadeInOutsideCropAreaAnimationDuration ??
-              this.fadeInOutsideCropAreaAnimationDuration,
+          this.fadeInOutsideCropAreaAnimationDuration,
       opacityOutsideCropAreaDuration:
           opacityOutsideCropAreaDuration ?? this.opacityOutsideCropAreaDuration,
       rotateAnimationCurve: rotateAnimationCurve ?? this.rotateAnimationCurve,
+      flipAnimationCurve: flipAnimationCurve ?? this.flipAnimationCurve,
       scaleAnimationCurve: scaleAnimationCurve ?? this.scaleAnimationCurve,
       cropDragAnimationCurve:
           cropDragAnimationCurve ?? this.cropDragAnimationCurve,
       fadeInOutsideCropAreaAnimationCurve:
           fadeInOutsideCropAreaAnimationCurve ??
-              this.fadeInOutsideCropAreaAnimationCurve,
+          this.fadeInOutsideCropAreaAnimationCurve,
       rotateDirection: rotateDirection ?? this.rotateDirection,
       desktopCornerDragArea:
           desktopCornerDragArea ?? this.desktopCornerDragArea,
       mobileCornerDragArea: mobileCornerDragArea ?? this.mobileCornerDragArea,
+      safeArea: safeArea ?? this.safeArea,
       style: style ?? this.style,
       icons: icons ?? this.icons,
       widgets: widgets ?? this.widgets,

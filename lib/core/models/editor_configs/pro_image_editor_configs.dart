@@ -14,13 +14,15 @@ import 'helper_lines_configs.dart';
 import 'image_generation_configs/image_generation_configs.dart';
 import 'layer_interaction_configs.dart';
 import 'main_editor_configs.dart';
-import 'paint_editor_configs.dart';
+import 'paint_editor/paint_editor_configs.dart';
 import 'progress_indicator_configs.dart';
-import 'size_editor_configs.dart';
 import 'state_history_configs.dart';
 import 'sticker_editor_configs.dart';
 import 'text_editor_configs.dart';
 import 'tune_editor_configs.dart';
+import 'video/audio_editor_configs.dart';
+import 'video/clips_editor_configs.dart';
+import 'video/video_editor_configs.dart';
 
 export '/features/crop_rotate_editor/models/aspect_ratio_item.dart';
 export '/shared/utils/platform_info.dart';
@@ -36,12 +38,15 @@ export 'helper_lines_configs.dart';
 export 'image_generation_configs/image_generation_configs.dart';
 export 'layer_interaction_configs.dart';
 export 'main_editor_configs.dart';
-export 'paint_editor_configs.dart';
+export 'paint_editor/paint_editor_configs.dart';
 export 'progress_indicator_configs.dart';
 export 'state_history_configs.dart';
 export 'sticker_editor_configs.dart';
 export 'text_editor_configs.dart';
 export 'tune_editor_configs.dart';
+export 'video/audio_editor_configs.dart';
+export 'video/clips_editor_configs.dart';
+export 'video/video_editor_configs.dart';
 
 /// A class representing configuration options for the Image Editor.
 class ProImageEditorConfigs {
@@ -58,8 +63,6 @@ class ProImageEditorConfigs {
   ///   behavior.
   /// - The `mainEditorConfigs` configures the Main Editor. By default, it
   ///   uses an empty `MainEditorConfigs` instance.
-  /// - The `sizeEditorConfigs` configures the Size Editor. By default, it
-  ///   uses an empty `SizeEditorConfigs` instance.
   /// - The `paintEditorConfigs` configures the Paint Editor. By default, it
   ///   uses an empty `PaintEditorConfigs` instance.
   /// - The `textEditorConfigs` configures the Text Editor. By default, it
@@ -74,8 +77,6 @@ class ProImageEditorConfigs {
   ///   uses an empty `EmojiEditorConfigs` instance.
   /// - The `stickerEditorConfigs` configures the Sticker Editor. By default,
   ///   it uses an empty `StickerEditorConfigs` instance.
-  /// - The `gradientBackground` specifies whether to use a gradient background
-  ///   for the Image Editor. By default, it is `false`.
   /// - The `designMode` specifies the design mode for the Image Editor. By
   ///   default, it is `ImageEditorDesignMode.material`.
   /// - The `stateHistoryConfigs` holds the configurations related to state
@@ -91,7 +92,6 @@ class ProImageEditorConfigs {
     this.heroTag = kImageEditorHeroTag,
     this.i18n = const I18n(),
     this.mainEditor = const MainEditorConfigs(),
-    this.sizeEditor = const SizeEditorConfigs(),
     this.paintEditor = const PaintEditorConfigs(),
     this.textEditor = const TextEditorConfigs(),
     this.cropRotateEditor = const CropRotateEditorConfigs(),
@@ -106,8 +106,10 @@ class ProImageEditorConfigs {
     this.layerInteraction = const LayerInteractionConfigs(),
     this.dialogConfigs = const DialogConfigs(),
     this.progressIndicatorConfigs = const ProgressIndicatorConfigs(),
+    this.videoEditor = const VideoEditorConfigs(),
+    this.audioEditor = const AudioEditorConfigs(),
+    this.clipsEditor = const ClipsEditorConfigs(),
     this.designMode = ImageEditorDesignMode.material,
-    // this.gradientBackground = false,
   });
 
   /// The theme to be used for the Image Editor.
@@ -119,9 +121,6 @@ class ProImageEditorConfigs {
   /// Internationalization settings for the Image Editor.
   final I18n i18n;
 
-  // /// Gradient background for the Image Editor;
-  // final bool gradientBackground;
-
   /// Configuration options for helper lines in the Image Editor.
   final HelperLineConfigs helperLines;
 
@@ -130,9 +129,6 @@ class ProImageEditorConfigs {
 
   /// Configuration options for the main Editor.
   final MainEditorConfigs mainEditor;
-
-  /// Configuration options for the Size Editor.
-  final SizeEditorConfigs sizeEditor;
 
   /// Configuration options for the Paint Editor.
   final PaintEditorConfigs paintEditor;
@@ -173,6 +169,15 @@ class ProImageEditorConfigs {
   /// Configuration for customizing progress indicators.
   final ProgressIndicatorConfigs progressIndicatorConfigs;
 
+  /// Configurations for video editing
+  final VideoEditorConfigs videoEditor;
+
+  /// Configurations for audio editing
+  final AudioEditorConfigs audioEditor;
+
+  /// Configurations for video clips editing
+  final ClipsEditorConfigs clipsEditor;
+
   /// Creates a copy of this `ProImageEditorConfigs` object with the given
   /// fields replaced with new values.
   ProImageEditorConfigs copyWith({
@@ -195,7 +200,9 @@ class ProImageEditorConfigs {
     ImageEditorDesignMode? designMode,
     DialogConfigs? dialogConfigs,
     ProgressIndicatorConfigs? progressIndicatorConfigs,
-    // bool? gradientBackground,
+    VideoEditorConfigs? videoEditor,
+    AudioEditorConfigs? audioEditor,
+    ClipsEditorConfigs? clipsEditor,
   }) {
     return ProImageEditorConfigs(
       theme: theme ?? this.theme,
@@ -218,7 +225,9 @@ class ProImageEditorConfigs {
       dialogConfigs: dialogConfigs ?? this.dialogConfigs,
       progressIndicatorConfigs:
           progressIndicatorConfigs ?? this.progressIndicatorConfigs,
-      // gradientBackground: gradientBackground ?? this.gradientBackground,
+      videoEditor: videoEditor ?? this.videoEditor,
+      audioEditor: audioEditor ?? this.audioEditor,
+      clipsEditor: clipsEditor ?? this.clipsEditor,
     );
   }
 }

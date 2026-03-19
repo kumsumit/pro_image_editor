@@ -1,4 +1,6 @@
 // Project imports:
+import 'package:flutter/widgets.dart';
+
 import 'editor_init_configs.dart';
 
 /// Configuration class for initializing the paint editor.
@@ -22,14 +24,15 @@ class PaintEditorInitConfigs extends EditorInitConfigs {
     super.appliedFilters,
     super.appliedTuneAdjustments,
     super.appliedBlurFactor,
-    super.onCloseEditor,
-    super.onImageEditingComplete,
-    super.onImageEditingStarted,
     super.convertToUint8List,
     this.enableFakeHero = false,
+    this.initialZoomMatrix,
     required super.theme,
   });
 
   /// Determines whether we draw a "fake" hero widget or not.
   final bool enableFakeHero;
+
+  /// The initial zoom matrix.
+  final Matrix4? initialZoomMatrix;
 }

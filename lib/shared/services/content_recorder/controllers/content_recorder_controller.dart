@@ -5,16 +5,17 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mime/mime.dart';
 
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/core/models/multi_threading/thread_capture_model.dart';
 import '/core/models/multi_threading/thread_request_model.dart';
+import '/plugins/mime/mime.dart';
 import '/shared/utils/decode_image.dart';
 import '/shared/utils/unique_id_generator.dart';
 import '../services/image_converter_service.dart';
 import '../services/image_render_service.dart';
-import '../services/isolate_manager.dart';
+import '../services/isolate_manager_stub.dart'
+    if (dart.library.io) '../services/isolate_manager.dart';
 import '../services/thread_fallback_manager.dart';
 import '../services/thread_manager.dart';
 import '../services/web_worker/web_worker_manager_dummy.dart'
@@ -29,6 +30,7 @@ class ContentRecorderController {
   /// Optionally enables thumbnail generation and skips initialization.
   ContentRecorderController({
     required ImageGenerationConfigs configs,
+    required this.isVideoEditor,
     this.enableThumbnailGeneration = false,
     bool ignoreGeneration = false,
   }) : _configs = configs {
@@ -38,6 +40,9 @@ class ContentRecorderController {
 
     _initializeMultiThreading(ignoreGeneration);
   }
+
+  /// A flag indicating whether the editor capture videos.
+  final bool isVideoEditor;
 
   /// A flag indicating whether thumbnail generation is enabled.
   final bool enableThumbnailGeneration;
@@ -77,7 +82,14 @@ class ContentRecorderController {
     }
 
     _imageConverterService = ImageConverterService(
-      configs: _configs,
+      /// For video editing is it important to enforce the following
+      /// configurations
+      configs: _configs.copyWith(
+        cropToDrawingBounds: isVideoEditor
+            ? false
+            : _configs.cropToDrawingBounds,
+        cropToImageBounds: isVideoEditor ? true : _configs.cropToImageBounds,
+      ),
       threadManager: _threadManager,
     );
     _imageRenderService = ImageRenderService(_configs);
@@ -85,7 +97,9 @@ class ContentRecorderController {
 
   /// Cleans up resources, destroys threads, and closes the recorder stream.
   Future<void> destroy() async {
-    await recorderStream.close();
+    if (!recorderStream.isClosed && recorderStream.hasListener) {
+      await recorderStream.close();
+    }
     if (!recordReadyHelper.isCompleted) {
       recordReadyHelper.complete(true);
     }
@@ -123,6 +137,9 @@ class ContentRecorderController {
     if (kIsWeb && stateHistoryScreenshot && (!_threadManager.isSupported)) {
       return null;
     }
+    if (isVideoEditor) {
+      outputFormat = OutputFormat.png;
+    }
 
     outputFormat ??= _configs.outputFormat;
     image ??= await getRawRenderedImage(imageInfos: imageInfos);
@@ -156,10 +173,7 @@ class ContentRecorderController {
       SizedBox(
         width: targetSize?.width,
         height: targetSize?.height,
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: widget,
-        ),
+        child: FittedBox(fit: BoxFit.contain, child: widget),
       ),
     );
 
@@ -196,18 +210,21 @@ class ContentRecorderController {
     Widget? widget,
     OutputFormat? outputFormat,
   }) async {
-    if (!_configs.generateImageInBackground ||
-        !_configs.generateInsideSeparateThread) {
+    if (!_configs.enableBackgroundGeneration ||
+        !_configs.enableIsolateGeneration) {
       return null;
+    }
+    if (isVideoEditor) {
+      outputFormat = OutputFormat.png;
     }
     ThreadCaptureState isolateCaptureState = ThreadCaptureState();
 
     if (screenshots != null) {
       /// Set every screenshot to broken which didn't read the ui image before
       /// changes happen.
-      screenshots
-          .where((el) => !el.processedRenderedImage)
-          .forEach((screenshot) {
+      screenshots.where((el) => !el.processedRenderedImage).forEach((
+        screenshot,
+      ) {
         screenshot.broken = true;
       });
       screenshots.add(isolateCaptureState);
@@ -258,8 +275,9 @@ class ContentRecorderController {
 
     bool isGenerationActive =
         backgroundScreenshot != null && !backgroundScreenshot.broken;
-    String id =
-        isGenerationActive ? backgroundScreenshot.id : generateUniqueId();
+    String id = isGenerationActive
+        ? backgroundScreenshot.id
+        : generateUniqueId();
 
     try {
       _threadManager.destroyAllActiveTasks(id);
@@ -272,10 +290,7 @@ class ContentRecorderController {
           // Capture a new screenshot if the current screenshot is broken or
           // didn't exists.
           bytes = widget == null
-              ? await _captureImageContent(
-                  id: id,
-                  imageInfos: imageInfos,
-                )
+              ? await _captureImageContent(id: id, imageInfos: imageInfos)
               : await _captureWidget(
                   widget,
                   id: id,
@@ -300,10 +315,7 @@ class ContentRecorderController {
 
       // Take a new screenshot when something went wrong.
       bytes = widget == null
-          ? await _captureImageContent(
-              id: id,
-              imageInfos: imageInfos,
-            )
+          ? await _captureImageContent(id: id, imageInfos: imageInfos)
           : await _captureWidget(
               widget,
               id: id,
@@ -334,17 +346,18 @@ class ContentRecorderController {
 
     /// Check if the image format is already same like the output format.
     List<String> sp = contentType.split('/');
-    bool isFormatSame = sp.length > 1 &&
+    bool isFormatSame =
+        sp.length > 1 &&
         (_configs.outputFormat.name == sp[1] ||
             (sp[1] == 'jpeg' && _configs.outputFormat == OutputFormat.jpg));
 
     /// Check if the output size is too large.
     double outputRatio = imageInfos.pixelRatio;
-    if (!_configs.captureOnlyDrawingBounds &&
-        context != null &&
-        context.mounted) {
-      outputRatio =
-          max(imageInfos.pixelRatio, MediaQuery.devicePixelRatioOf(context));
+    if (!_configs.cropToDrawingBounds && context != null && context.mounted) {
+      outputRatio = max(
+        imageInfos.pixelRatio,
+        MediaQuery.devicePixelRatioOf(context),
+      );
     }
     bool isOutputSizeTooLarge = _imageRenderService.checkOutputSizeIsTooLarge(
       imageInfos.renderedSize,
@@ -353,17 +366,14 @@ class ContentRecorderController {
     );
     if (!isFormatSame || isOutputSizeTooLarge) {
       final ui.Image image = await decodeImageFromList(bytes);
-      if (_configs.generateInsideSeparateThread) {
+      if (_configs.enableIsolateGeneration) {
         /// Recapture the image if the output format is incorrect or the output
         /// size is too large.
         if (kIsWeb || isOutputSizeTooLarge) {
           /// Due to a known issue with image decoding in Flutter web, we need
           /// to recapture the image to ensure accuracy.
           bytes = widget == null
-              ? await _captureImageContent(
-                  id: id,
-                  imageInfos: imageInfos,
-                )
+              ? await _captureImageContent(id: id, imageInfos: imageInfos)
               : await _captureWidget(
                   widget,
                   id: id,
@@ -373,10 +383,7 @@ class ContentRecorderController {
         } else {
           /// Send the image to the separate thread for encoding.
           bytes = await _threadManager.send(
-            await _generateSendEncodeData(
-              id: id,
-              image: image,
-            ),
+            await _generateSendEncodeData(id: id, image: image),
           );
         }
       } else {
@@ -410,9 +417,7 @@ class ContentRecorderController {
   /// `ThreadCaptureState` objects. The placeholder is marked as broken and can
   /// be used to track incomplete or failed captures in multi-threaded
   /// processing.
-  void addEmptyScreenshot({
-    required List<ThreadCaptureState> screenshots,
-  }) {
+  void addEmptyScreenshot({required List<ThreadCaptureState> screenshots}) {
     screenshots.add(ThreadCaptureState()..broken = true);
   }
 
@@ -423,10 +428,19 @@ class ContentRecorderController {
     required ui.Image image,
     required String id,
   }) async {
-    return ThreadRequest.fromConfigs(
+    return ThreadRequest(
       id: id,
-      image: await convertFlutterUiToImage(image),
-      configs: _configs,
+      image: await convertFlutterUiToImage(
+        image,
+        imageByteFormat: _configs.captureImageByteFormat,
+      ),
+      outputFormat: _configs.outputFormat,
+      singleFrame: _configs.singleFrame,
+      jpegQuality: _configs.jpegQuality,
+      jpegBackgroundColor: _configs.jpegBackgroundColor.toARGB32(),
+      jpegChroma: _configs.jpegChroma,
+      pngFilter: _configs.pngFilter,
+      pngLevel: _configs.pngLevel,
     );
   }
 }

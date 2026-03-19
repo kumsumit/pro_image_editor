@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 // Project imports:
-import 'package:pro_image_editor/pro_image_editor.dart';
+import '/features/tune_editor/tune_editor.dart';
 import '../frosted_glass_effect.dart';
 
 /// A custom app bar widget that creates a frosted glass effect for the
@@ -15,10 +15,7 @@ class FrostedGlassTuneAppbar extends StatelessWidget {
   ///
   /// The [tuneEditor] parameter is required to access the state of the
   /// Tune Editor.
-  const FrostedGlassTuneAppbar({
-    super.key,
-    required this.tuneEditor,
-  });
+  const FrostedGlassTuneAppbar({super.key, required this.tuneEditor});
 
   /// The current state of the [TuneEditor].
   ///

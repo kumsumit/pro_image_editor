@@ -37,10 +37,60 @@ class ReorderLayerExample extends StatefulWidget {
 /// within the [ReorderLayerExample] widget.
 class _ReorderLayerExampleState extends State<ReorderLayerExample>
     with ExampleHelperState<ReorderLayerExample> {
+  late final _configs = ProImageEditorConfigs(
+    designMode: platformDesignMode,
+    mainEditor: MainEditorConfigs(
+      enableCloseButton: !isDesktopMode(context),
+      widgets: MainEditorWidgets(
+        bodyItems: (editor, rebuildStream) {
+          return [
+            ReactiveWidget(
+              stream: rebuildStream,
+              builder: (_) =>
+                  editor.isLayerBeingTransformed || editor.isSubEditorOpen
+                      ? const SizedBox.shrink()
+                      : _buildReorderButton(editor),
+            ),
+          ];
+        },
+      ),
+    ),
+  );
+
+  late final _callbacks = ProImageEditorCallbacks(
+    onImageEditingStarted: onImageEditingStarted,
+    onImageEditingComplete: onImageEditingComplete,
+    onCloseEditor: (editorMode) => onCloseEditor(
+      editorMode: editorMode,
+      enablePop: !isDesktopMode(context),
+    ),
+    mainEditorCallbacks: MainEditorCallbacks(
+      helperLines: HelperLinesCallbacks(onLineHit: vibrateLineHit),
+    ),
+  );
+
   @override
   void initState() {
     super.initState();
     preCacheImage(assetPath: kImageEditorExampleAssetPath);
+  }
+
+  void _openReorderSheet(ProImageEditorState editor) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: ReorderLayerSheet(
+          layers: editor.activeLayers,
+          onReorder: (oldIndex, newIndex) {
+            editor.moveLayerListPosition(
+              oldIndex: oldIndex,
+              newIndex: newIndex,
+            );
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -50,65 +100,29 @@ class _ReorderLayerExampleState extends State<ReorderLayerExample>
     return ProImageEditor.asset(
       kImageEditorExampleAssetPath,
       key: editorKey,
-      callbacks: ProImageEditorCallbacks(
-        onImageEditingStarted: onImageEditingStarted,
-        onImageEditingComplete: onImageEditingComplete,
-        onCloseEditor: () => onCloseEditor(enablePop: !isDesktopMode(context)),
-      ),
-      configs: ProImageEditorConfigs(
-        helperLines: const HelperLineConfigs(
-          hitVibration: false,
+      callbacks: _callbacks,
+      configs: _configs,
+    );
+  }
+
+  Widget _buildReorderButton(ProImageEditorState editor) {
+    return Positioned(
+      bottom: 20,
+      left: 0,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.blue.shade700,
+          borderRadius: const BorderRadius.horizontal(
+            right: Radius.circular(100),
+          ),
         ),
-        designMode: platformDesignMode,
-        mainEditor: MainEditorConfigs(
-          enableCloseButton: !isDesktopMode(context),
-          widgets: MainEditorWidgets(
-            bodyItems: (editor, rebuildStream) {
-              return [
-                ReactiveWidget(
-                  stream: rebuildStream,
-                  builder: (_) =>
-                      editor.selectedLayerIndex >= 0 || editor.isSubEditorOpen
-                          ? const SizedBox.shrink()
-                          : Positioned(
-                              bottom: 20,
-                              left: 0,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade700,
-                                  borderRadius: const BorderRadius.only(
-                                    topRight: Radius.circular(100),
-                                    bottomRight: Radius.circular(100),
-                                  ),
-                                ),
-                                child: IconButton(
-                                  onPressed: () {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      builder: (context) {
-                                        return ReorderLayerSheet(
-                                          layers: editor.activeLayers,
-                                          onReorder: (oldIndex, newIndex) {
-                                            editor.moveLayerListPosition(
-                                              oldIndex: oldIndex,
-                                              newIndex: newIndex,
-                                            );
-                                            Navigator.pop(context);
-                                          },
-                                        );
-                                      },
-                                    );
-                                  },
-                                  icon: const Icon(
-                                    Icons.reorder,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                ),
-              ];
-            },
+        child: GestureInterceptor(
+          child: IconButton(
+            onPressed: () => _openReorderSheet(editor),
+            icon: const Icon(
+              Icons.reorder,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
@@ -192,23 +206,31 @@ class _ReorderLayerSheetState extends State<ReorderLayerSheet> {
                       style: const TextStyle(fontSize: 24),
                     )
                   : layer.runtimeType == PaintLayer
-                      ? SizedBox(
-                          height: 40,
-                          child: FittedBox(
-                            alignment: Alignment.centerLeft,
-                            child: CustomPaint(
-                              size: (layer as PaintLayer).size,
-                              willChange: true,
-                              isComplex: layer.item.mode == PaintMode.freeStyle,
-                              painter: DrawPaintItem(
-                                item: layer.item,
-                                scale: layer.scale,
-                                enabledHitDetection: false,
-                                freeStyleHighPerformance: false,
-                              ),
+                      ? Builder(builder: (context) {
+                          var paintLayer = layer as PaintLayer;
+                          bool isCensorLayer =
+                              paintLayer.item.mode == PaintMode.pixelate ||
+                                  paintLayer.item.mode == PaintMode.blur;
+                          return SizedBox(
+                            height: 40,
+                            child: FittedBox(
+                              alignment: Alignment.centerLeft,
+                              child: isCensorLayer
+                                  ? const Icon(Icons.blur_circular)
+                                  : CustomPaint(
+                                      size: paintLayer.size,
+                                      willChange: true,
+                                      isComplex: layer.item.mode ==
+                                          PaintMode.freeStyle,
+                                      painter: DrawPaintItem(
+                                        item: layer.item,
+                                        scale: layer.scale,
+                                        enabledHitDetection: false,
+                                      ),
+                                    ),
                             ),
-                          ),
-                        )
+                          );
+                        })
                       : layer.runtimeType == WidgetLayer
                           ? SizedBox(
                               height: 40,

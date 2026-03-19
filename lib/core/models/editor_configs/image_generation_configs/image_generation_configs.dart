@@ -1,13 +1,14 @@
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:image/image.dart' show JpegChroma, PngFilter;
 
+import '/plugins/image/src/formats/jpeg/jpeg_chroma.dart';
+import '/plugins/image/src/formats/png/png_filter.dart';
 import 'output_formats.dart';
 import 'processor_configs.dart';
 
-export 'package:image/image.dart' show JpegChroma, PngFilter;
+export '/plugins/image/src/formats/jpeg/jpeg_chroma.dart';
+export '/plugins/image/src/formats/png/png_filter.dart';
 export 'output_formats.dart';
 export 'processor_configs.dart';
 
@@ -17,84 +18,87 @@ export 'processor_configs.dart';
 /// that affect how images are generated.
 class ImageGenerationConfigs {
   /// Creates a new instance of [ImageGenerationConfigs].
-  ///
-  /// - The [allowEmptyEditCompletion] parameter controls if empty edit
-  ///   completions are allowed.
-  /// - The [generateInsideSeparateThread] parameter controls if image
-  ///   generation occurs inside an isolate.
-  /// - The [generateImageInBackground] parameter controls if image generation
-  ///   runs in the background.
-  /// - The [captureOnlyDrawingBounds] parameter controls if only image
-  ///   bounds are generated.
-  /// - The [customPixelRatio] parameter set the pixel ratio of the image
-  ///   relative to the content.
-  /// - The [processorConfigs] parameter set the processor configs.
   const ImageGenerationConfigs({
-    this.captureOnlyBackgroundImageArea = true,
-    this.allowEmptyEditCompletion = true,
+    this.cropToImageBounds = true,
+    this.cropToDrawingBounds = true,
+    this.allowEmptyEditingCompletion = true,
+    this.enableIsolateGeneration = true,
+    this.enableBackgroundGeneration = !kIsWeb || !kDebugMode,
     this.enableUseOriginalBytes = true,
-    this.generateInsideSeparateThread = true,
-    this.generateImageInBackground = !kIsWeb || !kDebugMode,
-    this.captureOnlyDrawingBounds = true,
+    this.singleFrame = false,
+    this.captureImageByteFormat = ImageByteFormat.rawRgba,
     this.customPixelRatio,
+    this.jpegQuality = 100,
     this.pngLevel = 6,
     this.pngFilter = PngFilter.none,
-    this.singleFrame = false,
-    this.jpegQuality = 100,
     this.jpegChroma = JpegChroma.yuv444,
+    this.jpegBackgroundColor = const Color(0xFFFFFFFF),
     this.outputFormat = OutputFormat.jpg,
     this.processorConfigs = const ProcessorConfigs(),
     this.maxOutputSize = const Size(2000, 2000),
     this.maxThumbnailSize = const Size(100, 100),
-  })  : assert(jpegQuality > 0 && jpegQuality <= 100,
-            'jpegQuality must be between 1 and 100'),
-        assert(
-            pngLevel >= 0 && pngLevel <= 9, 'pngLevel must be between 0 and 9'),
-        assert(customPixelRatio == null || customPixelRatio > 0,
-            'customPixelRatio must be greater than 0');
+  }) : assert(
+         jpegQuality > 0 && jpegQuality <= 100,
+         'jpegQuality must be between 1 and 100',
+       ),
+       assert(
+         pngLevel >= 0 && pngLevel <= 9,
+         'pngLevel must be between 0 and 9',
+       ),
+       assert(
+         customPixelRatio == null || customPixelRatio > 0,
+         'customPixelRatio must be greater than 0',
+       ),
+       assert(
+         captureImageByteFormat != ImageByteFormat.png,
+         'ImageByteFormat.png is not supported. '
+         'Use rawRgba or rawStraightRgba instead.',
+       );
 
   /// Indicates if it should only capture the background image area and cut all
   /// stuff outside, such as when a layer overlaps the image.
   ///
   /// When set to `true`, this flag ensures that the capture process focuses
-  /// solely on the background image area, ignoring any other elements that
-  /// might be present.
+  /// on the image area and crop everything outside.
   ///
-  /// If set to `false`, the capture will include all elements within the image
-  /// area, not just the background.
+  /// If set to `false`, the capture will include all elements even when they
+  /// are outside of the image.
   ///
   /// **Note:** If you disable this flag, it may require more performance to
   /// generate the image, especially on high resolution images in a large
   /// screen, cuz the editor need to find the bounding box by itself.
   ///
   /// By default, this property is set to `true`.
-  final bool captureOnlyBackgroundImageArea;
+  final bool cropToImageBounds;
 
-  /// Determines whether to capture only the content within the boundaries of
-  /// the drawings when editing is complete.
+  /// Determines whether to crop the final image to the bounds of the drawing
+  /// area.
   ///
-  /// If set to `true`, editing completion will result in cropping all content
-  /// outside the image boundaries.
+  /// - If `true`, the output image will be cropped to include only the drawn
+  ///   content, removing any empty or surrounding areas.
+  /// - If `false`, the full image, including any blank space around the
+  ///   drawings, will be retained.
   ///
-  /// Setting this property to `true` is useful when you want to focus on the
-  /// image content and exclude any surrounding elements.
-  /// Setting this property to `false` is useful when you want to capture the
-  /// full content.
+  /// Enabling this is useful when you want to focus solely on the drawn
+  /// content.
+  /// Disabling it ensures the entire canvas, including unused space, is
+  /// preserved.
   ///
-  /// By default, this property is set to `true`.
-  final bool captureOnlyDrawingBounds;
+  /// This option has only an effect when `cropToImageBounds` is `false`.
+  ///
+  /// **Default:** `true`
+  final bool cropToDrawingBounds;
 
-  /// Captures the final image after each change, such as adding a layer.
-  /// This significantly speeds up the editor because in most cases, the image
-  /// is already created when the user presses "done".
+  /// Captures the image after each modification, such as adding a layer.
+  /// This improves editor performance by ensuring the image is pre-generated
+  /// in most cases before the user presses "Done."
   ///
-  /// On Dart native platforms (all platforms except web), this runs on an
-  /// isolate thread.
-  /// On Dart web, it runs on a web worker.
+  /// - On Dart native platforms (all except web), this runs in an isolate
+  /// thread.
+  /// - On Dart web, it runs in a web worker.
   ///
-  /// This option is enabled by default unless we are in debug mode or the
-  /// platform is web.
-  final bool generateImageInBackground;
+  /// **Default:** `!kIsWeb || !kDebugMode`
+  final bool enableBackgroundGeneration;
 
   /// Allows image generation to run in an isolated thread, preventing any
   /// impact on the UI.
@@ -103,18 +107,18 @@ class ImageGenerationConfigs {
   /// Enabling this feature will significantly speed up the image creation
   /// process.
   ///
-  /// If this is disabled, `captureImagesInBackground` will also be disabled.
-  final bool generateInsideSeparateThread;
+  /// If this is disabled, `enableBackgroundGeneration` will also be disabled.
+  final bool enableIsolateGeneration;
 
   /// Whether the callback `onImageEditingComplete` call with empty editing.
   ///
-  /// The default value is true.
+  /// The default value is `true`.
   ///
   /// This option only affects the main editor and does not work in standalone
   /// editors.
   ///
-  /// <img src="https://github.com/hm21/pro_image_editor/blob/stable/assets/schema_callbacks.jpeg?raw=true" alt="Schema" height="500px" />
-  final bool allowEmptyEditCompletion;
+  /// <img src="https://github.com/hm21/pro_image_editor/blob/stable/assets/schema_capture_image.jpeg?raw=true" alt="Schema" height="500px" />
+  final bool allowEmptyEditingCompletion;
 
   /// When disabled, this flag allows the editor to re-record the original
   /// image even if there are no changes made. This is useful when
@@ -125,6 +129,21 @@ class ImageGenerationConfigs {
   ///
   /// **Default**: `true`
   final bool enableUseOriginalBytes;
+
+  /// The byte format used when capturing images for processing.
+  ///
+  /// Available options:
+  /// - `ImageByteFormat.rawStraightRgba` (default): Non-premultiplied alpha.
+  ///   Prevents black border artifacts around transparent edges. Recommended
+  ///   for PNG output or any format that preserves transparency.
+  /// - `ImageByteFormat.rawRgba`: Premultiplied alpha. May be slightly faster
+  ///   but can cause dark fringing around semi-transparent edges.
+  /// - `ImageByteFormat.png`: Encodes directly to PNG format.
+  /// - `ImageByteFormat.rawExtendedRgba128`: Extended range RGBA.
+  /// - `ImageByteFormat.rawUnmodified`: Platform-specific unmodified format.
+  ///
+  /// **Default**: `ImageByteFormat.rawStraightRgba`
+  final ImageByteFormat captureImageByteFormat;
 
   /// The pixel ratio of the image relative to the content.
   ///
@@ -162,6 +181,11 @@ class ImageGenerationConfigs {
   /// quality.
   final int jpegQuality;
 
+  /// The background color used when generating JPEG images.
+  /// This color is applied to areas of the image that are transparent,
+  /// as JPEG format does not support transparency.
+  final Color jpegBackgroundColor;
+
   /// The maximum output size for the image. It will maintain the image's aspect
   /// ratio but will fit within the specified constraints, similar to
   /// `BoxFit.contain`.
@@ -189,13 +213,13 @@ class ImageGenerationConfigs {
   /// [ImageGenerationConfigs] with some properties updated while keeping the
   /// others unchanged.
   ImageGenerationConfigs copyWith({
-    bool? captureOnlyBackgroundImageArea,
-    bool? allowEmptyEditCompletion,
+    bool? cropToImageBounds,
+    bool? cropToDrawingBounds,
+    bool? enableBackgroundGeneration,
+    bool? enableIsolateGeneration,
+    bool? allowEmptyEditingCompletion,
     bool? enableUseOriginalBytes,
-    bool? generateInsideSeparateThread,
-    bool? generateImageInBackground,
-    bool? captureOnlyDrawingBounds,
-    bool? awaitLoadingDialogContext,
+    ImageByteFormat? captureImageByteFormat,
     double? customPixelRatio,
     ProcessorConfigs? processorConfigs,
     OutputFormat? outputFormat,
@@ -203,23 +227,24 @@ class ImageGenerationConfigs {
     int? pngLevel,
     PngFilter? pngFilter,
     int? jpegQuality,
+    Color? jpegBackgroundColor,
     Size? maxOutputSize,
     Size? maxThumbnailSize,
     JpegChroma? jpegChroma,
   }) {
     return ImageGenerationConfigs(
-      captureOnlyBackgroundImageArea:
-          captureOnlyBackgroundImageArea ?? this.captureOnlyBackgroundImageArea,
-      allowEmptyEditCompletion:
-          allowEmptyEditCompletion ?? this.allowEmptyEditCompletion,
+      cropToImageBounds: cropToImageBounds ?? this.cropToImageBounds,
+      cropToDrawingBounds: cropToDrawingBounds ?? this.cropToDrawingBounds,
+      enableBackgroundGeneration:
+          enableBackgroundGeneration ?? this.enableBackgroundGeneration,
+      enableIsolateGeneration:
+          enableIsolateGeneration ?? this.enableIsolateGeneration,
+      allowEmptyEditingCompletion:
+          allowEmptyEditingCompletion ?? this.allowEmptyEditingCompletion,
       enableUseOriginalBytes:
           enableUseOriginalBytes ?? this.enableUseOriginalBytes,
-      generateInsideSeparateThread:
-          generateInsideSeparateThread ?? this.generateInsideSeparateThread,
-      generateImageInBackground:
-          generateImageInBackground ?? this.generateImageInBackground,
-      captureOnlyDrawingBounds:
-          captureOnlyDrawingBounds ?? this.captureOnlyDrawingBounds,
+      captureImageByteFormat:
+          captureImageByteFormat ?? this.captureImageByteFormat,
       customPixelRatio: customPixelRatio ?? this.customPixelRatio,
       processorConfigs: processorConfigs ?? this.processorConfigs,
       outputFormat: outputFormat ?? this.outputFormat,
@@ -227,6 +252,7 @@ class ImageGenerationConfigs {
       pngLevel: pngLevel ?? this.pngLevel,
       pngFilter: pngFilter ?? this.pngFilter,
       jpegQuality: jpegQuality ?? this.jpegQuality,
+      jpegBackgroundColor: jpegBackgroundColor ?? this.jpegBackgroundColor,
       maxOutputSize: maxOutputSize ?? this.maxOutputSize,
       maxThumbnailSize: maxThumbnailSize ?? this.maxThumbnailSize,
       jpegChroma: jpegChroma ?? this.jpegChroma,

@@ -9,7 +9,7 @@ import 'package:network_image_mock/network_image_mock.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_image_editor/shared/widgets/auto_image.dart';
 
-import '../../fake/fake_image.dart';
+import '../../mock/mock_image.dart';
 import 'auto_image_test.mocks.dart';
 
 @GenerateNiceMocks([MockSpec<EditorImage>()])
@@ -19,13 +19,10 @@ void main() {
   group('AutoImage Widget Tests', () {
     testWidgets('displays image from memory', (WidgetTester tester) async {
       when(mockEditorImage.type).thenReturn(EditorImageType.memory);
-      when(mockEditorImage.byteArray).thenReturn(fakeMemoryImage);
+      when(mockEditorImage.byteArray).thenReturn(mockMemoryImage);
 
       await tester.pumpWidget(
-        AutoImage(
-          mockEditorImage,
-          configs: const ProImageEditorConfigs(),
-        ),
+        AutoImage(mockEditorImage, configs: const ProImageEditorConfigs()),
       );
 
       expect(find.byType(Image), findsOneWidget);
@@ -34,13 +31,10 @@ void main() {
     testWidgets('displays image from network', (WidgetTester tester) async {
       await mockNetworkImagesFor(() async {
         when(mockEditorImage.type).thenReturn(EditorImageType.network);
-        when(mockEditorImage.networkUrl).thenReturn(fakeNetworkImage);
+        when(mockEditorImage.networkUrl).thenReturn(mockNetworkImage);
 
         await tester.pumpWidget(
-          AutoImage(
-            mockEditorImage,
-            configs: const ProImageEditorConfigs(),
-          ),
+          AutoImage(mockEditorImage, configs: const ProImageEditorConfigs()),
         );
 
         expect(find.byType(Image), findsOneWidget);

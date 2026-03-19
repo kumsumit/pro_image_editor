@@ -1,8 +1,8 @@
 // Flutter imports:
 import 'package:flutter/widgets.dart';
 
-// Project imports:
-import '/features/paint_editor/enums/paint_editor_enum.dart';
+import '/features/paint_editor/paint_editor.dart';
+import '../layers/paint_layer.dart';
 import 'standalone_editor_callbacks.dart';
 
 /// A class representing callbacks for the paint editor.
@@ -17,7 +17,11 @@ class PaintEditorCallbacks extends StandaloneEditorCallbacks {
     this.onEditorZoomScaleStart,
     this.onEditorZoomScaleUpdate,
     this.onEditorZoomScaleEnd,
+    this.onEditorZoomMatrix4Change,
     this.onOpacityChange,
+    this.onDoubleTap,
+    this.onEditLayer,
+    this.onTap,
     super.onInit,
     super.onAfterViewInit,
     super.onUndo,
@@ -34,7 +38,7 @@ class PaintEditorCallbacks extends StandaloneEditorCallbacks {
 
   /// A callback function that is triggered when the paint mode changes.
   ///
-  /// The [ValueChanged<PaintModeE>] parameter provides the new paint mode.
+  /// The [ValueChanged<PaintMode>] parameter provides the new paint mode.
   final ValueChanged<PaintMode>? onPaintModeChanged;
 
   /// A callback function that is triggered when the fill mode is toggled.
@@ -52,6 +56,99 @@ class PaintEditorCallbacks extends StandaloneEditorCallbacks {
 
   /// A callback function that is triggered when the color is changed.
   final Function()? onColorChanged;
+
+  /// A callback function that is triggered when the user `doubleTap`
+  /// on the body.
+  final Function()? onDoubleTap;
+
+  /// Callback function invoked when a paint layer is being edited.
+  ///
+  /// This function is called when the user attempts to edit an existing paint
+  /// layer in the paint editor. It receives the current [PaintLayer] that is
+  /// being edited and should return a [Future] that completes with the
+  /// modified [PaintLayer], or `null` if the edit operation was
+  /// cancelled or failed.
+  ///
+  /// Parameters:
+  /// - [layer]: The paint layer that is being edited
+  ///
+  /// Returns:
+  /// A [Future] that resolves to the updated [PaintLayer] if the edit was
+  /// successful, or `null` if the edit was cancelled or unsuccessful.
+  ///
+  /// **Example:**
+  /// ```dart
+  ///  callbacks: ProImageEditorCallbacks(
+  ///  paintEditorCallbacks: PaintEditorCallbacks(
+  ///    onEditLayer: (layer) async {
+  ///      return await Navigator.push<PaintLayer>(
+  ///        context,
+  ///        MaterialPageRoute(
+  ///          builder: (context) {
+  ///            return Scaffold(
+  ///              appBar: AppBar(title: const Text('Layer-Editor')),
+  ///              body: ListView(
+  ///                children: [
+  ///                  Container(
+  ///                    clipBehavior: Clip.hardEdge,
+  ///                    decoration: BoxDecoration(
+  ///                      color: Colors.black,
+  ///                      borderRadius: BorderRadius.circular(10),
+  ///                    ),
+  ///                    padding: const EdgeInsets.all(7),
+  ///                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+  ///                    height: 140,
+  ///                    child: FittedBox(
+  ///                      child: SizedBox.fromSize(
+  ///                        size: layer.rawSize,
+  ///                        child: LayerWidgetPaintItem(
+  ///                          willChange: true,
+  ///                          layer: layer,
+  ///                          paintEditorConfigs: const PaintEditorConfigs(),
+  ///                        ),
+  ///                      ),
+  ///                    ),
+  ///                  ),
+  ///                  FilledButton(
+  ///                    onPressed: () {
+  ///                      Color randomColor() {
+  ///                        final Random random = Random();
+  ///                        return Color.fromARGB(
+  ///                          255,
+  ///                          random.nextInt(256),
+  ///                          random.nextInt(256),
+  ///                          random.nextInt(256),
+  ///                        );
+  ///                      }
+  ///
+  ///                      Navigator.pop(
+  ///                        context,
+  ///                        layer.copyWith(
+  ///                          item: layer.item.copyWith(color: randomColor()),
+  ///                        ),
+  ///                      );
+  ///                    },
+  ///                    child: const Text('Toggle Color'),
+  ///                  ),
+  ///                ],
+  ///              ),
+  ///            );
+  ///          },
+  ///        ),
+  ///      );
+  ///    },
+  ///  ),
+  ///),
+  /// ```
+  final Future<PaintLayer?> Function(PaintLayer layer)? onEditLayer;
+
+  /// Callback function that is triggered when a tap down event occurs on the
+  /// canvas.
+  ///
+  /// The [details] parameter provides information about the position and
+  /// characteristics of the tap event. This callback can be used to handle
+  /// custom tap interactions within the paint editor.
+  final Function(PaintEditorState editor, TapDownDetails details)? onTap;
 
   /// Called when the user ends a pan or scale gesture on the widget.
   ///
@@ -97,6 +194,9 @@ class PaintEditorCallbacks extends StandaloneEditorCallbacks {
   /// interaction.
   ///  * [onEditorZoomScaleEnd], which handles the end of the same interaction.
   final GestureScaleStartCallback? onEditorZoomScaleStart;
+
+  /// Called when the editor zoom matrix changes.
+  final Function(Matrix4 value)? onEditorZoomMatrix4Change;
 
   /// Called when the user updates a pan or scale gesture on the editor.
   ///
@@ -171,5 +271,55 @@ class PaintEditorCallbacks extends StandaloneEditorCallbacks {
   void handleColorChanged() {
     onColorChanged?.call();
     handleUpdateUI();
+  }
+
+  /// Creates a copy with modified editor callbacks.
+  PaintEditorCallbacks copyWith({
+    ValueChanged<double>? onLineWidthChanged,
+    ValueChanged<PaintMode>? onPaintModeChanged,
+    ValueChanged<bool>? onToggleFill,
+    ValueChanged<double>? onOpacityChange,
+    Function()? onDrawingDone,
+    Function()? onColorChanged,
+    GestureScaleEndCallback? onEditorZoomScaleEnd,
+    GestureScaleStartCallback? onEditorZoomScaleStart,
+    Function(Matrix4 value)? onEditorZoomMatrix4Change,
+    GestureScaleUpdateCallback? onEditorZoomScaleUpdate,
+    Function()? onDoubleTap,
+    Function(PaintEditorState editor, TapDownDetails details)? onTap,
+    Function()? onInit,
+    Function()? onAfterViewInit,
+    Function()? onUpdateUI,
+    Function()? onDone,
+    Function()? onRedo,
+    Function()? onUndo,
+    Function()? onCloseEditor,
+    Future<PaintLayer?> Function(PaintLayer layer)? onEditLayer,
+  }) {
+    return PaintEditorCallbacks(
+      onLineWidthChanged: onLineWidthChanged ?? this.onLineWidthChanged,
+      onPaintModeChanged: onPaintModeChanged ?? this.onPaintModeChanged,
+      onToggleFill: onToggleFill ?? this.onToggleFill,
+      onOpacityChange: onOpacityChange ?? this.onOpacityChange,
+      onDrawingDone: onDrawingDone ?? this.onDrawingDone,
+      onColorChanged: onColorChanged ?? this.onColorChanged,
+      onEditorZoomScaleEnd: onEditorZoomScaleEnd ?? this.onEditorZoomScaleEnd,
+      onEditorZoomScaleStart:
+          onEditorZoomScaleStart ?? this.onEditorZoomScaleStart,
+      onEditorZoomMatrix4Change:
+          onEditorZoomMatrix4Change ?? this.onEditorZoomMatrix4Change,
+      onEditorZoomScaleUpdate:
+          onEditorZoomScaleUpdate ?? this.onEditorZoomScaleUpdate,
+      onDoubleTap: onDoubleTap ?? this.onDoubleTap,
+      onTap: onTap ?? this.onTap,
+      onInit: onInit ?? this.onInit,
+      onAfterViewInit: onAfterViewInit ?? this.onAfterViewInit,
+      onUpdateUI: onUpdateUI ?? this.onUpdateUI,
+      onDone: onDone ?? this.onDone,
+      onRedo: onRedo ?? this.onRedo,
+      onUndo: onUndo ?? this.onUndo,
+      onCloseEditor: onCloseEditor ?? this.onCloseEditor,
+      onEditLayer: onEditLayer ?? this.onEditLayer,
+    );
   }
 }

@@ -34,10 +34,10 @@ class ScreenResizeDetector extends StatefulWidget {
   final Widget child;
 
   /// Callback to be invoked when the screen is resized and update is detected.
-  final Function(ResizeEvent)? onResizeUpdate;
+  final Function(ResizeEvent event)? onResizeUpdate;
 
   /// Callback to be invoked when the screen resize ends.
-  final Function(ResizeEvent)? onResizeEnd;
+  final Function(ResizeEvent event)? onResizeEnd;
 
   /// Whether to ignore the safe area padding when detecting screen size
   /// changes.
@@ -74,35 +74,41 @@ class _ScreenResizeDetectorState extends State<ScreenResizeDetector> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      Size newSize = Size(
-        constraints.biggest.width - _safeArea.horizontal,
-        constraints.biggest.height - _safeArea.vertical,
-      );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        Size newSize = Size(
+          constraints.biggest.width - _safeArea.horizontal,
+          constraints.biggest.height - _safeArea.vertical,
+        );
 
-      if (newSize != _lastContentSize) {
-        widget.onResizeUpdate?.call(ResizeEvent(
-          oldContentSize: _lastContentSize,
-          newContentSize: newSize,
-        ));
-        _lastContentSize = newSize;
+        if (newSize != _lastContentSize) {
+          widget.onResizeUpdate?.call(
+            ResizeEvent(
+              oldContentSize: _lastContentSize,
+              newContentSize: newSize,
+            ),
+          );
+          _lastContentSize = newSize;
 
-        if (!_activeResizing) {
-          _startContentSize = newSize;
-          _activeResizing = true;
+          if (!_activeResizing) {
+            _startContentSize = newSize;
+            _activeResizing = true;
+          }
+
+          _resizeDebounce$(() {
+            widget.onResizeEnd?.call(
+              ResizeEvent(
+                oldContentSize: _startContentSize,
+                newContentSize: newSize,
+              ),
+            );
+            _activeResizing = false;
+          });
         }
 
-        _resizeDebounce$(() {
-          widget.onResizeEnd?.call(ResizeEvent(
-            oldContentSize: _startContentSize,
-            newContentSize: newSize,
-          ));
-          _activeResizing = false;
-        });
-      }
-
-      return widget.child;
-    });
+        return widget.child;
+      },
+    );
   }
 }
 

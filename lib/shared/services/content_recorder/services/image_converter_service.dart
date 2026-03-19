@@ -65,7 +65,7 @@ class ImageConverterService {
   }) async {
     format ??= configs.outputFormat;
 
-    if (configs.generateInsideSeparateThread) {
+    if (configs.enableIsolateGeneration) {
       try {
         /// For the case multithreading isn't supported we fall back to the
         /// main thread.
@@ -74,11 +74,7 @@ class ImageConverterService {
         }
 
         return await threadManager.send(
-          await _generateSendImageData(
-            id: id,
-            image: image,
-            format: format,
-          ),
+          await _generateSendImageData(id: id, image: image, format: format),
         );
       } catch (e) {
         // Fallback to the main thread.
@@ -99,17 +95,24 @@ class ImageConverterService {
   ///
   /// Returns a `Uint8List` containing the converted image data or `null`
   /// if the conversion fails.
-  Future<Uint8List?> _convertOnMainThread({
-    required ui.Image image,
-  }) async {
-    if (configs.captureOnlyDrawingBounds) {
+  Future<Uint8List?> _convertOnMainThread({required ui.Image image}) async {
+    if (configs.cropToDrawingBounds) {
       image = await dartUiRemoveTransparentImgAreas(image) ?? image;
     }
     return await encodeImageFromThreadRequest(
-      ThreadRequest.fromConfigs(
+      ThreadRequest(
         id: 'id',
-        image: await convertFlutterUiToImage(image),
-        configs: configs,
+        image: await convertFlutterUiToImage(
+          image,
+          imageByteFormat: configs.captureImageByteFormat,
+        ),
+        outputFormat: configs.outputFormat,
+        singleFrame: configs.singleFrame,
+        jpegQuality: configs.jpegQuality,
+        jpegBackgroundColor: configs.jpegBackgroundColor.toARGB32(),
+        jpegChroma: configs.jpegChroma,
+        pngFilter: configs.pngFilter,
+        pngLevel: configs.pngLevel,
       ),
     );
   }
@@ -132,14 +135,18 @@ class ImageConverterService {
   }) async {
     return ImageConvertThreadRequest(
       id: id,
-      generateOnlyImageBounds: configs.captureOnlyDrawingBounds,
+      generateOnlyImageBounds: configs.cropToDrawingBounds,
       outputFormat: format,
       jpegChroma: configs.jpegChroma,
       jpegQuality: configs.jpegQuality,
+      jpegBackgroundColor: configs.jpegBackgroundColor.toARGB32(),
       pngFilter: configs.pngFilter,
       pngLevel: configs.pngLevel,
       singleFrame: configs.singleFrame,
-      image: await convertFlutterUiToImage(image),
+      image: await convertFlutterUiToImage(
+        image,
+        imageByteFormat: configs.captureImageByteFormat,
+      ),
     );
   }
 }

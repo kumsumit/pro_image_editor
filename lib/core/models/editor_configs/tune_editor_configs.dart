@@ -2,6 +2,7 @@ import '/features/tune_editor/models/tune_adjustment_item.dart';
 import '../custom_widgets/tune_editor_widgets.dart';
 import '../icons/tune_editor_icons.dart';
 import '../styles/tune_editor_style.dart';
+import 'utils/base_sub_editor_configs.dart';
 import 'utils/editor_safe_area.dart';
 
 export '../custom_widgets/tune_editor_widgets.dart';
@@ -13,16 +14,10 @@ export '../styles/tune_editor_style.dart';
 /// This class defines various configurations such as enabling the editor,
 /// showing layers, providing tune adjustment options, and defining the
 /// editor's safe area.
-class TuneEditorConfigs {
+class TuneEditorConfigs implements BaseSubEditorConfigs {
   /// Creates a [TuneEditorConfigs] instance with the specified parameters.
-  ///
-  /// - [enabled] determines whether the tune editor is enabled or not.
-  /// - [showLayers] specifies if the layers are visible in the editor.
-  /// - [tuneAdjustmentOptions] provides a list of available tune adjustment
-  ///   options that the user can configure.
-  /// - [safeArea] defines the safe area configuration for the editor interface.
   const TuneEditorConfigs({
-    this.enabled = true,
+    this.enableGesturePop = true,
     this.showLayers = true,
     this.tuneAdjustmentOptions,
     this.safeArea = const EditorSafeArea(),
@@ -31,10 +26,9 @@ class TuneEditorConfigs {
     this.widgets = const TuneEditorWidgets(),
   });
 
-  /// Indicates whether the tune editor is enabled.
-  ///
-  /// When this is `false`, the tune editor features will be disabled.
-  final bool enabled;
+  /// {@macro enableGesturePop}
+  @override
+  final bool enableGesturePop;
 
   /// Specifies whether the layers should be visible in the editor.
   ///
@@ -63,17 +57,8 @@ class TuneEditorConfigs {
 
   /// Creates a copy of this [TuneEditorConfigs] object with the given fields
   /// replaced with new values.
-  ///
-  /// The [copyWith] method allows you to create a new instance of
-  /// [TuneEditorConfigs] with some properties updated while keeping the
-  /// others unchanged.
-  ///
-  /// - [enabled] updates whether the tune editor is enabled.
-  /// - [showLayers] updates the visibility of layers in the editor.
-  /// - [safeArea] updates the safe area configuration.
-  /// - [tuneAdjustmentOptions] updates the available tune adjustment options.
   TuneEditorConfigs copyWith({
-    bool? enabled,
+    bool? enableGesturePop,
     bool? showLayers,
     EditorSafeArea? safeArea,
     List<TuneAdjustmentItem>? tuneAdjustmentOptions,
@@ -82,7 +67,7 @@ class TuneEditorConfigs {
     TuneEditorWidgets? widgets,
   }) {
     return TuneEditorConfigs(
-      enabled: enabled ?? this.enabled,
+      enableGesturePop: enableGesturePop ?? this.enableGesturePop,
       safeArea: safeArea ?? this.safeArea,
       showLayers: showLayers ?? this.showLayers,
       tuneAdjustmentOptions:

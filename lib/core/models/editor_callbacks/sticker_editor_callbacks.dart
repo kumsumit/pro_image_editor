@@ -29,7 +29,7 @@ class StickerEditorCallbacks extends StandaloneEditorCallbacks {
   /// - [editorState]: The current state of the image editor, providing access
   ///   to relevant editor properties and methods for modifying the editing
   ///   environment.
-  /// - [sticker]: The `StickerLayerData` instance representing the sticker
+  /// - [sticker]: The `WidgetLayer` instance representing the sticker
   ///   that was tapped. This includes the sticker's properties such as its
   ///   widget, position, rotation, scale, and more.
   /// - [index]: The index of the sticker in the list of active layers, which
@@ -49,15 +49,28 @@ class StickerEditorCallbacks extends StandaloneEditorCallbacks {
   ///   );
   /// },
   /// ```
-  final Function(
-    ProImageEditorState editorState,
-    WidgetLayer sticker,
-    int index,
-  )? onTapEditSticker;
+  final Function(ProImageEditorState editorState, WidgetLayer sticker)?
+  onTapEditSticker;
 
   /// A callback triggered each time the search value changes.
   ///
   /// This callback is activated exclusively when the editor mode is set to
   /// 'WhatsApp'.
   final Function(String value)? onSearchChanged;
+
+  /// Creates a copy with modified editor callbacks.
+  StickerEditorCallbacks copyWith({
+    Function(ProImageEditorState editorState, WidgetLayer sticker)?
+    onTapEditSticker,
+    Function(String value)? onSearchChanged,
+    Function()? onInit,
+    Function()? onAfterViewInit,
+  }) {
+    return StickerEditorCallbacks(
+      onInit: onInit ?? this.onInit,
+      onAfterViewInit: onAfterViewInit ?? this.onAfterViewInit,
+      onTapEditSticker: onTapEditSticker ?? this.onTapEditSticker,
+      onSearchChanged: onSearchChanged ?? this.onSearchChanged,
+    );
+  }
 }

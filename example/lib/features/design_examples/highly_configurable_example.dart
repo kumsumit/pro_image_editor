@@ -34,7 +34,10 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
       callbacks: ProImageEditorCallbacks(
         onImageEditingStarted: onImageEditingStarted,
         onImageEditingComplete: onImageEditingComplete,
-        onCloseEditor: onCloseEditor,
+        onCloseEditor: (editorMode) => onCloseEditor(editorMode: editorMode),
+        mainEditorCallbacks: MainEditorCallbacks(
+          helperLines: HelperLinesCallbacks(onLineHit: vibrateLineHit),
+        ),
       ),
       configs: ProImageEditorConfigs(
         designMode: platformDesignMode,
@@ -169,7 +172,6 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
           showVerticalLine: true,
           showHorizontalLine: true,
           showRotateLine: true,
-          hitVibration: true,
           style: HelperLineStyle(
             horizontalColor: Color.fromARGB(255, 15, 196, 60),
             verticalColor: Color.fromARGB(255, 15, 196, 60),
@@ -177,11 +179,21 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
           ),
         ),
         mainEditor: const MainEditorConfigs(
+          tools: [
+            SubEditorMode.paint,
+            SubEditorMode.text,
+            SubEditorMode.cropRotate,
+            SubEditorMode.tune,
+            SubEditorMode.filter,
+            SubEditorMode.blur,
+            SubEditorMode.emoji,
+            SubEditorMode.sticker,
+          ],
           style: MainEditorStyle(
-            // background: Color.fromARGB(255, 255, 169, 169),
-            // appBarColor: Color.fromARGB(255, 126, 14, 6),
-            // appBarBackground: Color.fromARGB(255, 255, 211, 77),
-            // bottomBarBackground: Colors.purple,
+            background: Color.fromARGB(255, 255, 169, 169),
+            appBarColor: Color.fromARGB(255, 126, 14, 6),
+            appBarBackground: Color.fromARGB(255, 255, 211, 77),
+            bottomBarBackground: Colors.purple,
             uiOverlayStyle: SystemUiOverlayStyle(
               statusBarColor: Color.fromARGB(66, 60, 65, 41),
               statusBarIconBrightness: Brightness.light,
@@ -201,17 +213,17 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
           ),
         ),
         paintEditor: const PaintEditorConfigs(
-          enabled: true,
-          hasOptionFreeStyle: true,
-          hasOptionArrow: true,
-          hasOptionLine: true,
-          hasOptionRect: true,
-          hasOptionCircle: true,
-          hasOptionDashLine: true,
-          canToggleFill: true,
-          canChangeLineWidth: true,
-          initialFill: true,
-          freeStyleHighPerformanceScaling: true,
+          tools: [
+            PaintMode.freeStyle,
+            PaintMode.arrow,
+            PaintMode.line,
+            PaintMode.rect,
+            PaintMode.circle,
+            PaintMode.dashLine,
+          ],
+          showToggleFillButton: true,
+          showLineWidthAdjustmentButton: true,
+          isInitiallyFilled: true,
           initialPaintMode: PaintMode.freeStyle,
           style: PaintEditorStyle(
             appBarColor: Color(0xFFE1E1E1),
@@ -238,9 +250,8 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
           ),
         ),
         textEditor: TextEditorConfigs(
-          enabled: true,
-          canToggleTextAlign: true,
-          canToggleBackgroundMode: true,
+          showTextAlignButton: true,
+          showBackgroundModeButton: true,
           initFontSize: 24.0,
           initialTextAlign: TextAlign.center,
           initialBackgroundColorMode: LayerBackgroundMode.background,
@@ -273,9 +284,12 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
           ],
         ),
         cropRotateEditor: const CropRotateEditorConfigs(
-          enabled: true,
-          canRotate: true,
-          canChangeAspectRatio: true,
+          tools: [
+            CropRotateTool.rotate,
+            CropRotateTool.flip,
+            CropRotateTool.aspectRatio,
+            CropRotateTool.reset,
+          ],
           initAspectRatio: 0.0,
           aspectRatios: [
             AspectRatioItem(text: 'Free', value: null),
@@ -310,7 +324,6 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
           ),
         ),
         tuneEditor: TuneEditorConfigs(
-          enabled: true,
           showLayers: true,
           tuneAdjustmentOptions: [
             const TuneAdjustmentItem(
@@ -417,7 +430,6 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
           ),
         ),
         filterEditor: FilterEditorConfigs(
-          enabled: true,
           filterList: presetFiltersList,
           style: const FilterEditorStyle(
             appBarBackground: Color.fromARGB(255, 82, 0, 82),
@@ -430,7 +442,6 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
           ),
         ),
         blurEditor: const BlurEditorConfigs(
-          enabled: true,
           maxBlur: 20.0,
           style: BlurEditorStyle(
             appBarBackgroundColor: Color.fromARGB(255, 56, 0, 0),
@@ -442,7 +453,6 @@ class _HighlyConfigurableExampleState extends State<HighlyConfigurableExample>
           ),
         ),
         emojiEditor: const EmojiEditorConfigs(
-          enabled: true,
           initScale: 2.0,
           checkPlatformCompatibility: true,
           style: EmojiEditorStyle(

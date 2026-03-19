@@ -60,7 +60,11 @@ class _FrostedGlassExampleState extends State<FrostedGlassExample>
         callbacks: ProImageEditorCallbacks(
             onImageEditingStarted: onImageEditingStarted,
             onImageEditingComplete: onImageEditingComplete,
-            onCloseEditor: onCloseEditor,
+            onCloseEditor: (editorMode) =>
+                onCloseEditor(editorMode: editorMode),
+            mainEditorCallbacks: MainEditorCallbacks(
+              helperLines: HelperLinesCallbacks(onLineHit: vibrateLineHit),
+            ),
             stickerEditorCallbacks: StickerEditorCallbacks(
               onSearchChanged: (value) {
                 /// Filter your stickers
@@ -73,6 +77,16 @@ class _FrostedGlassExampleState extends State<FrostedGlassExample>
               iconTheme:
                   Theme.of(context).iconTheme.copyWith(color: Colors.white)),
           mainEditor: MainEditorConfigs(
+            tools: [
+              SubEditorMode.paint,
+              SubEditorMode.text,
+              SubEditorMode.cropRotate,
+              SubEditorMode.tune,
+              SubEditorMode.filter,
+              SubEditorMode.blur,
+              SubEditorMode.emoji,
+              SubEditorMode.sticker,
+            ],
             widgets: MainEditorWidgets(
               closeWarningDialog: (editor) async {
                 if (!context.mounted) return false;
@@ -231,8 +245,7 @@ class _FrostedGlassExampleState extends State<FrostedGlassExample>
             ),
           ),
           stickerEditor: StickerEditorConfigs(
-            enabled: true,
-            buildStickers: (setLayer, scrollController) => DemoBuildStickers(
+            builder: (setLayer, scrollController) => DemoBuildStickers(
                 setLayer: setLayer, scrollController: scrollController),
           ),
           layerInteraction: const LayerInteractionConfigs(
@@ -258,7 +271,7 @@ class _FrostedGlassExampleState extends State<FrostedGlassExample>
     Stream<dynamic> rebuildStream,
   ) {
     return [
-      if (editor.selectedLayerIndex < 0)
+      if (!editor.isLayerBeingTransformed)
         ReactiveWidget(
           stream: rebuildStream,
           builder: (_) => FrostedGlassActionBar(

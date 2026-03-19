@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pro_image_editor/pro_image_editor.dart';
 
 import '/core/mixins/converted_configs.dart';
 import '/core/mixins/editor_configs_mixin.dart';
+import '/pro_image_editor.dart';
+import '/shared/widgets/editor_scrollbar.dart';
 import '../../grounded_design.dart';
 
 /// A widget that provides the paint toolbar for the ProImageEditor.
@@ -19,7 +20,6 @@ class GroundedPaintBar extends StatefulWidget with SimpleConfigsAccess {
   const GroundedPaintBar({
     super.key,
     required this.configs,
-    required this.foregroundColor,
     required this.callbacks,
     required this.editor,
     required this.i18nColor,
@@ -28,9 +28,6 @@ class GroundedPaintBar extends StatefulWidget with SimpleConfigsAccess {
 
   /// The editor state that holds paint-related information.
   final PaintEditorState editor;
-
-  /// The foregroundColor for the Icon.
-  final Color foregroundColor;
 
   @override
   final ProImageEditorConfigs configs;
@@ -54,13 +51,11 @@ class GroundedPaintBar extends StatefulWidget with SimpleConfigsAccess {
 class _GroundedPaintBarState extends State<GroundedPaintBar>
     with ImageEditorConvertedConfigs, SimpleConfigsAccessState {
   late final ScrollController _bottomBarScrollCtrl;
-  late final Color _foreGroundColorAccent;
 
   @override
   void initState() {
     super.initState();
     _bottomBarScrollCtrl = ScrollController();
-    _foreGroundColorAccent = widget.foregroundColor.withValues(alpha: 0.6);
   }
 
   @override
@@ -69,23 +64,20 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
     super.dispose();
   }
 
-  // Color get _foreGroundColor => paintEditorConfigs.style.appBarColor;
-  // Color get _foreGroundColorAccent => foreGroundColor.withValues(alpha: 0.6);
+  Color get _foreGroundColor => paintEditorConfigs.style.appBarColor;
+  Color get _foreGroundColorAccent => _foreGroundColor.withValues(alpha: 0.6);
 
   @override
   Widget build(BuildContext context) {
     return GroundedBottomWrapper(
       theme: configs.theme,
       children: (constraints) => [
-        Scrollbar(
+        EditorScrollbar(
           controller: _bottomBarScrollCtrl,
-          scrollbarOrientation: ScrollbarOrientation.top,
-          thickness: isDesktop ? null : 0,
           child: _buildFunctions(constraints),
         ),
         GroundedBottomBar(
           configs: configs,
-          foregroundColor: widget.foregroundColor,
           undo: widget.editor.undoAction,
           redo: widget.editor.redoAction,
           done: widget.editor.done,
@@ -144,34 +136,31 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
                   ),
                   _buildDivider(),
                 ],
-                ...List.generate(
-                  widget.editor.paintModes.length,
-                  (index) {
-                    PaintModeBottomBarItem item =
-                        widget.editor.paintModes[index];
-                    Color color = getColor(item.mode);
-                    return FadeInUp(
-                      duration: kGroundedFadeInDuration * 1.5,
-                      delay: kGroundedFadeInStaggerDelay * (index + 2),
-                      child: FlatIconTextButton(
-                        label: Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: 10.0,
-                            color: widget.editor.paintMode == item.mode
-                                ? paintEditorConfigs
-                                    .style.bottomBarActiveItemColor
-                                : _foreGroundColorAccent,
-                          ),
+                ...List.generate(widget.editor.tools.length, (index) {
+                  PaintModeBottomBarItem item = widget.editor.tools[index];
+                  Color color = getColor(item.mode);
+                  return FadeInUp(
+                    duration: kGroundedFadeInDuration * 1.5,
+                    delay: kGroundedFadeInStaggerDelay * (index + 2),
+                    child: FlatIconTextButton(
+                      label: Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 10.0,
+                          color: widget.editor.paintMode == item.mode
+                              ? paintEditorConfigs
+                                    .style
+                                    .bottomBarActiveItemColor
+                              : _foreGroundColorAccent,
                         ),
-                        icon: Icon(item.icon, color: color),
-                        onPressed: () {
-                          widget.editor.setMode(item.mode);
-                        },
                       ),
-                    );
-                  },
-                ),
+                      icon: Icon(item.icon, color: color),
+                      onPressed: () {
+                        widget.editor.setMode(item.mode);
+                      },
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -185,15 +174,9 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
       FlatIconTextButton(
         label: Text(
           widget.i18nColor,
-          style: TextStyle(
-            fontSize: 10.0,
-            color: _foreGroundColorAccent,
-          ),
+          style: TextStyle(fontSize: 10.0, color: _foreGroundColorAccent),
         ),
-        icon: Icon(
-          Icons.color_lens_outlined,
-          color: widget.foregroundColor,
-        ),
+        icon: Icon(Icons.color_lens_outlined, color: _foreGroundColor),
         onPressed: () {
           widget.showColorPicker(widget.editor.activeColor);
         },
@@ -201,14 +184,11 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
       FlatIconTextButton(
         label: Text(
           i18n.paintEditor.lineWidth,
-          style: TextStyle(
-            fontSize: 10.0,
-            color: _foreGroundColorAccent,
-          ),
+          style: TextStyle(fontSize: 10.0, color: _foreGroundColorAccent),
         ),
         icon: Icon(
           paintEditorConfigs.icons.lineWeight,
-          color: widget.foregroundColor,
+          color: _foreGroundColor,
         ),
         onPressed: () {
           widget.editor.openLinWidthBottomSheet();
@@ -217,14 +197,11 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
       FlatIconTextButton(
         label: Text(
           i18n.paintEditor.changeOpacity,
-          style: TextStyle(
-            fontSize: 10.0,
-            color: _foreGroundColorAccent,
-          ),
+          style: TextStyle(fontSize: 10.0, color: _foreGroundColorAccent),
         ),
         icon: Icon(
           paintEditorConfigs.icons.changeOpacity,
-          color: widget.foregroundColor,
+          color: _foreGroundColor,
         ),
         onPressed: () {
           widget.editor.openOpacityBottomSheet();
@@ -241,7 +218,8 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
             child: child,
           ),
         ),
-        child: widget.editor.paintMode == PaintMode.rect ||
+        child:
+            widget.editor.paintMode == PaintMode.rect ||
                 widget.editor.paintMode == PaintMode.circle
             ? Center(
                 child: FlatIconTextButton(
@@ -256,7 +234,7 @@ class _GroundedPaintBarState extends State<GroundedPaintBar>
                     widget.editor.fillBackground
                         ? paintEditorConfigs.icons.fill
                         : paintEditorConfigs.icons.noFill,
-                    color: widget.foregroundColor,
+                    color: _foreGroundColor,
                   ),
                   onPressed: () {
                     widget.editor.toggleFill();

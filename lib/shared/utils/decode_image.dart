@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 // Project imports:
-import '/features/crop_rotate_editor/models/transform_factors.dart';
+import '/features/crop_rotate_editor/models/transform_configs.dart';
 
 /// Decode the image being edited.
 Future<ImageInfos> decodeImageInfos({
@@ -18,34 +18,41 @@ Future<ImageInfos> decodeImageInfos({
   );
 
   bool rotated = configs?.is90DegRotated == true;
-  int w = decodedImage.width;
-  int h = decodedImage.height;
+  int width = decodedImage.width;
+  int height = decodedImage.height;
 
-  if (configs != null && configs.isNotEmpty) {
-    w = w ~/ configs.scaleUser;
-    h = h ~/ configs.scaleUser;
+  double calculatePixelRatio(num width, num height) {
+    bool fitToHeight = screenSize.aspectRatio > (width / height);
+    double widthRatio = width / screenSize.width;
+    double heightRatio = height / screenSize.height;
+    return fitToHeight ? heightRatio : widthRatio;
   }
+
+  // Calculate the pixel ratio before scaling and rotation
+  double originalPixelRatio = calculatePixelRatio(width, height);
 
   /// If the image is rotated we also flip the width/ height
   if (rotated) {
-    int hX = h;
-    h = w;
-    w = hX;
+    int hX = height;
+    height = width;
+    width = hX;
   }
 
-  double widthRatio = w.toDouble() / screenSize.width;
-  double heightRatio = h.toDouble() / screenSize.height;
+  if (configs != null && configs.isNotEmpty) {
+    width ~/= configs.scaleUser;
+    height ~/= configs.scaleUser;
+  }
 
-  bool imageFitToHeight =
-      screenSize.aspectRatio > Size(w.toDouble(), h.toDouble()).aspectRatio;
-
-  double pixelRatio = imageFitToHeight ? heightRatio : widthRatio;
+  // Calculate final pixel ratio after scaling
+  double pixelRatio = calculatePixelRatio(width, height);
 
   Size renderedSize = rawSize / pixelRatio;
+  Size originalRenderedSize = rawSize / originalPixelRatio;
 
   return ImageInfos(
     rawSize: rawSize,
     renderedSize: renderedSize,
+    originalRenderedSize: originalRenderedSize,
     cropRectSize: configs != null && configs.isNotEmpty
         ? configs.cropRect.size
         : renderedSize,
@@ -60,6 +67,7 @@ class ImageInfos {
   const ImageInfos({
     required this.rawSize,
     required this.renderedSize,
+    required this.originalRenderedSize,
     required this.cropRectSize,
     required this.pixelRatio,
     required this.isRotated,
@@ -70,6 +78,9 @@ class ImageInfos {
 
   /// The size of the image after rendering.
   final Size renderedSize;
+
+  /// The size of the image after rendering without any transformations.
+  final Size originalRenderedSize;
 
   /// The size of the cropping rectangle.
   final Size cropRectSize;
@@ -85,6 +96,7 @@ class ImageInfos {
   ImageInfos copyWith({
     Size? rawSize,
     Size? renderedSize,
+    Size? originalRenderedSize,
     Size? cropRectSize,
     double? pixelRatio,
     bool? isRotated,
@@ -92,9 +104,31 @@ class ImageInfos {
     return ImageInfos(
       rawSize: rawSize ?? this.rawSize,
       renderedSize: renderedSize ?? this.renderedSize,
+      originalRenderedSize: originalRenderedSize ?? this.originalRenderedSize,
       cropRectSize: cropRectSize ?? this.cropRectSize,
       pixelRatio: pixelRatio ?? this.pixelRatio,
       isRotated: isRotated ?? this.isRotated,
     );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is ImageInfos &&
+        other.rawSize == rawSize &&
+        other.renderedSize == renderedSize &&
+        other.cropRectSize == cropRectSize &&
+        other.pixelRatio == pixelRatio &&
+        other.isRotated == isRotated;
+  }
+
+  @override
+  int get hashCode {
+    return rawSize.hashCode ^
+        renderedSize.hashCode ^
+        cropRectSize.hashCode ^
+        pixelRatio.hashCode ^
+        isRotated.hashCode;
   }
 }

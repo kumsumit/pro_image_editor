@@ -42,14 +42,20 @@ class _ZoomExampleState extends State<ZoomExample>
   @override
   Widget build(BuildContext context) {
     if (!isPreCached) return const PrepareImageWidget();
+
     return ProImageEditor.asset(
-      gradientBackground: true,
       kImageEditorExampleAssetPath,
       key: editorKey,
       callbacks: ProImageEditorCallbacks(
         onImageEditingStarted: onImageEditingStarted,
         onImageEditingComplete: onImageEditingComplete,
-        onCloseEditor: () => onCloseEditor(enablePop: !isDesktopMode(context)),
+        onCloseEditor: (editorMode) => onCloseEditor(
+          editorMode: editorMode,
+          enablePop: !isDesktopMode(context),
+        ),
+        mainEditorCallbacks: MainEditorCallbacks(
+          helperLines: HelperLinesCallbacks(onLineHit: vibrateLineHit),
+        ),
       ),
       configs: ProImageEditorConfigs(
         designMode: platformDesignMode,
@@ -65,7 +71,7 @@ class _ZoomExampleState extends State<ZoomExample>
                   ReactiveWidget(
                     stream: rebuildStream,
                     builder: (_) =>
-                        editor.selectedLayerIndex >= 0 || editor.isSubEditorOpen
+                        editor.isLayerBeingTransformed || editor.isSubEditorOpen
                             ? const SizedBox.shrink()
                             : Positioned(
                                 bottom: 20,
@@ -78,11 +84,13 @@ class _ZoomExampleState extends State<ZoomExample>
                                       bottomRight: Radius.circular(100),
                                     ),
                                   ),
-                                  child: IconButton(
-                                    onPressed: editor.resetZoom,
-                                    icon: const Icon(
-                                      Icons.zoom_out_map_rounded,
-                                      color: Colors.white,
+                                  child: GestureInterceptor(
+                                    child: IconButton(
+                                      onPressed: editor.resetZoom,
+                                      icon: const Icon(
+                                        Icons.zoom_out_map_rounded,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),

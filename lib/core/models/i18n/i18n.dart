@@ -1,17 +1,20 @@
 // Project imports:
+import 'i18n_audio_editor.dart';
 import 'i18n_blur_editor.dart';
+import 'i18n_clips_editor.dart';
 import 'i18n_crop_rotate_editor.dart';
 import 'i18n_emoji_editor.dart';
 import 'i18n_filter_editor.dart';
 import 'i18n_layer_interaction.dart';
 import 'i18n_paint_editor.dart';
-import 'i18n_size_editor.dart';
 import 'i18n_sticker_editor.dart';
 import 'i18n_text_editor.dart';
 import 'i18n_tune_editor.dart';
 import 'i18n_various.dart';
 
+export 'i18n_audio_editor.dart';
 export 'i18n_blur_editor.dart';
+export 'i18n_clips_editor.dart';
 export 'i18n_crop_rotate_editor.dart';
 export 'i18n_emoji_editor.dart';
 export 'i18n_filter_editor.dart';
@@ -143,7 +146,6 @@ class I18n {
   /// ```
   const I18n({
     this.layerInteraction = const I18nLayerInteraction(),
-    this.sizeEditor = const I18nSizeEditor(),
     this.paintEditor = const I18nPaintEditor(),
     this.textEditor = const I18nTextEditor(),
     this.cropRotateEditor = const I18nCropRotateEditor(),
@@ -152,6 +154,8 @@ class I18n {
     this.blurEditor = const I18nBlurEditor(),
     this.emojiEditor = const I18nEmojiEditor(),
     this.stickerEditor = const I18nStickerEditor(),
+    this.audioEditor = const I18nAudioEditor(),
+    this.clipsEditor = const I18nClipsEditor(),
     this.various = const I18nVarious(),
     this.importStateHistoryMsg = 'Initialize Editor',
     this.cancel = 'Cancel',
@@ -161,9 +165,6 @@ class I18n {
     this.remove = 'Remove',
     this.doneLoadingMsg = 'Changes are being applied',
   });
-
-  /// Translations and messages specific to the paint editor.
-  final I18nSizeEditor sizeEditor;
 
   /// Translations and messages specific to the paint editor.
   final I18nPaintEditor paintEditor;
@@ -195,6 +196,12 @@ class I18n {
   /// Translations and messages specific to the crop and rotate editor.
   final I18nCropRotateEditor cropRotateEditor;
 
+  /// Translations and messages specific to the audio editor.
+  final I18nAudioEditor audioEditor;
+
+  /// Translations and messages specific to the video clips editor.
+  final I18nClipsEditor clipsEditor;
+
   /// Message displayed while changes are being applied.
   final String doneLoadingMsg;
 
@@ -224,7 +231,6 @@ class I18n {
   /// [I18n] with some properties updated while keeping the
   /// others unchanged.
   I18n copyWith({
-    I18nSizeEditor? sizeEditor,
     I18nPaintEditor? paintEditor,
     I18nVarious? various,
     I18nLayerInteraction? layerInteraction,
@@ -235,6 +241,8 @@ class I18n {
     I18nEmojiEditor? emojiEditor,
     I18nStickerEditor? stickerEditor,
     I18nCropRotateEditor? cropRotateEditor,
+    I18nAudioEditor? audioEditor,
+    I18nClipsEditor? clipsEditor,
     String? doneLoadingMsg,
     String? importStateHistoryMsg,
     String? cancel,
@@ -244,7 +252,6 @@ class I18n {
     String? remove,
   }) {
     return I18n(
-      sizeEditor: sizeEditor ?? this.sizeEditor,
       paintEditor: paintEditor ?? this.paintEditor,
       various: various ?? this.various,
       layerInteraction: layerInteraction ?? this.layerInteraction,
@@ -255,6 +262,8 @@ class I18n {
       emojiEditor: emojiEditor ?? this.emojiEditor,
       stickerEditor: stickerEditor ?? this.stickerEditor,
       cropRotateEditor: cropRotateEditor ?? this.cropRotateEditor,
+      audioEditor: audioEditor ?? this.audioEditor,
+      clipsEditor: clipsEditor ?? this.clipsEditor,
       doneLoadingMsg: doneLoadingMsg ?? this.doneLoadingMsg,
       importStateHistoryMsg:
           importStateHistoryMsg ?? this.importStateHistoryMsg,

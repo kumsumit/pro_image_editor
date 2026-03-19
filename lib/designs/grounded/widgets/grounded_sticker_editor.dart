@@ -1,10 +1,9 @@
 // Flutter imports:
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:pro_image_editor/designs/frosted_glass/frosted_glass.dart';
 
-// Project imports:
-import 'package:pro_image_editor/pro_image_editor.dart';
+import '/pro_image_editor.dart';
+import '../../frosted_glass/frosted_glass.dart';
 
 /// A widget that provides the sticker editor interface in the ProImageEditor.
 ///
@@ -22,7 +21,6 @@ class GroundedStickerEditor extends StatefulWidget {
     super.key,
     required this.configs,
     required this.callbacks,
-    required this.foregroundColor,
   });
 
   /// The configuration for the image editor.
@@ -30,9 +28,6 @@ class GroundedStickerEditor extends StatefulWidget {
 
   /// The callbacks from the image editor.
   final ProImageEditorCallbacks callbacks;
-
-  /// The foregroundColor for the Icon.
-  final Color foregroundColor;
 
   @override
   State<GroundedStickerEditor> createState() => _GroundedStickerEditorState();
@@ -67,7 +62,7 @@ class _GroundedStickerEditorState extends State<GroundedStickerEditor> {
 
   @override
   Widget build(BuildContext context) {
-    // Color foreGroundColor = widget.configs.mainEditor.style.appBarColor;
+    Color foreGroundColor = widget.configs.mainEditor.style.appBarColor;
     return FrostedGlassEffect(
       radius: BorderRadius.zero,
       child: Scaffold(
@@ -83,8 +78,10 @@ class _GroundedStickerEditorState extends State<GroundedStickerEditor> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 3, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 3,
+                  horizontal: 12,
+                ),
                 color: const Color(0xFF222222),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -96,7 +93,9 @@ class _GroundedStickerEditorState extends State<GroundedStickerEditor> {
                           setState(() {
                             _searchCtrl.clear();
                             _activeSearch = false;
-                            widget.callbacks.stickerEditorCallbacks
+                            widget
+                                .callbacks
+                                .stickerEditorCallbacks
                                 ?.onSearchChanged
                                 ?.call('');
                           });
@@ -106,7 +105,7 @@ class _GroundedStickerEditorState extends State<GroundedStickerEditor> {
                       },
                       icon: Icon(
                         widget.configs.mainEditor.icons.closeEditor,
-                        color: widget.foregroundColor,
+                        color: foreGroundColor,
                       ),
                     ),
                     Expanded(
@@ -130,7 +129,7 @@ class _GroundedStickerEditorState extends State<GroundedStickerEditor> {
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -164,9 +163,7 @@ class _GroundedStickerEditorState extends State<GroundedStickerEditor> {
                     });
                   },
                   itemColor: const Color.fromARGB(255, 243, 243, 243),
-                  style: const TextStyle(
-                    color: Colors.white,
-                  ),
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
               CupertinoButton(
@@ -185,12 +182,13 @@ class _GroundedStickerEditorState extends State<GroundedStickerEditor> {
       return Container(
         constraints: const BoxConstraints(maxWidth: 400),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(100)),
+          color: const Color(0xFF222222),
+          borderRadius: BorderRadius.circular(100),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Icon(Icons.search),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(left: 12.0),

@@ -141,12 +141,15 @@ class _StandaloneExampleState extends State<StandaloneExample>
 
               /// If your users paint a lot in a short time, you should disable
               /// this flag because it will overload the isolated thread which
-              /// delay the final result generateImageInBackground: true,
+              /// delay the final result enableBackgroundGeneration: true,
               ),
         ),
-        onImageEditingStarted: onImageEditingStarted,
-        onImageEditingComplete: onImageEditingComplete,
-        onCloseEditor: onCloseEditor,
+        callbacks: ProImageEditorCallbacks(
+          onImageEditingStarted: onImageEditingStarted,
+          onImageEditingComplete: onImageEditingComplete,
+          onCloseEditor: (editorMode) =>
+              onCloseEditor(editorMode: EditorMode.main),
+        ),
       ),
     );
   }
@@ -165,12 +168,15 @@ class _StandaloneExampleState extends State<StandaloneExample>
               /// If your users change a lot stuff in a short time, you should
               /// disable this flag because it will overload the isolated
               /// thread which delay the final result.
-              /// generateImageInBackground: true,
+              /// enableBackgroundGeneration: true,
               ),
         ),
-        onImageEditingStarted: onImageEditingStarted,
-        onImageEditingComplete: onImageEditingComplete,
-        onCloseEditor: onCloseEditor,
+        callbacks: ProImageEditorCallbacks(
+          onImageEditingStarted: onImageEditingStarted,
+          onImageEditingComplete: onImageEditingComplete,
+          onCloseEditor: (editorMode) =>
+              onCloseEditor(editorMode: EditorMode.main),
+        ),
       ),
     );
   }
@@ -181,9 +187,12 @@ class _StandaloneExampleState extends State<StandaloneExample>
       initConfigs: FilterEditorInitConfigs(
         theme: Theme.of(context),
         convertToUint8List: true,
-        onImageEditingStarted: onImageEditingStarted,
-        onImageEditingComplete: onImageEditingComplete,
-        onCloseEditor: onCloseEditor,
+        callbacks: ProImageEditorCallbacks(
+          onImageEditingStarted: onImageEditingStarted,
+          onImageEditingComplete: onImageEditingComplete,
+          onCloseEditor: (editorMode) =>
+              onCloseEditor(editorMode: EditorMode.main),
+        ),
         configs: ProImageEditorConfigs(
           designMode: platformDesignMode,
         ),
@@ -197,9 +206,12 @@ class _StandaloneExampleState extends State<StandaloneExample>
       initConfigs: TuneEditorInitConfigs(
         theme: Theme.of(context),
         convertToUint8List: true,
-        onImageEditingStarted: onImageEditingStarted,
-        onImageEditingComplete: onImageEditingComplete,
-        onCloseEditor: onCloseEditor,
+        callbacks: ProImageEditorCallbacks(
+          onImageEditingStarted: onImageEditingStarted,
+          onImageEditingComplete: onImageEditingComplete,
+          onCloseEditor: (editorMode) =>
+              onCloseEditor(editorMode: EditorMode.main),
+        ),
         configs: ProImageEditorConfigs(
           designMode: platformDesignMode,
         ),
@@ -213,9 +225,12 @@ class _StandaloneExampleState extends State<StandaloneExample>
       initConfigs: BlurEditorInitConfigs(
         theme: Theme.of(context),
         convertToUint8List: true,
-        onImageEditingStarted: onImageEditingStarted,
-        onImageEditingComplete: onImageEditingComplete,
-        onCloseEditor: onCloseEditor,
+        callbacks: ProImageEditorCallbacks(
+          onImageEditingStarted: onImageEditingStarted,
+          onImageEditingComplete: onImageEditingComplete,
+          onCloseEditor: (editorMode) =>
+              onCloseEditor(editorMode: EditorMode.main),
+        ),
         configs: ProImageEditorConfigs(
           designMode: platformDesignMode,
         ),

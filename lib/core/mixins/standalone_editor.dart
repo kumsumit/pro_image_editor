@@ -5,19 +5,20 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '/core/mixins/converted_callbacks.dart';
+import '/core/models/complete_parameters.dart';
 import '/features/filter_editor/types/filter_matrix.dart';
 import '/features/tune_editor/models/tune_adjustment_matrix.dart';
+import '/shared/controllers/video_controller.dart';
+import '/shared/factories/editor_factory.dart';
+import '/shared/factories/editor_mapper.dart';
 import '/shared/services/content_recorder/controllers/content_recorder_controller.dart';
 import '/shared/utils/decode_image.dart';
+import '/shared/utils/transparent_image_generator_utils.dart';
 import '/shared/widgets/overlays/loading_dialog/loading_dialog.dart';
 import '../models/editor_callbacks/pro_image_editor_callbacks.dart';
 import '../models/editor_configs/pro_image_editor_configs.dart';
 import '../models/editor_image.dart';
-import '../models/init_configs/blur_editor_init_configs.dart';
-import '../models/init_configs/crop_rotate_editor_init_configs.dart';
 import '../models/init_configs/editor_init_configs.dart';
-import '../models/init_configs/filter_editor_init_configs.dart';
-import '../models/init_configs/paint_editor_init_configs.dart';
 import '../models/layers/layer.dart';
 import '../models/multi_threading/thread_capture_model.dart';
 import 'converted_configs.dart';
@@ -28,19 +29,32 @@ mixin StandaloneEditor<T extends EditorInitConfigs> {
   T get initConfigs;
 
   /// Returns the editor image
-  EditorImage get editorImage;
+  EditorImage? get editorImage;
+
+  /// Returns the video controller
+  ProVideoController? get videoController;
 }
 
 /// A mixin providing access to standalone editor configurations and image
 /// within a state.
-mixin StandaloneEditorState<T extends StatefulWidget,
-        I extends EditorInitConfigs>
+mixin StandaloneEditorState<
+  T extends StatefulWidget,
+  I extends EditorInitConfigs
+>
     on State<T>, ImageEditorConvertedConfigs, ImageEditorConvertedCallbacks {
   /// Returns the initialization configurations for the editor.
   I get initConfigs => (widget as StandaloneEditor<I>).initConfigs;
 
+  /// The background image which is used in the video editor.
+  EditorImage? videoBackgroundImage;
+
   /// Returns the image being edited.
-  EditorImage get editorImage => (widget as StandaloneEditor<I>).editorImage;
+  EditorImage? get editorImage =>
+      videoBackgroundImage ?? (widget as StandaloneEditor<I>).editorImage;
+
+  /// Returns the controller to edit the video.
+  ProVideoController? get videoController =>
+      (widget as StandaloneEditor<I>).videoController;
 
   @override
   ProImageEditorConfigs get configs => initConfigs.configs;
@@ -87,7 +101,10 @@ mixin StandaloneEditorState<T extends StatefulWidget,
   late ContentRecorderController screenshotCtrl;
 
   /// Indicates it create a screenshot or not.
-  bool createScreenshot = false;
+  bool isGenerationActive = false;
+
+  /// Indicates if the video editor is used
+  bool get isVideoEditor => videoController != null;
 
   /// The position in the history of screenshots. This is used to track the
   /// current position in the list of screenshots.
@@ -96,6 +113,8 @@ mixin StandaloneEditorState<T extends StatefulWidget,
   /// A list of captured screenshots. Each element in the list represents the
   /// state of a screenshot captured by the isolate.
   final List<ThreadCaptureState> screenshotHistory = [];
+
+  Uint8List? _transparentImageBytes;
 
   /// Sets the image information data.
   ///
@@ -107,7 +126,9 @@ mixin StandaloneEditorState<T extends StatefulWidget,
   }) async {
     if (imageInfos == null || forceUpdate == true) {
       imageInfos = (await decodeImageInfos(
-        bytes: await editorImage.safeByteArray(context),
+        bytes:
+            await (editorImage?.safeByteArray(context) ??
+                _createTransparentImage()),
         screenSize: editorBodySize,
         configs: activeHistory,
       ));
@@ -119,15 +140,20 @@ mixin StandaloneEditorState<T extends StatefulWidget,
   @protected
   void doneEditing({
     dynamic returnValue,
-    required EditorImage editorImage,
+    EditorImage? editorImage,
     Function? onCloseWithValue,
     Function(Uint8List?)? onSetFakeHero,
+    required double blur,
+    required List<List<double>> matrixFilterList,
+    required List<List<double>> matrixTuneAdjustmentsList,
+    required TransformConfigs? transform,
   }) async {
-    if (createScreenshot) return;
-    initConfigs.onImageEditingStarted?.call();
+    if (isGenerationActive) return;
 
     if (initConfigs.convertToUint8List) {
-      createScreenshot = true;
+      initConfigs.callbacks.onImageEditingStarted?.call();
+
+      isGenerationActive = true;
       LoadingDialog.instance.show(
         context,
         configs: configs,
@@ -143,7 +169,8 @@ mixin StandaloneEditorState<T extends StatefulWidget,
       }
 
       /// Capture the final screenshot
-      bool screenshotIsCaptured = screenshotHistoryPosition > 0 &&
+      bool screenshotIsCaptured =
+          screenshotHistoryPosition > 0 &&
           screenshotHistoryPosition <= screenshotHistory.length;
       Uint8List? bytes = await screenshotCtrl.captureFinalScreenshot(
         imageInfos: imageInfos!,
@@ -152,15 +179,49 @@ mixin StandaloneEditorState<T extends StatefulWidget,
             : null,
         originalImageBytes: screenshotHistoryPosition > 0
             ? null
-            : await editorImage.safeByteArray(context),
+            : await editorImage!.safeByteArray(context),
       );
 
-      createScreenshot = false;
+      isGenerationActive = false;
+
+      var imageBytes = bytes ?? Uint8List.fromList([]);
 
       /// Return final image that the user can handle it but still with the
       /// active loading dialog
-      await initConfigs.onImageEditingComplete
-          ?.call(bytes ?? Uint8List.fromList([]));
+      await initConfigs.callbacks.onImageEditingComplete?.call(imageBytes);
+
+      /// Return complete parameters if requested
+      if (initConfigs.callbacks.onCompleteWithParameters != null) {
+        final isTransformed = transform?.isNotEmpty ?? false;
+
+        var decodedImage = await decodeImageFromList(imageBytes);
+        Size originalImageSize = Size(
+          decodedImage.width.toDouble(),
+          decodedImage.height.toDouble(),
+        );
+        Size? outputSize = transform?.getCropSize(originalImageSize);
+        Offset? outputOffset = transform?.getCropStartOffset(originalImageSize);
+
+        await initConfigs.callbacks.onCompleteWithParameters?.call(
+          CompleteParameters(
+            blur: blur,
+            matrixFilterList: matrixFilterList,
+            matrixTuneAdjustmentsList: matrixTuneAdjustmentsList,
+            cropWidth: isTransformed ? outputSize!.width.round() : null,
+            cropHeight: isTransformed ? outputSize!.height.round() : null,
+            cropX: isTransformed ? outputOffset!.dx.round() : null,
+            cropY: isTransformed ? outputOffset!.dy.round() : null,
+            flipX: transform?.flipX ?? false,
+            flipY: transform?.flipY ?? false,
+            rotateTurns: transform?.angleToTurns() ?? 0,
+            startTime: null,
+            endTime: null,
+            image: imageBytes,
+            isTransformed: isTransformed,
+            layers: layers ?? [],
+          ),
+        );
+      }
 
       /// Precache the image for the case the user require the hero animation
       if (onSetFakeHero != null) {
@@ -173,7 +234,7 @@ mixin StandaloneEditorState<T extends StatefulWidget,
       /// Hide the loading dialog
       LoadingDialog.instance.hide();
 
-      initConfigs.onCloseEditor?.call();
+      initConfigs.callbacks.onCloseEditor?.call(editorMode);
     } else {
       if (onCloseWithValue == null) {
         Navigator.pop(context, returnValue);
@@ -185,20 +246,18 @@ mixin StandaloneEditorState<T extends StatefulWidget,
 
   /// Closes the editor without applying changes.
   void close() {
-    if (initConfigs.onCloseEditor == null) {
+    if (initConfigs.callbacks.onCloseEditor == null) {
       Navigator.pop(context);
     } else {
-      initConfigs.onCloseEditor!.call();
+      initConfigs.callbacks.onCloseEditor?.call(editorMode);
     }
-    if (I is PaintEditorInitConfigs) {
-      paintEditorCallbacks?.handleCloseEditor();
-    } else if (I is CropRotateEditorInitConfigs) {
-      cropRotateEditorCallbacks?.handleCloseEditor();
-    } else if (I is FilterEditorInitConfigs) {
-      filterEditorCallbacks?.handleCloseEditor();
-    } else if (I is BlurEditorInitConfigs) {
-      blurEditorCallbacks?.handleCloseEditor();
-    }
+
+    EditorFactory.getEditor(editorMode).handleCloseEditor();
+  }
+
+  /// Returns the editor mode based on the init config type.
+  EditorMode get editorMode {
+    return EditorMapper.getEditorModeFromConfigs(initConfigs);
   }
 
   /// Takes a screenshot of the current editor state.
@@ -230,6 +289,7 @@ mixin StandaloneEditorState<T extends StatefulWidget,
     super.initState();
     screenshotCtrl = ContentRecorderController(
       configs: configs.imageGeneration,
+      isVideoEditor: isVideoEditor,
       ignoreGeneration: !initConfigs.convertToUint8List,
     );
     rebuildController = StreamController.broadcast();
@@ -243,15 +303,12 @@ mixin StandaloneEditorState<T extends StatefulWidget,
     super.dispose();
   }
 
-  /// Gets the minimum size between two sizes.
-  ///
-  /// This method returns the smaller of two sizes, ensuring that the resulting
-  /// size is neither null nor empty.
-  Size getMinimumSize(Size? a, Size b) {
-    return a == null || a.isEmpty
-        ? b.isEmpty
-            ? const Size(1, 1)
-            : b
-        : a;
+  Future<Uint8List> _createTransparentImage() async {
+    if (_transparentImageBytes != null) return _transparentImageBytes!;
+
+    _transparentImageBytes = await createTransparentImage(
+      videoController!.initialResolution,
+    );
+    return _transparentImageBytes!;
   }
 }

@@ -1,42 +1,45 @@
 // Dart imports:
+import 'dart:async';
 import 'dart:math';
 
 // Flutter imports:
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '/core/constants/editor_various_constants.dart';
 import '/core/mixins/converted_configs.dart';
 import '/core/mixins/editor_configs_mixin.dart';
 import '/core/models/editor_callbacks/pro_image_editor_callbacks.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/core/models/layers/layer.dart';
+import '/core/services/gesture_manager.dart';
+import '/features/main_editor/services/layer_interaction_manager.dart';
+import '/features/main_editor/services/main_editor_layers_service.dart';
 import '/features/paint_editor/enums/paint_editor_enum.dart';
-import '/features/paint_editor/widgets/draw_paint_item.dart';
-import '/plugins/rounded_background_text/src/rounded_background_text.dart';
-import '../../styles/platform_text_styles.dart';
+import '/shared/widgets/layer/enums/layer_widget_type_enum.dart';
+import '/shared/widgets/layer/services/layer_widget_context_menu.dart';
+import '/shared/widgets/layer/widgets/layer_widget_censor_item.dart';
+import '/shared/widgets/layer/widgets/layer_widget_emoji_item.dart';
+import '/shared/widgets/layer/widgets/layer_widget_paint_item.dart';
+import '/shared/widgets/layer/widgets/layer_widget_text_item.dart';
 import 'interaction_helper/layer_interaction_helper_widget.dart';
+import 'widgets/layer_widget_custom_item.dart';
 
 /// A widget representing a layer within a design canvas.
 class LayerWidget extends StatefulWidget with SimpleConfigsAccess {
   /// Creates a [LayerWidget] with the specified properties.
   const LayerWidget({
     super.key,
-    this.onScaleRotateDown,
-    this.onScaleRotateUp,
-    required this.editorCenterX,
-    required this.editorCenterY,
+    required this.editorBodySize,
     required this.configs,
-    required this.layerData,
+    required this.layer,
+    this.layersService,
+    this.layerInteractionManager,
     this.onContextMenuToggled,
-    this.onTapDown,
-    this.onTapUp,
-    this.onTap,
-    this.onEditTap,
-    this.onRemoveTap,
-    this.highPerformanceMode = false,
-    this.enableHitDetection = false,
-    this.selected = false,
+    this.onDuplicate,
     this.isInteractive = false,
+    this.enableMouseCursor = true,
     this.callbacks = const ProImageEditorCallbacks(),
   });
   @override
@@ -45,82 +48,31 @@ class LayerWidget extends StatefulWidget with SimpleConfigsAccess {
   @override
   final ProImageEditorCallbacks callbacks;
 
-  /// The x-coordinate of the editor's center.
-  ///
-  /// This parameter specifies the horizontal center of the editor's body in
-  /// logical pixels, used to position and transform layers relative to the
-  /// editor's center.
-  final double editorCenterX;
+  /// Service for managing editor layers such as adding, removing, or
+  /// updating them.
+  final MainEditorLayersService? layersService;
 
-  /// The y-coordinate of the editor's center.
-  ///
-  /// This parameter specifies the vertical center of the editor's body in
-  /// logical pixels,  used to position and transform layers relative to the
-  /// editor's center.
-  final double editorCenterY;
+  /// Handles user interactions with layers, like selecting or dragging them.
+  final LayerInteractionManager? layerInteractionManager;
+
+  /// The size of the editor's body area in logical pixels.
+  final Size editorBodySize;
 
   /// Data for the layer.
-  final Layer layerData;
+  final Layer layer;
 
   /// Callback when the context menu open/close
   final Function(bool isOpen)? onContextMenuToggled;
 
-  /// Callback when a tap down event occurs.
-  final Function()? onTapDown;
-
-  /// Callback when a tap up event occurs.
-  final Function()? onTapUp;
-
-  /// Callback when a tap event occurs.
-  final Function(Layer)? onTap;
-
-  /// Callback for removing the layer.
-  final Function()? onRemoveTap;
-
-  /// Callback for editing the layer.
-  final Function()? onEditTap;
-
-  /// Callback for handling pointer down events associated with scale and rotate
-  /// gestures.
-  ///
-  /// This callback is triggered when the user presses down on the widget to
-  /// begin a scaling or rotating gesture. It provides both the pointer event
-  /// and the size of the widget being interacted with, allowing for precise
-  /// manipulation.
-  ///
-  /// - Parameters:
-  ///   - event: The [PointerDownEvent] containing details about the pointer
-  ///     interaction, such as position and device type.
-  ///   - size: The [Size] of the widget being manipulated, useful for
-  ///     calculating scaling and rotation transformations relative to the
-  ///     widget's dimensions.
-  final Function(PointerDownEvent, Size)? onScaleRotateDown;
-
-  /// Callback for handling pointer up events associated with scale and rotate
-  /// gestures.
-  ///
-  /// This callback is triggered when the user releases the widget after a
-  /// scaling or rotating gesture. It allows for finalizing the interaction and
-  /// making any necessary updates or state changes based on the completed
-  /// gesture.
-  ///
-  /// - Parameter event: The [PointerUpEvent] containing details about the
-  ///   pointer release, such as position and device type.
-  final Function(PointerUpEvent)? onScaleRotateUp;
-
-  /// Controls high-performance for free-style drawing.
-  final bool highPerformanceMode;
-
-  /// Enables or disables hit detection.
-  /// When set to `true`, it allows detecting user interactions with the
-  /// interface.
-  final bool enableHitDetection;
-
-  /// Indicates whether the layer is selected.
-  final bool selected;
+  /// Callback triggered when a layer should be copied.
+  final Function()? onDuplicate;
 
   /// Indicates whether the layer is interactive.
   final bool isInteractive;
+
+  /// A flag indicating whether the mouse cursor should be enabled for this
+  /// widget.
+  final bool enableMouseCursor;
 
   @override
   createState() => _LayerWidgetState();
@@ -128,115 +80,203 @@ class LayerWidget extends StatefulWidget with SimpleConfigsAccess {
 
 class _LayerWidgetState extends State<LayerWidget>
     with ImageEditorConvertedConfigs, SimpleConfigsAccessState {
-  final _layerKey = GlobalKey();
+  late LayerWidgetType _layerType;
 
-  /// The type of layer being represented.
-  late _LayerType _layerType;
+  late final _layersService = widget.layersService;
+  late final _layerInteractionManager = widget.layerInteractionManager;
+
+  /// Indicates whether the layer is selected.
+  bool get _isSelected =>
+      _layerInteractionManager?.selectedLayerIds.contains(_layer.id) ?? false;
 
   /// Flag to control the display of a move cursor.
-  bool _showMoveCursor = false;
+  final _showMoveCursor = ValueNotifier(false);
+  final _lastHitState = ValueNotifier(false);
+
+  late final _contextManager = LayerWidgetContextMenu(
+    i18nLayerInteraction: i18n.layerInteraction,
+    layerInteractionIcons: layerInteraction.icons,
+    onContextMenuToggled: widget.onContextMenuToggled,
+    onEditTap: () => _layersService?.handleEditTap(_layer),
+    onRemoveTap: () => _layersService?.handleRemoveLayer(_layer),
+  );
+
+  late final Offset _fractionalOffset;
+
+  PointerEvent? _lastDownEvent;
+  Offset? _lastLayerOffset;
+  int? _temporaryLayerHash;
+
+  DateTime _tapDownTimestamp = DateTime.now();
+  Timer? _longPressTimer;
+  final Duration _longPressThreshold = const Duration(milliseconds: 500);
+
+  /// Returns the current layer being displayed.
+  Layer get _layer => widget.layer;
+
+  Size get _halfBodySize => widget.editorBodySize / 2;
+
+  /// Calculates the horizontal offset for the layer.
+  double get offsetX => _layer.offset.dx + _halfBodySize.width;
+
+  /// Calculates the vertical offset for the layer.
+  double get offsetY => _layer.offset.dy + _halfBodySize.height;
+
+  bool get _enableVisibleOverlay =>
+      _layerInteractionManager?.layersAreSelectable(widget.configs) ?? false;
 
   @override
   void initState() {
     super.initState();
-    switch (widget.layerData.runtimeType) {
-      case const (TextLayer):
-        _layerType = _LayerType.text;
-        break;
-      case const (EmojiLayer):
-        _layerType = _LayerType.emoji;
-        break;
-      case const (WidgetLayer):
-        _layerType = _LayerType.widget;
-        break;
-      case const (PaintLayer):
-        _layerType = _LayerType.canvas;
-        break;
-      default:
-        _layerType = _LayerType.unknown;
-        break;
+
+    if (_layer.isTextLayer) {
+      _layerType = LayerWidgetType.text;
+      _fractionalOffset = configs.textEditor.layerFractionalOffset;
+    } else if (_layer.isEmojiLayer) {
+      _layerType = LayerWidgetType.emoji;
+      _fractionalOffset = configs.emojiEditor.layerFractionalOffset;
+    } else if (_layer.isWidgetLayer) {
+      _layerType = LayerWidgetType.widget;
+      _fractionalOffset = configs.stickerEditor.layerFractionalOffset;
+    } else if (_layer.isPaintLayer) {
+      var layer = _layer as PaintLayer;
+      _layerType =
+          layer.item.mode == PaintMode.blur ||
+              layer.item.mode == PaintMode.pixelate
+          ? LayerWidgetType.censor
+          : LayerWidgetType.canvas;
+      _fractionalOffset = configs.paintEditor.layerFractionalOffset;
+    } else {
+      _layerType = LayerWidgetType.unknown;
+      _fractionalOffset = const Offset(-0.5, -0.5);
     }
+  }
+
+  @override
+  void dispose() {
+    _lastHitState.dispose();
+    _showMoveCursor.dispose();
+    _longPressTimer?.cancel();
+    super.dispose();
   }
 
   /// Handles a secondary tap up event, typically for showing a context menu.
   void _onSecondaryTapUp(TapUpDetails details) {
-    if (_checkHitIsOutsideInCanvas()) return;
-    final Offset clickPosition = details.globalPosition;
-    double spacing = 14.0;
+    if (_isOutsideHitBox() || GestureManager.instance.isBlocked) return;
 
-    widget.onContextMenuToggled?.call(true);
-
-    // Show a popup menu at the click position
-    showMenu(
+    _contextManager.open(
       context: context,
-      useRootNavigator: true,
-      position: RelativeRect.fromLTRB(
-        clickPosition.dx,
-        clickPosition.dy,
-        clickPosition.dx + 1.0, // Adding a small value to avoid zero width
-        clickPosition.dy + 1.0, // Adding a small value to avoid zero height
-      ),
-      items: <PopupMenuEntry<String>>[
-        if (_layerType == _LayerType.text &&
-            widget.layerData.interaction.enableEdit)
-          PopupMenuItem<String>(
-            value: 'edit',
-            child: Row(
-              spacing: spacing,
-              children: [
-                Icon(layerInteraction.icons.edit),
-                Text(i18n.layerInteraction.edit),
-              ],
-            ),
-          ),
-        PopupMenuItem<String>(
-          value: 'remove',
-          child: Row(
-            spacing: spacing,
-            children: [
-              Icon(layerInteraction.icons.remove),
-              Text(i18n.layerInteraction.remove),
-            ],
-          ),
-        ),
-      ],
-    ).then((String? selectedValue) {
-      switch (selectedValue) {
-        case 'edit':
-          widget.onEditTap?.call();
-          break;
-        case 'remove':
-          widget.onRemoveTap?.call();
-          break;
-        default:
-      }
-
-      widget.onContextMenuToggled?.call(false);
-    });
-  }
-
-  /// Handles a tap event on the layer.
-  void _onTap() {
-    if (_checkHitIsOutsideInCanvas()) return;
-    widget.onTap?.call(_layer);
+      details: details,
+      enableEditButton:
+          _layerType == LayerWidgetType.text && _layer.interaction.enableEdit,
+      enableRemoveButton: true,
+    );
   }
 
   /// Handles a pointer down event on the layer.
   void _onPointerDown(PointerDownEvent event) {
-    if (_checkHitIsOutsideInCanvas()) return;
+    if (GestureManager.instance.isBlocked) return;
+    bool isLayerSelected = _isSelected;
+
+    _lastDownEvent = event;
+    _lastLayerOffset = _layer.offset;
+    _temporaryLayerHash = _layer.hashCode;
+    _tapDownTimestamp = DateTime.now();
+
+    if (_isOutsideHitBox()) return;
     if (!isDesktop || event.buttons != kSecondaryMouseButton) {
-      widget.onTapDown?.call();
+      _layersService?.handleTapDown(_layer, event);
     }
+    // Start long press detection
+    _longPressTimer?.cancel();
+    _longPressTimer = Timer(_longPressThreshold, () {
+      if (_lastDownEvent == null ||
+          _lastLayerOffset == null ||
+          _temporaryLayerHash != _layer.hashCode) {
+        return;
+      }
+
+      final offsetDistance = (_layer.offset - _lastLayerOffset!).distance;
+
+      if (offsetDistance <= 0 && _layer.interaction.enableSelection) {
+        _layersService?.handleLongPress(
+          _layer,
+          isSelected: isLayerSelected,
+          areLayersSelectable: _enableVisibleOverlay,
+        );
+      }
+    });
   }
 
   /// Handles a pointer up event on the layer.
   void _onPointerUp(PointerUpEvent event) {
-    widget.onTapUp?.call();
+    _longPressTimer?.cancel();
+    if (GestureManager.instance.isBlocked) return;
+    // Notify optional onTapUp callback
+    _layersService?.handleTapUp(_layer);
+
+    /// Important: To avoid gesture conflicts, we need to create our own
+    /// onTap event using the Listener widget instead of GestureDetector.
+    /// Below is a minimal example of how this can work. If anyone has
+    /// issues with this, please open a new issue.
+
+    // Cancel if down position is not set
+    if (_lastDownEvent == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final interaction = _layer.interaction;
+      final offsetDistance =
+          (event.position - _lastDownEvent!.position).distance;
+      final timeElapsed = DateTime.now()
+          .difference(_tapDownTimestamp)
+          .inMilliseconds;
+
+      // Ignore if pointer moved too much (exceeds tap slop)
+      if (offsetDistance >= tapSlop) return;
+
+      // Ignore if tap took too long (not a quick tap)
+      if (timeElapsed > tapTimeElapsed) return;
+
+      // Fire onTap only if selection/edit is enabled and pointer is inside hit box
+      final bool canSelect = interaction.enableSelection;
+      final bool canEdit = interaction.enableEdit;
+      final bool insideHitBox = !_isOutsideHitBox();
+      final bool isStylus = event.kind == PointerDeviceKind.stylus;
+      final bool isTextLayer = _layerType == LayerWidgetType.text;
+
+      if (!(canSelect || canEdit)) {
+        return;
+      }
+
+      // For stylus on TEXT layers only, bypass hit box check since it has
+      // precision issues with stylus input
+      // For paint layers: always use hit box validation (no bypass)
+      // to ensure taps on empty space inside shapes don't trigger edit.
+      final bool stylusTextBypass = isStylus && isTextLayer;
+
+      if (insideHitBox || stylusTextBypass) {
+        _layersService?.handleLayerTap(_layer, _lastDownEvent!);
+      }
+    });
+  }
+
+  bool _isOutsideHitBox() {
+    final bool hitOutsideCanvas = _isHitOutsideInCanvas();
+    final bool hitOutsideText = _isHitOutsideInText();
+    final bool isCensor = _layerType == LayerWidgetType.censor;
+    final bool isSelected = _isSelected;
+
+    return ((hitOutsideCanvas || hitOutsideText) && !isCensor) && !isSelected;
   }
 
   /// Checks if the hit is outside the canvas for certain types of layers.
-  bool _checkHitIsOutsideInCanvas() {
-    return _layerType == _LayerType.canvas && !(_layer as PaintLayer).item.hit;
+  bool _isHitOutsideInCanvas() {
+    return _layer.isPaintLayer && !(_layer as PaintLayer).item.hit;
+  }
+
+  /// Checks if the hit is outside the canvas for certain types of layers.
+  bool _isHitOutsideInText() {
+    return _layer.isTextLayer && !(_layer as TextLayer).hit;
   }
 
   /// Calculates the transformation matrix for the layer's position and
@@ -249,213 +289,185 @@ class _LayerWidgetState extends State<LayerWidget>
       ..rotateZ(_layer.rotation);
   }
 
-  /// Returns the current layer being displayed.
-  Layer get _layer => widget.layerData;
+  void _onHoverEnter() {
+    if (((!_layer.isPaintLayer || _layerType == LayerWidgetType.censor) &&
+            !_layer.isTextLayer) ||
+        _isSelected) {
+      _showMoveCursor.value = true;
+    }
+  }
 
-  /// Calculates the horizontal offset for the layer.
-  double get offsetX => _layer.offset.dx + widget.editorCenterX;
-
-  /// Calculates the vertical offset for the layer.
-  double get offsetY => _layer.offset.dy + widget.editorCenterY;
+  void _onHoverLeave() {
+    if (_layer.isPaintLayer) {
+      (_layer as PaintLayer).item.hit = false;
+    } else if (_layer.isTextLayer) {
+      (_layer as TextLayer).hit = false;
+    }
+    _showMoveCursor.value = false;
+    _lastHitState.value = false;
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Position the widget with specified padding
+    Matrix4 transformMatrix = _calcTransformMatrix();
+
+    final overlayPadding = _isSelected
+        ? layerInteraction.style.overlayPadding
+        : EdgeInsets.zero;
+
+    final adjustedLeft =
+        offsetX - overlayPadding.horizontal * (_fractionalOffset.dx + 0.5);
+    final adjustedTop =
+        offsetY - overlayPadding.vertical * (_fractionalOffset.dy + 0.5);
+
     return Positioned(
-      top: offsetY,
-      left: offsetX,
-      child: FractionalTranslation(
-        translation: const Offset(-0.5, -0.5),
-        child: _buildPosition(), // Build the widget content
+      left: adjustedLeft,
+      top: adjustedTop,
+      child: RepaintBoundary(
+        child: FractionalTranslation(
+          translation: _fractionalOffset,
+          child: Hero(
+            // Important that hero is above transform
+            createRectTween: (begin, end) => RectTween(begin: begin, end: end),
+            tag: _layer.id,
+            child: Transform(
+              transform: transformMatrix,
+              alignment: Alignment.center,
+              child: _buildInteractionHandlers(),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  /// Build the content with possible transformations
-  Widget _buildPosition() {
-    Matrix4 transformMatrix = _calcTransformMatrix();
-
-    return Hero(
-      key: _layerKey,
-      createRectTween: (begin, end) => RectTween(begin: begin, end: end),
-      tag: widget.layerData.id,
-      child: Transform(
-        transform: transformMatrix,
-        alignment: Alignment.center,
-        child: LayerInteractionHelperWidget(
-          layerData: widget.layerData,
-          configs: configs,
-          callbacks: callbacks,
-          selected: widget.selected,
-          onEditLayer: widget.onEditTap,
-          isInteractive: widget.isInteractive,
-          onScaleRotateDown: (details) {
-            widget.onScaleRotateDown?.call(details, context.size ?? Size.zero);
-          },
-          onScaleRotateUp: widget.onScaleRotateUp,
-          onRemoveLayer: widget.onRemoveTap,
-          child: MouseRegion(
-            hitTestBehavior: HitTestBehavior.translucent,
-            cursor: _showMoveCursor && widget.layerData.interaction.enableMove
-                ? layerInteraction.style.hoverCursor
-                : MouseCursor.defer,
-            onEnter: (event) {
-              if (_layerType != _LayerType.canvas) {
-                setState(() {
-                  _showMoveCursor = true;
-                });
-              }
-            },
-            onExit: (event) {
-              if (_layerType == _LayerType.canvas) {
-                (widget.layerData as PaintLayer).item.hit = false;
-              } else {
-                setState(() {
-                  _showMoveCursor = false;
-                });
-              }
-            },
-            child: GestureDetector(
+  Widget _buildInteractionHandlers() {
+    var interaction = _layer.interaction;
+    return LayerInteractionHelperWidget(
+      layer: _layer,
+      configs: configs,
+      callbacks: callbacks,
+      selected: _isSelected,
+      onEditLayer: () => _layersService?.handleEditTap(_layer),
+      forceIgnoreGestures:
+          !(interaction.enableSelection || interaction.enableEdit),
+      isInteractive: widget.isInteractive,
+      enableVisibleOverlay: _enableVisibleOverlay,
+      onScaleRotateDown: (details) => _layersService?.handleScaleRotateDown(
+        context.size ?? Size.zero,
+        _layer,
+      ),
+      onScaleRotateUp: (_) => _layersService?.handleScaleRotateUp(),
+      onRemoveLayer: () => _layersService?.handleRemoveLayer(_layer),
+      onDuplicate: widget.onDuplicate,
+      onGroupLayers: _layersService?.handleGroupLayers,
+      onUngroupLayers: () => _layersService?.handleUngroupLayers(_layer),
+      child: _buildCursor(
+        child: ValueListenableBuilder(
+          valueListenable: _lastHitState,
+          builder: (_, _, _) {
+            return GestureDetector(
               behavior: HitTestBehavior.translucent,
               onSecondaryTapUp: isDesktop ? _onSecondaryTapUp : null,
-              onTap: _onTap,
               child: Listener(
                 behavior: HitTestBehavior.translucent,
                 onPointerDown: _onPointerDown,
                 onPointerUp: _onPointerUp,
                 child: Padding(
-                  padding: EdgeInsets.all(widget.selected ? 7.0 : 0),
+                  padding: !_isSelected
+                      ? EdgeInsets.zero
+                      : layerInteraction.style.overlayPadding,
                   child: FittedBox(
+                    key: _layer.keyInternalSize,
                     child: _buildContent(),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
+    );
+  }
+
+  Widget _buildCursor({required Widget child}) {
+    return ValueListenableBuilder(
+      valueListenable: _showMoveCursor,
+      builder: (_, showCursor, _) {
+        return MouseRegion(
+          hitTestBehavior: HitTestBehavior.translucent,
+          cursor:
+              showCursor &&
+                  _layer.interaction.enableMove &&
+                  widget.enableMouseCursor
+              ? layerInteraction.style.hoverCursor
+              : MouseCursor.defer,
+          onEnter: (event) => _onHoverEnter(),
+          onExit: (event) => _onHoverLeave(),
+          child: child,
+        );
+      },
     );
   }
 
   /// Builds the content widget based on the type of layer being displayed.
   Widget _buildContent() {
+    Widget? content;
     switch (_layerType) {
-      case _LayerType.emoji:
-        return _buildEmoji();
-      case _LayerType.text:
-        return _buildText();
-      case _LayerType.widget:
-        return _buildWidgetLayer();
-      case _LayerType.canvas:
-        return _buildCanvas();
+      case LayerWidgetType.emoji:
+        content = LayerWidgetEmojiItem(
+          layer: _layer as EmojiLayer,
+          emojiEditorConfigs: emojiEditorConfigs,
+          textEditorConfigs: textEditorConfigs,
+          designMode: designMode,
+        );
+      case LayerWidgetType.text:
+        content = LayerWidgetTextItem(
+          layer: _layer as TextLayer,
+          textEditorConfigs: textEditorConfigs,
+          showMoveCursor: _showMoveCursor,
+          onHitChanged: (state) {
+            _lastHitState.value = state;
+          },
+        );
+      case LayerWidgetType.widget:
+        content = LayerWidgetCustomItem(
+          layer: _layer as WidgetLayer,
+          stickerEditorConfigs: stickerEditorConfigs,
+        );
+      case LayerWidgetType.canvas:
+        content = LayerWidgetPaintItem(
+          layer: _layer as PaintLayer,
+          isSelected: _isSelected,
+          enableHitDetection:
+              _layerInteractionManager?.enabledHitDetection ?? false,
+          onHitChanged: (state) {
+            _lastHitState.value = state;
+          },
+          paintEditorConfigs: widget.configs.paintEditor,
+        );
+      case LayerWidgetType.censor:
+        content = LayerWidgetCensorItem(
+          layer: _layer as PaintLayer,
+          censorConfigs: paintEditorConfigs.censorConfigs,
+        );
       default:
         return const SizedBox.shrink();
     }
+
+    if (_layer.boxConstraints != null) {
+      content = ConstrainedBox(
+        constraints: _layer.boxConstraints!,
+        child: content,
+      );
+    }
+
+    return content;
   }
 
-  double getLineHeight(TextStyle style) {
-    final span = TextSpan(text: 'X', style: style);
-    final painter = TextPainter(
-      text: span,
-      textAlign: TextAlign.left,
-      textDirection: TextDirection.ltr,
-    )..layout();
-    return painter.preferredLineHeight;
-  }
-
-  /// Build the text widget
-  Widget _buildText() {
-    var fontSize = textEditorConfigs.initFontSize * _layer.scale;
-    var layer = _layer as TextLayer;
-    var style = TextStyle(
-      fontSize: fontSize * layer.fontScale,
-      color: layer.color,
-      overflow: TextOverflow.ellipsis,
-    );
-
-    double height = getLineHeight(style);
-    const horizontalPaddingFactor = 0.3;
-
-    return Container(
-      // Fix Hit-Box
-      padding: EdgeInsets.only(
-        left: height * horizontalPaddingFactor,
-        right: height * horizontalPaddingFactor,
-        bottom: height * 0.175 / 2,
-      ),
-      child: HeroMode(
-        enabled: false,
-        child: RoundedBackgroundText(
-          layer.text.toString(),
-          backgroundColor: layer.background,
-          textAlign: layer.align,
-          style: layer.textStyle?.copyWith(
-                fontSize: style.fontSize,
-                fontWeight: style.fontWeight,
-                color: style.color,
-                fontFamily: style.fontFamily,
-              ) ??
-              style,
-        ),
-      ),
-    );
-  }
-
-  /// Build the emoji widget
-  Widget _buildEmoji() {
-    var layer = _layer as EmojiLayer;
-    return Material(
-      // Prevent hero animation bug
-      type: MaterialType.transparency,
-      textStyle: platformTextStyle(context, designMode),
-      child: Text(
-        layer.emoji.toString(),
-        textAlign: TextAlign.center,
-        style: emojiEditorConfigs.style.textStyle.copyWith(
-          fontSize: textEditorConfigs.initFontSize * _layer.scale,
-        ),
-      ),
-    );
-  }
-
-  /// Build the layer widget
-  Widget _buildWidgetLayer() {
-    var layer = _layer as WidgetLayer;
-    return SizedBox(
-      width: stickerEditorConfigs.initWidth * layer.scale,
-      child: FittedBox(
-        fit: BoxFit.contain,
-        child: layer.widget,
-      ),
-    );
-  }
-
-  /// Build the canvas widget
-  Widget _buildCanvas() {
-    var layer = _layer as PaintLayer;
-    return Padding(
-      // Better hit detection for mobile devices
-      padding: EdgeInsets.all(isDesktop ? 0 : 15),
-      child: RepaintBoundary(
-        child: Opacity(
-          opacity: layer.opacity,
-          child: CustomPaint(
-            size: layer.size,
-            willChange: false,
-            isComplex: layer.item.mode == PaintMode.freeStyle,
-            painter: DrawPaintItem(
-              item: layer.item,
-              scale: widget.layerData.scale,
-              selected: widget.selected,
-              enabledHitDetection: widget.enableHitDetection,
-              freeStyleHighPerformance: widget.highPerformanceMode,
-            ),
-          ),
-        ),
-      ),
-    );
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    _layer.debugFillProperties(properties);
   }
 }
-
-// ignore: camel_case_types
-enum _LayerType { emoji, text, widget, canvas, unknown }

@@ -66,7 +66,8 @@ class SliderBottomSheet<T> extends StatefulWidget {
     double,
     dynamic Function(double),
     dynamic Function(double),
-  )? customSlider;
+  )?
+  customSlider;
 
   /// Whether to show the factor value in the title.
   final bool showFactorInTitle;
@@ -106,7 +107,7 @@ class _SliderBottomSheetState<T> extends State<SliderBottomSheet<T>> {
   late double _value = widget.value;
   late final double _presetValue = widget.value;
 
-  void updateFontScaleScale(double value) {
+  void updateValue(double value) {
     widget.onValueChanged(value);
     _value = value;
     setState(() {});
@@ -114,20 +115,19 @@ class _SliderBottomSheetState<T> extends State<SliderBottomSheet<T>> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      textStyle: platformTextStyle(context, widget.designMode),
-      child: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildHeader(),
-              _buildBody(),
-            ],
+    return SafeArea(
+      child: Material(
+        color: Colors.transparent,
+        textStyle: platformTextStyle(context, widget.designMode),
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [_buildHeader(), _buildBody()],
+            ),
           ),
         ),
       ),
@@ -135,8 +135,9 @@ class _SliderBottomSheetState<T> extends State<SliderBottomSheet<T>> {
   }
 
   Widget _buildHeader() {
-    String factorText =
-        widget.showFactorInTitle ? ' ${_value.toStringAsFixed(1)}x' : '';
+    String factorText = widget.showFactorInTitle
+        ? ' ${_value.toStringAsFixed(1)}x'
+        : '';
 
     return BottomSheetHeaderRow(
       title: '${widget.title}$factorText',
@@ -154,7 +155,7 @@ class _SliderBottomSheetState<T> extends State<SliderBottomSheet<T>> {
           widget.state,
           widget.rebuildController.stream,
           _value,
-          updateFontScaleScale,
+          updateValue,
           (onChangedEnd) {},
         ) ??
         Row(
@@ -165,7 +166,7 @@ class _SliderBottomSheetState<T> extends State<SliderBottomSheet<T>> {
                 min: widget.min,
                 divisions: widget.divisions,
                 value: _value,
-                onChanged: updateFontScaleScale,
+                onChanged: updateValue,
               ),
             ),
             if (widget.resetIcon != null) ...[
@@ -184,14 +185,12 @@ class _SliderBottomSheetState<T> extends State<SliderBottomSheet<T>> {
         duration: const Duration(milliseconds: 150),
         child: _value != _presetValue
             ? IconButton(
-                key: const ValueKey('ResetFontScaleButtonActive'),
                 onPressed: () {
-                  updateFontScaleScale(_presetValue);
+                  updateValue(_presetValue);
                 },
                 icon: Icon(widget.resetIcon),
               )
             : IconButton(
-                key: const ValueKey('ResetFontScaleButtonInactive'),
                 color: Colors.transparent,
                 onPressed: null,
                 icon: Icon(widget.resetIcon),

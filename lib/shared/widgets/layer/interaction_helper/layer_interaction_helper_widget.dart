@@ -1,6 +1,7 @@
 // Flutter imports:
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '/core/mixins/converted_configs.dart';
@@ -9,6 +10,7 @@ import '/core/models/custom_widgets/utils/custom_widgets_typedef.dart';
 import '/core/models/editor_callbacks/pro_image_editor_callbacks.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/core/models/layers/layer.dart';
+import '/features/paint_editor/enums/paint_editor_enum.dart';
 import '/plugins/defer_pointer/defer_pointer.dart';
 import '/shared/widgets/reactive_widgets/reactive_custom_widget.dart';
 import '../models/layer_item_interaction.dart';
@@ -50,16 +52,21 @@ class LayerInteractionHelperWidget extends StatefulWidget
   /// ```
   const LayerInteractionHelperWidget({
     super.key,
-    required this.layerData,
+    required this.layer,
     required this.child,
     required this.configs,
     this.onEditLayer,
     this.onRemoveLayer,
+    this.onDuplicate,
     this.onScaleRotateDown,
     this.onScaleRotateUp,
+    this.onGroupLayers,
+    this.onUngroupLayers,
     this.selected = false,
     this.isInteractive = false,
     this.callbacks = const ProImageEditorCallbacks(),
+    this.forceIgnoreGestures = false,
+    this.enableVisibleOverlay = false,
   });
 
   /// The configuration settings for the image editor.
@@ -88,6 +95,9 @@ class LayerInteractionHelperWidget extends StatefulWidget
   /// layer, allowing for modifications to the layer's content.
   final Function()? onEditLayer;
 
+  /// Callback triggered when a layer should be copied.
+  final Function()? onDuplicate;
+
   /// Callback for handling the remove layer action.
   ///
   /// This callback is triggered when the user selects the remove option for a
@@ -108,11 +118,24 @@ class LayerInteractionHelperWidget extends StatefulWidget
   /// or rotating, finalizing the interaction.
   final Function(PointerUpEvent)? onScaleRotateUp;
 
+  /// Callback for grouping layers.
+  ///
+  /// This callback is triggered when the user wants to group the current
+  /// layer with other selected layers, creating a group that will be
+  /// selected together.
+  final Function()? onGroupLayers;
+
+  /// Callback for ungrouping layers.
+  ///
+  /// This callback is triggered when the user wants to ungroup the current
+  /// layer, removing it from its current group.
+  final Function()? onUngroupLayers;
+
   /// Data representing the layer's configuration and state.
   ///
   /// This data is used to determine the layer's appearance, behavior, and the
   /// interactions available to the user.
-  final Layer layerData;
+  final Layer layer;
 
   /// Indicates whether the layer is interactive.
   ///
@@ -120,10 +143,20 @@ class LayerInteractionHelperWidget extends StatefulWidget
   /// tooltips.
   final bool isInteractive;
 
+  /// Determines whether gesture interactions should be forcibly ignored.
+  ///
+  /// When set to `true`, all gesture interactions with the associated widget
+  /// will be ignored, regardless of other conditions. This can be useful in
+  /// scenarios where you want to temporarily disable user interaction.
+  final bool forceIgnoreGestures;
+
   /// Indicates whether the layer is selected.
   ///
   /// If true, the layer is highlighted, and interaction buttons are displayed.
   final bool selected;
+
+  /// A flag to enable or disable the visibility of the overlay.
+  final bool enableVisibleOverlay;
 
   @override
   State<LayerInteractionHelperWidget> createState() =>
@@ -139,10 +172,30 @@ class _LayerInteractionHelperWidgetState
     extends State<LayerInteractionHelperWidget>
     with ImageEditorConvertedConfigs, SimpleConfigsAccessState {
   final _rebuildStream = StreamController.broadcast();
+  final _overlayCtrl = OverlayPortalController();
+  final _isOverlayVisibleNotifier = ValueNotifier(false);
+
+  Layer get _layer => widget.layer;
+
+  @override
+  void didUpdateWidget(covariant LayerInteractionHelperWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _isOverlayVisibleNotifier.value = widget.selected;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.selected) {
+        if (!_overlayCtrl.isShowing) _overlayCtrl.show();
+      } else {
+        if (_overlayCtrl.isShowing) _overlayCtrl.hide();
+      }
+    });
+  }
 
   @override
   void dispose() {
+    if (_overlayCtrl.isShowing) _overlayCtrl.hide();
     _rebuildStream.close();
+    _isOverlayVisibleNotifier.dispose();
     super.dispose();
   }
 
@@ -152,105 +205,195 @@ class _LayerInteractionHelperWidgetState
     super.setState(fn);
   }
 
+  double get _rotation {
+    if (_layer.flipX) {
+      return _layer.rotation;
+    }
+    return -_layer.rotation;
+  }
+
+  LayerItemInteractions get _layerInteractions {
+    return LayerItemInteractions(
+      duplicated: widget.onDuplicate ?? () {},
+      edit: widget.onEditLayer ?? () {},
+      remove: widget.onRemoveLayer ?? () {},
+      scaleRotateDown: _handleScaleRotateDown,
+      scaleRotateUp: _handleScaleRotateUp,
+      group: widget.onGroupLayers ?? () {},
+      ungroup: widget.onUngroupLayers ?? () {},
+    );
+  }
+
+  void _handleScaleRotateDown(PointerDownEvent event) {
+    widget.onScaleRotateDown?.call(event);
+  }
+
+  void _handleScaleRotateUp(PointerUpEvent event) {
+    widget.onScaleRotateUp?.call(event);
+  }
+
+  bool _isLayerEditable() {
+    if (!_layer.interaction.enableEdit) return false;
+
+    if (_layer.isTextLayer) {
+      return textEditorConfigs.enableEdit;
+    } else if (_layer.isPaintLayer) {
+      final paintMode = (_layer as PaintLayer).item.mode;
+
+      return paintEditorConfigs.enableEdit &&
+          paintMode != PaintMode.blur &&
+          paintMode != PaintMode.pixelate;
+    } else if (_layer.isWidgetLayer) {
+      return widget.callbacks.stickerEditorCallbacks?.onTapEditSticker != null;
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    String layerId = widget.layerData.id;
-    var deferManager = DeferManager.maybeOf(context);
-
-    if (!widget.isInteractive ||
-        (!widget.selected && deferManager?.selectedLayerId != '')) {
-      // Return the child widget directly if the layer is not interactive.
-      return widget.child;
-    } else if (!widget.selected) {
-      // Use a defer pointer if the layer is not selected, preventing
-      // interaction.
-      return DeferPointer(
-        key: ValueKey('Defer-${deferManager?.id ?? ''}-$layerId'),
+    if (widget.forceIgnoreGestures) {
+      return IgnorePointer(
+        ignoring: widget.forceIgnoreGestures,
         child: widget.child,
       );
     }
 
+    String layerId = _layer.id;
+    var deferManager = DeferManager.maybeOf(context);
+
+    if (!widget.isInteractive) {
+      // Return the child widget directly if the layer is not interactive.
+      return widget.child;
+    }
+
+    Widget child = DeferPointer(
+      key: ValueKey('Defer-${deferManager?.id ?? ''}-$layerId'),
+      child: widget.child,
+    );
+
+    if (!widget.enableVisibleOverlay) {
+      return child;
+    }
+
+    return OverlayPortal.overlayChildLayoutBuilder(
+      controller: _overlayCtrl,
+      overlayChildBuilder: (context, info) {
+        if (layerInteraction.widgets.overlayChildBuilder != null) {
+          return ValueListenableBuilder(
+            valueListenable: _isOverlayVisibleNotifier,
+            builder: (_, isVisible, _) {
+              if (!isVisible) return const SizedBox.shrink();
+              return layerInteraction.widgets.overlayChildBuilder!(
+                _rebuildStream.stream,
+                info,
+                _layer,
+                _layerInteractions,
+              );
+            },
+          );
+        }
+
+        final Matrix4 transform = info.childPaintTransform.clone();
+
+        // The child size
+        final childWidth = info.childSize.width;
+        final childHeight = info.childSize.height;
+
+        // The new padded size
+        final paddedWidth = childWidth;
+        final paddedHeight = childHeight;
+
+        return Positioned(
+          width: paddedWidth,
+          height: paddedHeight,
+          left: 0,
+          child: ValueListenableBuilder(
+            valueListenable: _isOverlayVisibleNotifier,
+            builder: (_, isVisible, _) {
+              if (!isVisible) return const SizedBox.shrink();
+
+              return Transform(
+                transform: transform,
+                alignment: Alignment.topLeft,
+                child: Transform.flip(
+                  flipX: _layer.flipX,
+                  flipY: _layer.flipY,
+                  child: _buildSelectionOverlay(),
+                ),
+              );
+            },
+          ),
+        );
+      },
+      child: DeferPointer(
+        key: ValueKey('Defer-${deferManager?.id ?? ''}-$layerId'),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildSelectionOverlay() {
     List<LayerInteractionItem> children =
         layerInteraction.widgets.children ?? _buildDefaultInteractions();
 
     return TooltipVisibility(
       visible: layerInteraction.style.showTooltips,
-      child: DeferPointer(
-        child: Stack(
-          fit: StackFit.passthrough,
-          alignment: Alignment.center,
-          children: [
-            layerInteraction.widgets.border
-                    ?.call(widget.child, widget.layerData) ??
-                Container(
-                  margin: EdgeInsets.all(
-                    layerInteraction.style.buttonRadius +
-                        layerInteraction.style.strokeWidth * 2,
-                  ),
-                  child: CustomPaint(
-                    foregroundPainter: LayerInteractionBorderPainter(
-                      style: layerInteraction.style,
-                    ),
-                    child: widget.child,
-                  ),
+      child: Stack(
+        fit: StackFit.passthrough,
+        alignment: Alignment.center,
+        children: [
+          layerInteraction.widgets.border?.call(widget.child, _layer) ??
+              Padding(
+                padding: EdgeInsets.all(
+                  layerInteraction.style.buttonRadius +
+                      layerInteraction.style.strokeWidth,
                 ),
-            ...children.map(
-              (item) => item.call(
-                _rebuildStream.stream,
-                widget.layerData,
-                LayerItemInteractions(
-                  edit: widget.onEditLayer ?? () {},
-                  remove: widget.onRemoveLayer ?? () {},
-                  scaleRotateDown: (event) {
-                    widget.onScaleRotateDown?.call(event);
-                  },
-                  scaleRotateUp: (event) {
-                    widget.onScaleRotateUp?.call(event);
-                  },
+                child: CustomPaint(
+                  foregroundPainter: LayerInteractionBorderPainter(
+                    style: layerInteraction.style,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
+          ...children.map(
+            (item) =>
+                item.call(_rebuildStream.stream, _layer, _layerInteractions),
+          ),
+        ],
       ),
     );
   }
 
   List<LayerInteractionItem> _buildDefaultInteractions() {
-    bool isLayerEditable = widget.layerData.interaction.enableEdit &&
-            widget.layerData.runtimeType == TextLayer ||
-        (widget.layerData.runtimeType == WidgetLayer &&
-            widget.callbacks.stickerEditorCallbacks?.onTapEditSticker != null);
-
     return [
-      if (isLayerEditable)
+      if (_isLayerEditable())
         (rebuildStream, layer, interactions) => ReactiveWidget(
-              stream: rebuildStream,
-              builder: (_) => _buildEditButton(interactions),
-            ),
+          stream: rebuildStream,
+          builder: (_) => _buildEditButton(interactions),
+        ),
       (rebuildStream, layer, interactions) => ReactiveWidget(
-            stream: rebuildStream,
-            builder: (_) => _buildRemoveButton(interactions),
-          ),
+        stream: rebuildStream,
+        builder: (_) => _buildRemoveButton(interactions),
+      ),
       (rebuildStream, layer, interactions) => ReactiveWidget(
-            stream: rebuildStream,
-            builder: (_) => _buildRotateScaleIcon(interactions),
-          ),
+        stream: rebuildStream,
+        builder: (_) => _buildRotateScaleButton(interactions),
+      ),
     ];
   }
 
-  Widget _buildRotateScaleIcon(LayerItemInteractions interactions) {
+  Widget _buildRotateScaleButton(LayerItemInteractions interactions) {
     return layerInteraction.widgets.rotateScaleButton?.call(
           _rebuildStream.stream,
-          (value) => widget.onScaleRotateDown?.call(value),
-          (value) => widget.onScaleRotateUp?.call(value),
-          -widget.layerData.rotation,
+          _handleScaleRotateDown,
+          _handleScaleRotateUp,
+          _rotation,
         ) ??
         Positioned(
           bottom: 0,
           right: 0,
           child: LayerInteractionButton(
-            rotation: -widget.layerData.rotation,
+            rotation: _rotation,
             onScaleRotateDown: interactions.scaleRotateDown,
             onScaleRotateUp: interactions.scaleRotateUp,
             buttonRadius: layerInteraction.style.buttonRadius,
@@ -267,13 +410,13 @@ class _LayerInteractionHelperWidgetState
     return layerInteraction.widgets.editButton?.call(
           _rebuildStream.stream,
           () => widget.onEditLayer?.call(),
-          -widget.layerData.rotation,
+          _rotation,
         ) ??
         Positioned(
           top: 0,
           right: 0,
           child: LayerInteractionButton(
-            rotation: -widget.layerData.rotation,
+            rotation: _rotation,
             onTap: interactions.edit,
             buttonRadius: layerInteraction.style.buttonRadius,
             cursor: layerInteraction.style.editCursor,
@@ -289,13 +432,13 @@ class _LayerInteractionHelperWidgetState
     return layerInteraction.widgets.removeButton?.call(
           _rebuildStream.stream,
           () => widget.onRemoveLayer?.call(),
-          -widget.layerData.rotation,
+          _rotation,
         ) ??
         Positioned(
           top: 0,
           left: 0,
           child: LayerInteractionButton(
-            rotation: -widget.layerData.rotation,
+            rotation: _rotation,
             onTap: interactions.remove,
             buttonRadius: layerInteraction.style.buttonRadius,
             cursor: layerInteraction.style.removeCursor,
@@ -305,5 +448,74 @@ class _LayerInteractionHelperWidgetState
             background: layerInteraction.style.buttonRemoveBackground,
           ),
         );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+
+    properties
+      ..add(DiagnosticsProperty<Layer>('layer', widget.layer))
+      ..add(DiagnosticsProperty<Widget>('child', widget.child))
+      ..add(
+        FlagProperty('selected', value: widget.selected, ifTrue: 'selected'),
+      )
+      ..add(
+        FlagProperty(
+          'isInteractive',
+          value: widget.isInteractive,
+          ifTrue: 'interactive',
+        ),
+      )
+      ..add(
+        FlagProperty(
+          'forceIgnoreGestures',
+          value: widget.forceIgnoreGestures,
+          ifTrue: 'force ignore gestures',
+        ),
+      )
+      ..add(
+        FlagProperty(
+          'enableVisibleOverlay',
+          value: widget.enableVisibleOverlay,
+          ifTrue: 'visible overlay enabled',
+        ),
+      )
+      ..add(
+        ObjectFlagProperty<Function()>.has('onEditLayer', widget.onEditLayer),
+      )
+      ..add(
+        ObjectFlagProperty<Function()>.has('onDuplicate', widget.onDuplicate),
+      )
+      ..add(
+        ObjectFlagProperty<Function()>.has(
+          'onRemoveLayer',
+          widget.onRemoveLayer,
+        ),
+      )
+      ..add(
+        ObjectFlagProperty<Function(PointerDownEvent)>.has(
+          'onScaleRotateDown',
+          widget.onScaleRotateDown,
+        ),
+      )
+      ..add(
+        ObjectFlagProperty<Function(PointerUpEvent)>.has(
+          'onScaleRotateUp',
+          widget.onScaleRotateUp,
+        ),
+      )
+      ..add(
+        ObjectFlagProperty<Function()>.has(
+          'onGroupLayers',
+          widget.onGroupLayers,
+        ),
+      )
+      ..add(
+        ObjectFlagProperty<Function()>.has(
+          'onUngroupLayers',
+          widget.onUngroupLayers,
+        ),
+      );
   }
 }

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
+import '/shared/widgets/editor_scrollbar.dart';
 import '/shared/widgets/flat_icon_text_button.dart';
 import '../controllers/main_editor_controllers.dart';
 import '../services/sizes_manager.dart';
@@ -34,8 +35,6 @@ class MainEditorBottombar extends StatelessWidget {
     required this.sizesManager,
     required this.bottomBarKey,
     required this.theme,
-    required this.foregroundColor,
-    required this.openSizeEditor,
     required this.openPaintEditor,
     required this.openTextEditor,
     required this.openCropRotateEditor,
@@ -44,6 +43,8 @@ class MainEditorBottombar extends StatelessWidget {
     required this.openBlurEditor,
     required this.openEmojiEditor,
     required this.openStickerEditor,
+    required this.openAudioEditor,
+    required this.openClipsEditor,
   });
 
   /// Manages the main editor's controllers.
@@ -60,12 +61,6 @@ class MainEditorBottombar extends StatelessWidget {
 
   /// The theme data for styling the bottom bar.
   final ThemeData theme;
-
-  /// The Foreground color for the AppBar.
-  final Color foregroundColor;
-
-   /// Callback for opening the size editor.
-  final Function() openSizeEditor;
 
   /// Callback for opening the paint editor.
   final Function() openPaintEditor;
@@ -91,125 +86,150 @@ class MainEditorBottombar extends StatelessWidget {
   /// Callback for opening the sticker editor.
   final Function() openStickerEditor;
 
+  /// Callback for opening the audio editor.
+  final Function() openAudioEditor;
+
+  /// Callback for opening the clips editor.
+  final Function() openClipsEditor;
+
   final double _bottomIconSize = 22.0;
-  TextStyle get _bottomTextStyle => TextStyle(
-        fontSize: 10.0,
-        color: foregroundColor,
-      );
+  Color get _foregroundColor => configs.mainEditor.style.bottomBarColor;
+  TextStyle get _bottomTextStyle =>
+      TextStyle(fontSize: 10.0, color: _foregroundColor);
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       key: bottomBarKey,
-      child: LayoutBuilder(builder: (context, constraints) {
-        return Theme(
-          data: theme,
-          child: Scrollbar(
-            controller: controllers.bottomBarScrollCtrl,
-            scrollbarOrientation: ScrollbarOrientation.top,
-            thickness: isDesktop ? null : 0,
-            child: BottomAppBar(
-              height: kBottomNavigationBarHeight,
-              color: Colors.transparent,
-              padding: EdgeInsets.zero,
-              child: Center(
-                child: SingleChildScrollView(
-                  controller: controllers.bottomBarScrollCtrl,
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minWidth: min(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Theme(
+            data: theme,
+            child: EditorScrollbar(
+              controller: controllers.bottomBarScrollCtrl,
+              child: BottomAppBar(
+                height: kBottomNavigationBarHeight,
+                color: configs.mainEditor.style.bottomBarBackground,
+                padding: EdgeInsets.zero,
+                child: Center(
+                  child: SingleChildScrollView(
+                    controller: controllers.bottomBarScrollCtrl,
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: min(
                           sizesManager.lastScreenSize.width != 0
                               ? sizesManager.lastScreenSize.width
                               : constraints.maxWidth,
-                          650),
-                      maxWidth: 650,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        mainAxisSize: MainAxisSize.min,
-                        children: _buildEditorButtons(),
+                          700,
+                        ),
+                        maxWidth: 700,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisSize: MainAxisSize.min,
+                          children: _buildEditorButtons(),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 
   /// Builds a list of editor action buttons dynamically
   List<Widget> _buildEditorButtons() {
-    return [
-       if (configs.paintEditor.enabled)
-        _buildActionButton(
-          key: const ValueKey('open-size-editor-btn'),
-          label: configs.i18n.sizeEditor.bottomNavigationBarText,
-          icon: configs.sizeEditor.icons.bottomNavBar,
-          onPressed: openSizeEditor,
-        ),
-      if (configs.paintEditor.enabled)
-        _buildActionButton(
-          key: const ValueKey('open-paint-editor-btn'),
-          label: configs.i18n.paintEditor.bottomNavigationBarText,
-          icon: configs.paintEditor.icons.bottomNavBar,
-          onPressed: openPaintEditor,
-        ),
-      if (configs.textEditor.enabled)
-        _buildActionButton(
-          key: const ValueKey('open-text-editor-btn'),
-          label: configs.i18n.textEditor.bottomNavigationBarText,
-          icon: configs.textEditor.icons.bottomNavBar,
-          onPressed: openTextEditor,
-        ),
-      if (configs.cropRotateEditor.enabled)
-        _buildActionButton(
-          key: const ValueKey('open-crop-rotate-editor-btn'),
-          label: configs.i18n.cropRotateEditor.bottomNavigationBarText,
-          icon: configs.cropRotateEditor.icons.bottomNavBar,
-          onPressed: openCropRotateEditor,
-        ),
-      if (configs.tuneEditor.enabled)
-        _buildActionButton(
-          key: const ValueKey('open-tune-editor-btn'),
-          label: configs.i18n.tuneEditor.bottomNavigationBarText,
-          icon: configs.tuneEditor.icons.bottomNavBar,
-          onPressed: openTuneEditor,
-        ),
-      if (configs.filterEditor.enabled)
-        _buildActionButton(
-          key: const ValueKey('open-filter-editor-btn'),
-          label: configs.i18n.filterEditor.bottomNavigationBarText,
-          icon: configs.filterEditor.icons.bottomNavBar,
-          onPressed: openFilterEditor,
-        ),
-      if (configs.blurEditor.enabled)
-        _buildActionButton(
-          key: const ValueKey('open-blur-editor-btn'),
-          label: configs.i18n.blurEditor.bottomNavigationBarText,
-          icon: configs.blurEditor.icons.bottomNavBar,
-          onPressed: openBlurEditor,
-        ),
-      if (configs.emojiEditor.enabled)
-        _buildActionButton(
-          key: const ValueKey('open-emoji-editor-btn'),
-          label: configs.i18n.emojiEditor.bottomNavigationBarText,
-          icon: configs.emojiEditor.icons.bottomNavBar,
-          onPressed: openEmojiEditor,
-        ),
-      if (configs.stickerEditor.enabled)
-        _buildActionButton(
-          key: const ValueKey('open-sticker-editor-btn'),
-          label: configs.i18n.stickerEditor.bottomNavigationBarText,
-          icon: configs.stickerEditor.icons.bottomNavBar,
-          onPressed: openStickerEditor,
-        ),
-    ];
+    return configs.mainEditor.tools
+        .map((tool) {
+          switch (tool) {
+            case SubEditorMode.paint:
+              return _buildActionButton(
+                key: const ValueKey('open-paint-editor-btn'),
+                label: configs.i18n.paintEditor.bottomNavigationBarText,
+                icon: configs.paintEditor.icons.bottomNavBar,
+                onPressed: openPaintEditor,
+              );
+
+            case SubEditorMode.text:
+              return _buildActionButton(
+                key: const ValueKey('open-text-editor-btn'),
+                label: configs.i18n.textEditor.bottomNavigationBarText,
+                icon: configs.textEditor.icons.bottomNavBar,
+                onPressed: openTextEditor,
+              );
+
+            case SubEditorMode.cropRotate:
+              return _buildActionButton(
+                key: const ValueKey('open-crop-rotate-editor-btn'),
+                label: configs.i18n.cropRotateEditor.bottomNavigationBarText,
+                icon: configs.cropRotateEditor.icons.bottomNavBar,
+                onPressed: openCropRotateEditor,
+              );
+
+            case SubEditorMode.tune:
+              return _buildActionButton(
+                key: const ValueKey('open-tune-editor-btn'),
+                label: configs.i18n.tuneEditor.bottomNavigationBarText,
+                icon: configs.tuneEditor.icons.bottomNavBar,
+                onPressed: openTuneEditor,
+              );
+
+            case SubEditorMode.filter:
+              return _buildActionButton(
+                key: const ValueKey('open-filter-editor-btn'),
+                label: configs.i18n.filterEditor.bottomNavigationBarText,
+                icon: configs.filterEditor.icons.bottomNavBar,
+                onPressed: openFilterEditor,
+              );
+
+            case SubEditorMode.blur:
+              return _buildActionButton(
+                key: const ValueKey('open-blur-editor-btn'),
+                label: configs.i18n.blurEditor.bottomNavigationBarText,
+                icon: configs.blurEditor.icons.bottomNavBar,
+                onPressed: openBlurEditor,
+              );
+
+            case SubEditorMode.emoji:
+              return _buildActionButton(
+                key: const ValueKey('open-emoji-editor-btn'),
+                label: configs.i18n.emojiEditor.bottomNavigationBarText,
+                icon: configs.emojiEditor.icons.bottomNavBar,
+                onPressed: openEmojiEditor,
+              );
+
+            case SubEditorMode.sticker:
+              return _buildActionButton(
+                key: const ValueKey('open-sticker-editor-btn'),
+                label: configs.i18n.stickerEditor.bottomNavigationBarText,
+                icon: configs.stickerEditor.icons.bottomNavBar,
+                onPressed: openStickerEditor,
+              );
+            case SubEditorMode.audio:
+              return _buildActionButton(
+                key: const ValueKey('open-audio-editor-btn'),
+                label: configs.i18n.audioEditor.bottomNavigationBarText,
+                icon: configs.audioEditor.icons.bottomNavBar,
+                onPressed: openAudioEditor,
+              );
+            case SubEditorMode.videoClips:
+              return _buildActionButton(
+                key: const ValueKey('open-clips-editor-btn'),
+                label: configs.i18n.clipsEditor.bottomNavigationBarText,
+                icon: configs.clipsEditor.icons.bottomNavBar,
+                onPressed: openClipsEditor,
+              );
+          }
+        })
+        .whereType<Widget>()
+        .toList();
   }
 
   /// Helper to build a single action button
@@ -222,7 +242,7 @@ class MainEditorBottombar extends StatelessWidget {
     return FlatIconTextButton(
       key: key,
       label: Text(label, style: _bottomTextStyle),
-      icon: Icon(icon, size: _bottomIconSize, color: foregroundColor),
+      icon: Icon(icon, size: _bottomIconSize, color: _foregroundColor),
       onPressed: onPressed,
     );
   }

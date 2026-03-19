@@ -22,9 +22,6 @@ class TuneEditorInitConfigs extends EditorInitConfigs {
     super.appliedFilters,
     super.appliedTuneAdjustments,
     super.appliedBlurFactor,
-    super.onCloseEditor,
-    super.onImageEditingComplete,
-    super.onImageEditingStarted,
     super.convertToUint8List,
     required super.theme,
   });

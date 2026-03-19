@@ -5,6 +5,7 @@ import '/core/mixins/editor_configs_mixin.dart';
 import '/designs/grounded/grounded_design.dart';
 import '/features/crop_rotate_editor/widgets/crop_aspect_ratio_button.dart';
 import '/pro_image_editor.dart';
+import '/shared/widgets/editor_scrollbar.dart';
 
 /// A widget that provides controls for cropping and rotating an image in the
 /// ProImageEditor.
@@ -20,7 +21,6 @@ class GroundedCropRotateBar extends StatefulWidget with SimpleConfigsAccess {
   const GroundedCropRotateBar({
     super.key,
     required this.configs,
-    required this.foregroundColor,
     required this.callbacks,
     required this.editor,
     required this.selectedRatioColor,
@@ -37,9 +37,6 @@ class GroundedCropRotateBar extends StatefulWidget with SimpleConfigsAccess {
 
   /// The color used for highlighting the selected aspect ratio.
   final Color selectedRatioColor;
-
-  /// The foregroundColor for the Icon.
-  final Color foregroundColor;
 
   @override
   State<GroundedCropRotateBar> createState() => _GroundedCropRotateBarState();
@@ -75,15 +72,12 @@ class _GroundedCropRotateBarState extends State<GroundedCropRotateBar>
     return GroundedBottomWrapper(
       theme: configs.theme,
       children: (constraints) => [
-        Scrollbar(
+        EditorScrollbar(
           controller: _bottomBarScrollCtrl,
-          scrollbarOrientation: ScrollbarOrientation.top,
-          thickness: isDesktop ? null : 0,
           child: _buildFunctions(constraints),
         ),
         GroundedBottomBar(
           configs: configs,
-          foregroundColor: widget.foregroundColor,
           done: widget.editor.done,
           close: widget.editor.close,
           undo: widget.editor.undoAction,
@@ -104,6 +98,7 @@ class _GroundedCropRotateBarState extends State<GroundedCropRotateBar>
         alignment: Alignment.center,
         child: SingleChildScrollView(
           controller: _bottomBarScrollCtrl,
+          clipBehavior: Clip.none,
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
           child: FadeInUp(
@@ -114,7 +109,9 @@ class _GroundedCropRotateBarState extends State<GroundedCropRotateBar>
               children: <Widget>[
                 ..._buildConfigs(),
                 if (cropRotateEditorConfigs.aspectRatios.isNotEmpty &&
-                    cropRotateEditorConfigs.canChangeAspectRatio) ...[
+                    cropRotateEditorConfigs.tools.contains(
+                      CropRotateTool.aspectRatio,
+                    )) ...[
                   const SizedBox(width: 5),
                   _buildDivider(),
                   ...List.generate(
@@ -166,10 +163,7 @@ class _GroundedCropRotateBarState extends State<GroundedCropRotateBar>
       FlatIconTextButton(
         label: Text(
           i18n.cropRotateEditor.rotate,
-          style: TextStyle(
-            fontSize: 10.0,
-            color: _foreGroundColorAccent,
-          ),
+          style: TextStyle(fontSize: 10.0, color: _foreGroundColorAccent),
         ),
         icon: Icon(
           cropRotateEditorConfigs.icons.rotate,
@@ -182,15 +176,9 @@ class _GroundedCropRotateBarState extends State<GroundedCropRotateBar>
       FlatIconTextButton(
         label: Text(
           i18n.cropRotateEditor.flip,
-          style: TextStyle(
-            fontSize: 10.0,
-            color: _foreGroundColorAccent,
-          ),
+          style: TextStyle(fontSize: 10.0, color: _foreGroundColorAccent),
         ),
-        icon: Icon(
-          cropRotateEditorConfigs.icons.flip,
-          color: _foreGroundColor,
-        ),
+        icon: Icon(cropRotateEditorConfigs.icons.flip, color: _foreGroundColor),
         onPressed: () {
           widget.editor.flip();
         },

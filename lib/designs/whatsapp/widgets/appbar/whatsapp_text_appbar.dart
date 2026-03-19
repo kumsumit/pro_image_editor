@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 // Project imports:
-import 'package:pro_image_editor/pro_image_editor.dart';
+import '/pro_image_editor.dart';
 import '../../styles/whatsapp_appbar_button_style.dart';
 import '../../whatsapp_done_btn.dart';
 
@@ -60,11 +60,13 @@ class _WhatsAppTextAppBarState extends State<WhatsAppTextAppBar> {
                   style: whatsAppButtonStyle,
                   tooltip: widget.configs.i18n.textEditor.textAlign,
                   onPressed: widget.onAlignChange,
-                  icon: Icon(widget.align == TextAlign.left
-                      ? widget.configs.textEditor.icons.alignLeft
-                      : widget.align == TextAlign.right
-                          ? widget.configs.textEditor.icons.alignRight
-                          : widget.configs.textEditor.icons.alignCenter),
+                  icon: Icon(
+                    widget.align == TextAlign.left
+                        ? widget.configs.textEditor.icons.alignLeft
+                        : widget.align == TextAlign.right
+                        ? widget.configs.textEditor.icons.alignRight
+                        : widget.configs.textEditor.icons.alignCenter,
+                  ),
                 ),
                 gap,
                 IconButton(
@@ -78,8 +80,8 @@ class _WhatsAppTextAppBarState extends State<WhatsAppTextAppBar> {
             Align(
               alignment:
                   widget.configs.designMode == ImageEditorDesignMode.cupertino
-                      ? Alignment.centerLeft
-                      : Alignment.centerRight,
+                  ? Alignment.centerLeft
+                  : Alignment.centerRight,
               child: WhatsAppDoneBtn(
                 foregroundColor: widget.configs.textEditor.style.appBarColor,
                 configs: widget.configs,

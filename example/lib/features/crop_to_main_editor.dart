@@ -41,8 +41,12 @@ class _CropToMainEditorExampleState extends State<CropToMainEditorExample>
     designMode: platformDesignMode,
     cropRotateEditor: const CropRotateEditorConfigs(
       initAspectRatio: 1,
-      provideImageInfos: true,
-      canChangeAspectRatio: false,
+      enableProvideImageInfos: true,
+      tools: [
+        CropRotateTool.rotate,
+        CropRotateTool.flip,
+        CropRotateTool.reset,
+      ],
     ),
   );
 
@@ -75,9 +79,14 @@ class _CropToMainEditorExampleState extends State<CropToMainEditorExample>
           key: editorKey,
           callbacks: ProImageEditorCallbacks(
             onImageEditingStarted: onImageEditingStarted,
-            onCloseEditor: () =>
-                onCloseEditor(enablePop: !isDesktopMode(context)),
+            onCloseEditor: (editorMode) => onCloseEditor(
+              editorMode: editorMode,
+              enablePop: !isDesktopMode(context),
+            ),
             onImageEditingComplete: onImageEditingComplete,
+            mainEditorCallbacks: MainEditorCallbacks(
+              helperLines: HelperLinesCallbacks(onLineHit: vibrateLineHit),
+            ),
           ),
           configs: _editorConfigs.copyWith(
             mainEditor: MainEditorConfigs(
@@ -85,9 +94,15 @@ class _CropToMainEditorExampleState extends State<CropToMainEditorExample>
                 transformConfigs: transformations,
                 imageInfos: imageInfos,
               ),
-            ),
-            cropRotateEditor: const CropRotateEditorConfigs(
-              enabled: false,
+              tools: [
+                SubEditorMode.paint,
+                SubEditorMode.text,
+                // SubEditorMode.cropRotate,
+                SubEditorMode.tune,
+                SubEditorMode.filter,
+                SubEditorMode.blur,
+                SubEditorMode.emoji,
+              ],
             ),
           ),
         ),

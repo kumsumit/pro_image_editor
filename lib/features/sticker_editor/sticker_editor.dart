@@ -1,4 +1,3 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
 import '/core/mixins/converted_configs.dart';
@@ -50,31 +49,19 @@ class StickerEditorState extends State<StickerEditor>
 
   @override
   Widget build(BuildContext context) {
-    assert(
-      widget.configs.stickerEditor.buildStickers != null,
-      '`buildStickers` is required',
-    );
+    assert(stickerEditorConfigs.builder != null, '`builder` is required');
 
     return ExtendedPopScope(
-      child: widget.configs.stickerEditor.buildStickers!(
+      canPop: stickerEditorConfigs.enableGesturePop,
+      child: stickerEditorConfigs.builder!.call(
         setLayer,
         widget.scrollController,
       ),
     );
   }
 
-  /// Sets the current layer with a sticker and closes the navigation.
-  ///
-  /// [widget] is the widget to be set as the layer.
-  void setLayer(
-    Widget widget, {
-    WidgetLayerExportConfigs? exportConfigs,
-  }) {
-    Navigator.of(context).pop(
-      WidgetLayer(
-        widget: widget,
-        exportConfigs: exportConfigs ?? const WidgetLayerExportConfigs(),
-      ),
-    );
+  /// Close the editor with the selected widget-layer.
+  void setLayer(WidgetLayer widgetLayer) {
+    Navigator.of(context).pop(widgetLayer);
   }
 }

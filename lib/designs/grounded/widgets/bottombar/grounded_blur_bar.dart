@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pro_image_editor/pro_image_editor.dart';
 
 import '/core/mixins/converted_configs.dart';
 import '/core/mixins/editor_configs_mixin.dart';
 import '/designs/grounded/grounded_design.dart';
+import '/pro_image_editor.dart';
 
 /// A widget that represents the blur control bar in the image editor.
 ///
@@ -20,14 +20,10 @@ class GroundedBlurBar extends StatefulWidget with SimpleConfigsAccess {
     required this.configs,
     required this.callbacks,
     required this.editor,
-    required this.foregroundColor,
   });
 
   /// The editor state that holds blur and editing information.
   final BlurEditorState editor;
-
-  /// The forgroundColor for the Icon.
-  final Color foregroundColor;
 
   @override
   final ProImageEditorConfigs configs;
@@ -52,7 +48,6 @@ class _GroundedBlurBarState extends State<GroundedBlurBar>
         _buildFunctions(constraints),
         GroundedBottomBar(
           configs: configs,
-          foregroundColor: widget.foregroundColor,
           done: widget.editor.done,
           close: widget.editor.close,
         ),

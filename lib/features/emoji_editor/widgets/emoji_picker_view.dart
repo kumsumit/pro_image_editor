@@ -1,12 +1,13 @@
 import 'dart:math';
 
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 
 import '/core/models/i18n/i18n_emoji_editor.dart';
 import '/core/models/styles/emoji_editor_style.dart';
 import '/features/emoji_editor/services/emoji_state_manager.dart';
+import '/plugins/emoji_picker_flutter/emoji_picker_flutter.dart';
 import '/shared/utils/platform_info.dart';
+import './emoji_editor_category_view.dart';
 import 'emoji_cell_extended.dart';
 
 /// A widget that provides an enhanced emoji picker view.
@@ -81,12 +82,16 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
   late double _emojiBoxSize;
   late TextStyle _emojiStyle;
 
+  late final _viewConfigs = widget.config.emojiViewConfig;
+
   @override
   void initState() {
     super.initState();
     _scrollController = widget.scrollController ?? ScrollController();
-    var initCategory = _categories.indexWhere((element) =>
-        element.category == widget.config.categoryViewConfig.initCategory);
+    var initCategory = _categories.indexWhere(
+      (element) =>
+          element.category == widget.config.categoryViewConfig.initCategory,
+    );
     if (initCategory == -1) {
       initCategory = 0;
     }
@@ -124,10 +129,13 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
 
   void _scrollToItem(int index) {
     final GlobalKey key = _itemKeys[index]!;
-    final RenderBox renderBox =
-        key.currentContext?.findRenderObject() as RenderBox;
-    final position = renderBox.localToGlobal(Offset.zero,
-        ancestor: context.findRenderObject());
+    final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final position = renderBox.localToGlobal(
+      Offset.zero,
+      ancestor: context.findRenderObject(),
+    );
 
     final offset = position.dy + _scrollController.offset - _searchBarHeight;
 
@@ -151,12 +159,16 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
     }
 
     Future.delayed(
-        Duration(
-          milliseconds:
-              max(widget.emojiEditorStyle.scrollToDuration.inMilliseconds, 200),
-        ), () {
-      _activeTabChange = false;
-    });
+      Duration(
+        milliseconds: max(
+          widget.emojiEditorStyle.scrollToDuration.inMilliseconds,
+          200,
+        ),
+      ),
+      () {
+        _activeTabChange = false;
+      },
+    );
   }
 
   void _onScroll() {
@@ -166,24 +178,25 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
       final key = _itemKeys[i];
 
       final context = key!.currentContext;
-      if (context != null) {
-        final renderBox = context.findRenderObject() as RenderBox;
 
-        final position = renderBox.localToGlobal(
-          Offset.zero,
-          ancestor: this.context.findRenderObject(),
-        );
+      if (context == null) continue;
+      final renderBox = context.findRenderObject() as RenderBox?;
+      if (renderBox == null) return;
 
-        var category = _categories[i].category;
-        final double dy = position.dy - searchHeight;
+      final position = renderBox.localToGlobal(
+        Offset.zero,
+        ancestor: this.context.findRenderObject(),
+      );
 
-        if (dy < 0) {
-          if (_activeCategory.name != category.name) {
-            _activeCategory = category;
-            _tabController.animateTo(i);
-          }
-          break;
+      var category = _categories[i].category;
+      final double dy = position.dy - searchHeight;
+
+      if (dy < 0) {
+        if (_activeCategory.name != category.name) {
+          _activeCategory = category;
+          _tabController.animateTo(i);
         }
+        break;
       }
     }
   }
@@ -257,7 +270,7 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
   }
 
   List<CategoryEmoji> get _categories {
-    return widget.state.categoryEmoji.toList();
+    return widget.state.categoryEmoji;
   }
 
   @override
@@ -267,36 +280,35 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
       setActiveCategory: _setActiveCategory,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          _emojiSize =
-              widget.config.emojiViewConfig.getEmojiSize(constraints.maxWidth);
+          _emojiSize = _viewConfigs.getEmojiSize(constraints.maxWidth);
 
-          _emojiBoxSize = widget.config.emojiViewConfig
-              .getEmojiBoxSize(constraints.maxWidth);
+          _emojiBoxSize = widget.config.emojiViewConfig.getEmojiBoxSize(
+            constraints.maxWidth,
+          );
           _setEmojiTextStyle();
 
           return EmojiContainer(
             color: widget.emojiEditorStyle.backgroundColor,
-            buttonMode: widget.config.emojiViewConfig.buttonMode,
+            buttonMode: _viewConfigs.buttonMode,
             child: Column(
-              children: [
-                widget.config.viewOrderConfig.top,
-                widget.config.viewOrderConfig.middle,
-                widget.config.viewOrderConfig.bottom,
-              ].map(
-                (item) {
-                  switch (item) {
-                    case EmojiPickerItem.categoryBar:
-                      // Category view
-                      return _buildCategoryView();
-                    case EmojiPickerItem.emojiView:
-                      // Emoji view
-                      return _buildEmojiView();
-                    case EmojiPickerItem.searchBar:
-                      // Search Bar
-                      return _buildSearchBar();
-                  }
-                },
-              ).toList(),
+              children:
+                  [
+                    widget.config.viewOrderConfig.top,
+                    widget.config.viewOrderConfig.middle,
+                    widget.config.viewOrderConfig.bottom,
+                  ].map((item) {
+                    switch (item) {
+                      case EmojiPickerItem.categoryBar:
+                        // Category view
+                        return _buildCategoryView();
+                      case EmojiPickerItem.emojiView:
+                        // Emoji view
+                        return _buildEmojiView();
+                      case EmojiPickerItem.searchBar:
+                        // Search Bar
+                        return _buildSearchBar();
+                    }
+                  }).toList(),
             ),
           );
         },
@@ -337,10 +349,7 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
           }
           return true;
         },
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: pages,
-        ),
+        child: CustomScrollView(controller: _scrollController, slivers: pages),
       ),
     );
   }
@@ -348,38 +357,38 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
   Widget _buildPage(CategoryEmoji categoryEmoji) {
     // Build page normally
     return SliverPadding(
-      padding: widget.config.emojiViewConfig.gridPadding.copyWith(
-        bottom: widget.config.emojiViewConfig.gridPadding.bottom + 20,
+      padding: _viewConfigs.gridPadding.copyWith(
+        bottom: _viewConfigs.gridPadding.bottom + 20,
       ),
       sliver: SliverGrid.builder(
         key: ValueKey('emojiScrollView-${categoryEmoji.category.name}'),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           childAspectRatio: 1,
-          crossAxisCount: widget.config.emojiViewConfig.columns,
-          mainAxisSpacing: widget.config.emojiViewConfig.verticalSpacing,
-          crossAxisSpacing: widget.config.emojiViewConfig.horizontalSpacing,
+          crossAxisCount: _viewConfigs.columns,
+          mainAxisSpacing: _viewConfigs.verticalSpacing,
+          crossAxisSpacing: _viewConfigs.horizontalSpacing,
         ),
         itemCount: categoryEmoji.emoji.length,
         itemBuilder: (context, index) {
+          final emoji = categoryEmoji.emoji[index];
           Widget cell = EmojiCellExtended(
-            emoji: categoryEmoji.emoji[index],
+            emoji: emoji,
             emojiSize: _emojiSize,
             emojiBoxSize: _emojiBoxSize,
             categoryEmoji: categoryEmoji,
             emojiStyle: _emojiStyle,
             onEmojiSelected: _onSkinTonedEmojiSelected,
             onSkinToneDialogRequested: _openSkinToneDialog,
-            buttonMode: widget.config.emojiViewConfig.buttonMode,
+            buttonMode: _viewConfigs.buttonMode,
             enableSkinTones: widget.config.skinToneConfig.enabled,
             skinToneIndicatorColor: widget.config.skinToneConfig.indicatorColor,
           );
 
-          if (!categoryEmoji.emoji[index].hasSkinTone) {
+          if (!emoji.hasSkinTone) {
             return cell;
           } else {
             return addSkinToneTargetIfAvailableExtended(
-              linkKey: categoryEmoji.category.name +
-                  categoryEmoji.emoji[index].emoji,
+              linkKey: categoryEmoji.category.name + emoji.emoji,
               child: cell,
             );
           }
@@ -393,10 +402,7 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
     required Widget child,
   }) {
     final link = links.putIfAbsent(linkKey, LayerLink.new);
-    return CompositedTransformTarget(
-      link: link,
-      child: child,
-    );
+    return CompositedTransformTarget(link: link, child: child);
   }
 
   Widget _buildCategoryView() {
@@ -407,7 +413,7 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
             _tabController,
             _pageController,
           )
-        : DefaultCategoryView(
+        : EmojiEditorCategoryView(
             widget.config,
             widget.state,
             _tabController,
@@ -419,6 +425,7 @@ class _DefaultEmojiPickerViewState extends State<ProEmojiPickerView>
     if (!widget.config.bottomActionBarConfig.enabled) {
       return const SizedBox.shrink();
     }
+
     return SizedBox(
       key: _searchBarKey,
       child: widget.config.bottomActionBarConfig.customBottomActionBar != null

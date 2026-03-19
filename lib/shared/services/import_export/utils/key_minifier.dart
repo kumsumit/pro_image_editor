@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '/shared/services/import_export/constants/minified_keys.dart';
 
 /// A service class responsible for minifying or preserving keys in data
@@ -10,9 +12,7 @@ class EditorKeyMinifier {
   ///
   /// If [enableMinify] is set to `true`, the minification process will be
   /// enabled.
-  EditorKeyMinifier({
-    required this.enableMinify,
-  });
+  EditorKeyMinifier({required this.enableMinify});
 
   /// Indicates whether minification is enabled.
   final bool enableMinify;
@@ -114,13 +114,17 @@ class EditorKeyMinifier {
           var value = entry.value;
 
           if (entry.key == 'interaction') {
-            value = Map.from(entry.value).map((itemKey, itemValue) =>
-                MapEntry(convertLayerInteractionKey(itemKey), itemValue));
+            value = Map.from(entry.value).map(
+              (itemKey, itemValue) =>
+                  MapEntry(convertLayerInteractionKey(itemKey), itemValue),
+            );
           }
 
           if (entry.key == 'item') {
-            value = Map.from(entry.value).map((itemKey, itemValue) =>
-                MapEntry(convertPaintKey(itemKey), itemValue));
+            value = Map.from(entry.value).map(
+              (itemKey, itemValue) =>
+                  MapEntry(convertPaintKey(itemKey), itemValue),
+            );
           }
 
           return MapEntry(newKey, value);
@@ -136,39 +140,37 @@ class EditorKeyMinifier {
   ///
   /// - [references]: A map containing reference data.
   /// - Returns: A new map with the reference keys converted.
-  Map<String, dynamic> convertReferenceKeys(
-    Map<String, dynamic> references,
-  ) {
+  Map<String, dynamic> convertReferenceKeys(Map<String, dynamic> references) {
     if (!enableMinify) return references;
 
     return references.map((key, value) {
       return MapEntry(
         key,
-        Map.from(value).map(
-          (entryKey, entryValue) {
-            if (entryKey == 'interaction') {
-              entryValue = Map.from(entryValue).map((itemKey, itemValue) =>
-                  MapEntry(convertLayerInteractionKey(itemKey), itemValue));
-            }
-
-            if (entryKey == 'item') {
-              entryValue = Map.from(entryValue).map((itemKey, itemValue) =>
-                  MapEntry(convertPaintKey(itemKey), itemValue));
-            }
-
-            return MapEntry(
-              convertLayerKey(entryKey),
-              entryValue,
+        Map.from(value).map((entryKey, entryValue) {
+          if (entryKey == 'interaction') {
+            entryValue = Map.from(entryValue).map(
+              (itemKey, itemValue) =>
+                  MapEntry(convertLayerInteractionKey(itemKey), itemValue),
             );
-          },
-        ),
+          }
+
+          if (entryKey == 'item') {
+            entryValue = Map.from(entryValue).map(
+              (itemKey, itemValue) =>
+                  MapEntry(convertPaintKey(itemKey), itemValue),
+            );
+          }
+
+          return MapEntry(convertLayerKey(entryKey), entryValue);
+        }),
       );
     });
   }
 
   /// Function to generate sequential alphabetical keys
   /// (A, B, ..., Z, AA, AB, ...)
-  String _generateAlphabeticalKey(int index) {
+  @visibleForTesting
+  String generateAlphabeticalKey(int index) {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     String key = '';
     while (index >= 0) {
@@ -196,22 +198,31 @@ class EditorKeyMinifier {
 
     int index = 0;
     Map<String, dynamic> updatedReferences = {};
-    List<Map<String, dynamic>> updatedHistory = history;
+    Map<String, String> idMapping = {}; // oldKey -> newKey
 
+    /// Generate new keys without updating anything yet
+    for (var oldKey in references.keys) {
+      String newKey = generateAlphabeticalKey(index++);
+      idMapping[oldKey] = newKey;
+    }
+
+    /// Create updated references with new keys
     for (var entry in references.entries) {
-      String newKey = _generateAlphabeticalKey(index);
+      String newKey = idMapping[entry.key]!;
       updatedReferences[newKey] = entry.value;
+    }
 
-      for (var historyEntry in updatedHistory) {
-        var layers = List.from(historyEntry['l'] ?? []);
-        for (var layerMap in layers) {
-          if (layerMap['id'] == entry.key) {
-            layerMap['id'] = newKey;
-          }
+    /// Update history with new ids
+    List<Map<String, dynamic>> updatedHistory = history.map((historyEntry) {
+      var layers = List<Map<String, dynamic>>.from(historyEntry['l'] ?? []);
+      for (var layerMap in layers) {
+        String? oldId = layerMap['id'];
+        if (oldId != null && idMapping.containsKey(oldId)) {
+          layerMap['id'] = idMapping[oldId];
         }
       }
-      index++;
-    }
+      return {...historyEntry, 'l': layers};
+    }).toList();
 
     references = updatedReferences;
     return ConvertLayerResponse(
@@ -228,10 +239,7 @@ class ConvertLayerResponse {
   ///
   /// - [history]: The list of history layers.
   /// - [references]: The updated references map.
-  ConvertLayerResponse({
-    required this.history,
-    required this.references,
-  });
+  ConvertLayerResponse({required this.history, required this.references});
 
   /// The updated history of layers.
   List<Map<String, dynamic>> history;

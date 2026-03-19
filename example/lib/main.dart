@@ -3,6 +3,7 @@ import 'package:example/shared/widgets/not_found_example.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:media_kit/media_kit.dart';
 
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,6 +14,9 @@ import 'core/constants/example_list_constant.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Necessary initialization for package:media_kit.
+  MediaKit.ensureInitialized();
 
   await Supabase.initialize(
     url: 'SUPABASE_URL',
@@ -34,11 +38,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pro-Image-Editor',
       theme: ThemeData(
-          appBarTheme: const AppBarTheme(
-      elevation: 0,
-      color: Colors.transparent,
-      shadowColor: Colors.transparent,
-    ),
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.blue.shade800,
           brightness: Brightness.dark,
@@ -209,17 +208,22 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               extended: true,
               destinations: kImageEditorExamples.map((example) {
+                var color = const Color(0xFFF5F5F5).withAlpha(
+                  example.disabled ? 150 : 255,
+                );
                 return NavigationRailDestination(
                   icon: Icon(
                     example.icon,
-                    color: const Color(0xFFF5F5F5),
+                    color: color,
                   ),
                   label: Text(
-                    example.name,
-                    style: const TextStyle(
-                      color: Color(0xFFF5F5F5),
+                    example.name +
+                        (example.disabled ? '\nNot supported on the web' : ''),
+                    style: TextStyle(
+                      color: color,
                     ),
                   ),
+                  disabled: example.disabled,
                 );
               }).toList(),
               selectedIndex: _railIndex,
@@ -265,7 +269,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ),
           ),
-          const Divider(height: 1),
+          const Divider(height: 10, thickness: 0),
           Flexible(
             child: Scrollbar(
               controller: _scrollCtrl,
@@ -276,21 +280,28 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
-                  children: ListTile.divideTiles(
-                    context: context,
-                    tiles: kImageEditorExamples.map(
-                      (example) => ListTile(
-                        onTap: () {
-                          Navigator.of(context).pushNamed(
-                            example.path,
-                          );
-                        },
-                        leading: Icon(example.icon),
-                        title: Text(example.name),
-                        trailing: const Icon(Icons.chevron_right_rounded),
-                      ),
-                    ),
-                  ).toList(),
+                  children: kImageEditorExamples
+                      .map(
+                        (example) => Opacity(
+                          opacity: example.disabled ? 0.6 : 1,
+                          child: ListTile(
+                            onTap: example.disabled
+                                ? null
+                                : () {
+                                    Navigator.of(context).pushNamed(
+                                      example.path,
+                                    );
+                                  },
+                            leading: Icon(example.icon),
+                            title: Text(example.name),
+                            subtitle: example.disabled
+                                ? Text(example.disabledMessage)
+                                : null,
+                            trailing: const Icon(Icons.chevron_right_rounded),
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             ),

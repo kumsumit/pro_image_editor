@@ -1,13 +1,13 @@
 // Dart imports:
 import 'dart:math';
 
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
-import 'package:emoji_picker_flutter/locales/default_emoji_set_locale.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 
 import '/core/mixins/converted_configs.dart';
 import '/core/mixins/editor_configs_mixin.dart';
+import '/plugins/emoji_picker_flutter/emoji_picker_flutter.dart';
+import '/plugins/emoji_picker_flutter/locales/default_emoji_set_locale.dart';
 import '/pro_image_editor.dart';
 import './widgets/emoji_editor_category_view.dart';
 import 'widgets/emoji_editor_full_screen_search.dart';
@@ -52,8 +52,10 @@ class EmojiEditorState extends State<EmojiEditor>
   late final TextStyle _textStyle;
 
   /// Check device is from Apple
-  final bool isApple = [TargetPlatform.iOS, TargetPlatform.macOS]
-      .contains(defaultTargetPlatform);
+  final bool isApple = [
+    TargetPlatform.iOS,
+    TargetPlatform.macOS,
+  ].contains(defaultTargetPlatform);
   bool _showExternalSearchPage = false;
 
   @override
@@ -85,21 +87,32 @@ class EmojiEditorState extends State<EmojiEditor>
     setState(() {
       _showExternalSearchPage = text.isNotEmpty;
     });
-    Future.delayed(Duration(
-            milliseconds: _emojiSearchPageKey.currentState == null ? 30 : 0))
-        .whenComplete(() {
+    Future.delayed(
+      Duration(milliseconds: _emojiSearchPageKey.currentState == null ? 30 : 0),
+    ).whenComplete(() {
       _emojiSearchPageKey.currentState?.search(text);
     });
   }
 
+  List<CategoryEmoji> _getDefaultEmojiSet(Locale locale) {
+    return emojiSetEnglish;
+  }
+
   Config _getEditorConfig(BoxConstraints constraints) {
+    var emojiI18n = i18n.emojiEditor;
+
     return Config(
       height: double.infinity,
-      locale: emojiEditorConfigs.locale,
-      emojiSet: emojiEditorConfigs.emojiSet,
+      locale: emojiI18n.locale ?? Localizations.localeOf(context),
+      emojiSet:
+          emojiEditorConfigs.emojiSet ??
+          (i18n.emojiEditor.enableSearchAutoI18n
+              ? getDefaultEmojiLocale
+              : _getDefaultEmojiSet),
       checkPlatformCompatibility: emojiEditorConfigs.checkPlatformCompatibility,
       emojiTextStyle: _textStyle,
-      emojiViewConfig: emojiEditorConfigs.style.emojiViewConfig ??
+      emojiViewConfig:
+          emojiEditorConfigs.style.emojiViewConfig ??
           EmojiViewConfig(
             gridPadding: EdgeInsets.zero,
             horizontalSpacing: 0,
@@ -116,7 +129,8 @@ class EmojiEditorState extends State<EmojiEditor>
           ),
       viewOrderConfig: emojiEditorConfigs.style.viewOrderConfig,
       skinToneConfig: emojiEditorConfigs.style.skinToneConfig,
-      categoryViewConfig: emojiEditorConfigs.style.categoryViewConfig ??
+      categoryViewConfig:
+          emojiEditorConfigs.style.categoryViewConfig ??
           CategoryViewConfig(
             initCategory: Category.RECENT,
             backgroundColor: emojiEditorConfigs.style.backgroundColor,
@@ -125,12 +139,7 @@ class EmojiEditorState extends State<EmojiEditor>
             iconColor: const Color(0xFF9E9E9E),
             tabIndicatorAnimDuration: kTabScrollDuration,
             dividerColor: Colors.transparent,
-            customCategoryView: (
-              config,
-              state,
-              tabController,
-              pageController,
-            ) {
+            customCategoryView: (config, state, tabController, pageController) {
               return EmojiEditorCategoryView(
                 config,
                 state,
@@ -151,15 +160,12 @@ class EmojiEditorState extends State<EmojiEditor>
             ),
           ),
       bottomActionBarConfig: emojiEditorConfigs.style.bottomActionBarConfig,
-      searchViewConfig: emojiEditorConfigs.style.searchViewConfig ??
+      searchViewConfig:
+          emojiEditorConfigs.style.searchViewConfig ??
           SearchViewConfig(
             backgroundColor: emojiEditorConfigs.style.backgroundColor,
             buttonIconColor: kImageEditorTextColor,
-            customSearchView: (
-              config,
-              state,
-              showEmojiView,
-            ) {
+            customSearchView: (config, state, showEmojiView) {
               return EmojiEditorHeaderSearchView(
                 config,
                 state,
@@ -178,56 +184,56 @@ class EmojiEditorState extends State<EmojiEditor>
   @override
   Widget build(BuildContext context) {
     return ExtendedPopScope(
-      child: SafeArea(
-        child: _buildEmojiPicker(),
-      ),
+      canPop: emojiEditorConfigs.enableGesturePop,
+      child: SafeArea(child: _buildEmojiPicker()),
     );
   }
 
   /// Builds a SizedBox containing the EmojiPicker with dynamic sizing.
   Widget _buildEmojiPicker() {
-    return LayoutBuilder(builder: (context, constraints) {
-      if (_showExternalSearchPage) {
-        return EmojiEditorFullScreenSearchView(
-          key: _emojiSearchPageKey,
-          config: _getEditorConfig(constraints),
-          state: EmojiViewState(
-            (emojiEditorConfigs.emojiSet ??
-                getDefaultEmojiLocale)(emojiEditorConfigs.locale),
-            (category, emoji) {
-              Navigator.pop(
-                context,
-                EmojiLayer(emoji: emoji.emoji),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (_showExternalSearchPage) {
+          var configs = _getEditorConfig(constraints);
+
+          return EmojiEditorFullScreenSearchView(
+            key: _emojiSearchPageKey,
+            config: configs,
+            state: EmojiViewState(
+              configs.emojiSet!(configs.locale),
+              (category, emoji) {
+                Navigator.pop(context, EmojiLayer(emoji: emoji.emoji));
+              },
+              () {},
+              () {},
+              () {},
+            ),
+          );
+        }
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: EmojiPicker(
+            key: _emojiPickerKey,
+            onEmojiSelected: (category, emoji) => {
+              Navigator.pop(context, EmojiLayer(emoji: emoji.emoji)),
+            },
+            textEditingController: _controller,
+            config: _getEditorConfig(constraints),
+            customWidget: (config, state, showSearchBar) {
+              return ProEmojiPickerView(
+                config: config,
+                state: state,
+                showSearchBar: showSearchBar,
+                scrollController: widget.scrollController,
+                i18nEmojiEditor: widget.configs.i18n.emojiEditor,
+                emojiEditorStyle: widget.configs.emojiEditor.style,
               );
             },
-            () {},
-            () {},
-            () {},
           ),
         );
-      }
-      return Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-        child: EmojiPicker(
-          key: _emojiPickerKey,
-          onEmojiSelected: (category, emoji) => {
-            Navigator.pop(context, EmojiLayer(emoji: emoji.emoji)),
-          },
-          textEditingController: _controller,
-          config: _getEditorConfig(constraints),
-          customWidget: (config, state, showSearchBar) {
-            return ProEmojiPickerView(
-              config: config,
-              state: state,
-              showSearchBar: showSearchBar,
-              scrollController: widget.scrollController,
-              i18nEmojiEditor: widget.configs.i18n.emojiEditor,
-              emojiEditorStyle: widget.configs.emojiEditor.style,
-            );
-          },
-        ),
-      );
-    });
+      },
+    );
   }
 }

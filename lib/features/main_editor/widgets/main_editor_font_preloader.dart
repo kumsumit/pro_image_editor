@@ -12,10 +12,7 @@ class MainEditorFontPreloader extends StatelessWidget {
   /// - [emojiEditorConfigs]: Configuration settings related to the emoji
   /// editor,
   ///   which include font settings and other necessary configurations.
-  const MainEditorFontPreloader({
-    super.key,
-    required this.emojiEditorConfigs,
-  });
+  const MainEditorFontPreloader({super.key, required this.emojiEditorConfigs});
 
   /// Configuration settings related to the emoji editor, including font
   /// details.
@@ -30,5 +27,19 @@ class MainEditorFontPreloader extends StatelessWidget {
     } else {
       return const SizedBox.shrink();
     }
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+
+    properties.add(
+      FlagProperty(
+        'isFontPreloaded',
+        value: kIsWeb && emojiEditorConfigs.enablePreloadWebFont,
+        ifTrue: 'enabled',
+        ifFalse: 'disabled',
+      ),
+    );
   }
 }

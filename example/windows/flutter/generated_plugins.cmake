@@ -4,14 +4,18 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
-  emoji_picker_flutter
+  audioplayers_windows
   file_saver
   file_selector_windows
   firebase_core
   firebase_storage
+  flutter_onnxruntime
   gal
-  share_plus
+  media_kit_libs_windows_video
+  media_kit_video
+  pro_video_editor
   url_launcher_windows
+  volume_controller
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

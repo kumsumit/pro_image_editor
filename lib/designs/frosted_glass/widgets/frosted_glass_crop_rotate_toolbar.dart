@@ -2,9 +2,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-// Project imports:
-import 'package:pro_image_editor/designs/frosted_glass/frosted_glass.dart';
 import '/pro_image_editor.dart';
+import '../frosted_glass.dart';
 
 /// Represents the toolbar for the crop/rotate functionality in the frosted-glass theme.
 class FrostedGlassCropRotateToolbar extends StatefulWidget {
@@ -51,11 +50,12 @@ class _FrostedGlassCropRotateToolbar
     extends State<FrostedGlassCropRotateToolbar> {
   @override
   Widget build(BuildContext context) {
-    var padding = const EdgeInsets.symmetric(vertical: 8, horizontal: 16);
-    var style = TextStyle(
+    const padding = EdgeInsets.symmetric(vertical: 8, horizontal: 16);
+    final style = TextStyle(
       color: widget.configs.cropRotateEditor.style.appBarColor,
       fontSize: 16,
     );
+    final tools = widget.configs.cropRotateEditor.tools;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -68,7 +68,7 @@ class _FrostedGlassCropRotateToolbar
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              if (widget.configs.cropRotateEditor.canRotate)
+              if (tools.contains(CropRotateTool.rotate))
                 IconButton(
                   onPressed: widget.onRotate,
                   tooltip: widget.configs.i18n.cropRotateEditor.rotate,
@@ -77,7 +77,7 @@ class _FrostedGlassCropRotateToolbar
                 )
               else
                 const SizedBox.shrink(),
-              if (widget.configs.cropRotateEditor.canReset)
+              if (tools.contains(CropRotateTool.reset))
                 CupertinoButton(
                   onPressed: widget.onReset,
                   padding: padding,
@@ -86,7 +86,7 @@ class _FrostedGlassCropRotateToolbar
                     style: style,
                   ),
                 ),
-              if (widget.configs.cropRotateEditor.canChangeAspectRatio)
+              if (tools.contains(CropRotateTool.aspectRatio))
                 IconButton(
                   onPressed: widget.openAspectRatios,
                   tooltip: widget.configs.i18n.cropRotateEditor.ratio,

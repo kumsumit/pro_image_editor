@@ -7,9 +7,15 @@ import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/features/crop_rotate_editor/widgets/crop_layer_painter.dart';
 import '/features/main_editor/controllers/main_editor_controllers.dart';
 import '/features/main_editor/services/layer_interaction_manager.dart';
+import '/shared/controllers/video_controller.dart';
 import '/shared/services/content_recorder/widgets/content_recorder.dart';
-import '/shared/widgets/extended/extended_interactive_viewer.dart';
+import '/shared/widgets/extended/interactive_viewer/extended_interactive_viewer.dart';
+import '/shared/widgets/layer/layer_drag_selection_area_widget.dart';
+import '/shared/widgets/video/video_editor_configurable.dart';
+import '/shared/widgets/video/video_editor_controls_widget.dart';
+import '../../crop_rotate_editor/enums/crop_mode.enum.dart';
 import '../main_editor.dart';
+import '../services/layer_drag_selection_service.dart';
 import '../services/sizes_manager.dart';
 import '../services/state_manager.dart';
 import 'main_editor_font_preloader.dart';
@@ -21,10 +27,11 @@ class MainEditorInteractiveContent extends StatelessWidget {
   /// builders, managers, configurations, and callbacks.
   ///
   /// - [buildImage]: A builder function to create the image widget.
+  /// - [buildVideo]: A builder function to create the video widget.
   /// - [buildLayers]: A builder function to create the layer widgets.
   /// - [buildHelperLines]: A builder function to create the helper lines
   ///   widget.
-  /// - [buildRemoveIcon]: A builder function to create the remove icon widget.
+  /// - [buildRemoveArea]: A builder function to create the remove area widget.
   /// - [stateManager]: Manages the state of the editor.
   /// - [sizesManager]: Handles size-related settings and adjustments.
   /// - [state]: Represents the current state of the editor.
@@ -34,30 +41,35 @@ class MainEditorInteractiveContent extends StatelessWidget {
   /// - [layerInteractionManager]: Handles interactions with editor layers.
   /// - [rebuildController]: A stream controller for triggering UI rebuilds.
   /// - [interactiveViewerKey]: A key for managing the interactive viewer state.
-  /// - [selectedLayerIndex]: The index of the currently selected layer.
   /// - [processFinalImage]: Indicates whether the final image is being
   ///   processed.
   const MainEditorInteractiveContent({
     super.key,
     required this.buildImage,
+    required this.buildVideo,
     required this.buildLayers,
     required this.buildHelperLines,
-    required this.buildRemoveIcon,
+    required this.buildRemoveArea,
     required this.callbacks,
     required this.sizesManager,
     required this.configs,
     required this.layerInteractionManager,
     required this.controllers,
-    required this.selectedLayerIndex,
     required this.processFinalImage,
     required this.rebuildController,
     required this.stateManager,
     required this.interactiveViewerKey,
     required this.state,
+    required this.isVideoEditor,
+    required this.videoController,
+    required this.layerDragSelectionService,
   });
 
   /// A builder function to create the image widget.
   final Widget Function() buildImage;
+
+  /// A builder function to create the video widget.
+  final Widget Function() buildVideo;
 
   /// A builder function to create the layer widgets.
   final Widget Function() buildLayers;
@@ -66,7 +78,7 @@ class MainEditorInteractiveContent extends StatelessWidget {
   final Widget Function() buildHelperLines;
 
   /// A builder function to create the remove icon widget.
-  final Widget Function() buildRemoveIcon;
+  final Widget Function() buildRemoveArea;
 
   /// Manages the state of the editor.
   final StateManager stateManager;
@@ -95,20 +107,29 @@ class MainEditorInteractiveContent extends StatelessWidget {
   /// A key for managing the interactive viewer state.
   final GlobalKey<ExtendedInteractiveViewerState> interactiveViewerKey;
 
-  /// The index of the currently selected layer.
-  final int selectedLayerIndex;
-
   /// Indicates whether the final image is being processed.
   final bool processFinalImage;
 
+  /// Indicates whether the image or video editor is active.
+  final bool isVideoEditor;
+
+  /// Manages video-related functionalities within the main editor.
+  final ProVideoController? videoController;
+
+  /// Manages the drag-to-select layer interaction.
+  final LayerDragSelectionService layerDragSelectionService;
+
   @override
   Widget build(BuildContext context) {
+    bool hasSelectedLayers = layerInteractionManager.hasSelectedLayers;
+
     return Center(
       child: Stack(
         children: [
           MainEditorFontPreloader(emojiEditorConfigs: configs.emojiEditor),
           Padding(
-            padding: selectedLayerIndex >= 0 &&
+            padding:
+                hasSelectedLayers &&
                     configs.layerInteraction.hideToolbarOnInteraction
                 ? EdgeInsets.only(
                     top: sizesManager.appBarHeight,
@@ -119,13 +140,28 @@ class MainEditorInteractiveContent extends StatelessWidget {
           ),
 
           /// Build crop area overlay
-          if (configs.imageGeneration.captureOnlyBackgroundImageArea)
+          if (configs.imageGeneration.cropToImageBounds)
             _buildCropAreaOverlay(),
+
+          /// Build video controls
+          if (isVideoEditor && configs.videoEditor.showControls)
+            AnimatedOpacity(
+              opacity: hasSelectedLayers ? 0 : 1,
+              duration: configs.layerInteraction.videoControlsSwitchDuration,
+              child: IgnorePointer(
+                ignoring: hasSelectedLayers,
+                child: VideoEditorConfigurable(
+                  controller: videoController!,
+                  child: const VideoEditorControlsWidget(),
+                ),
+              ),
+            ),
 
           /// Build helper content
           if (!processFinalImage) ...[
             buildHelperLines(),
-            if (selectedLayerIndex >= 0) buildRemoveIcon(),
+            buildRemoveArea(),
+            _buildLayerSelector(),
           ],
 
           /// Build custom body items
@@ -139,19 +175,20 @@ class MainEditorInteractiveContent extends StatelessWidget {
     );
   }
 
+  Widget _buildLayerSelector() {
+    return LayerDragSelectionAreaWidget(
+      layerDragSelectionService: layerDragSelectionService,
+    );
+  }
+
   Widget _buildInteractiveViewer() {
+    var mainConfigs = configs.mainEditor;
     return ExtendedInteractiveViewer(
       key: interactiveViewerKey,
-      boundaryMargin: configs.mainEditor.boundaryMargin,
-      enableZoom: configs.mainEditor.enableZoom,
-      minScale: configs.mainEditor.editorMinScale,
-      maxScale: configs.mainEditor.editorMaxScale,
+      enableExternalGestureDetector: true,
+      zoomConfigs: mainConfigs,
       onInteractionStart: (details) {
         callbacks.mainEditorCallbacks?.onEditorZoomScaleStart?.call(details);
-        layerInteractionManager.freeStyleHighPerformanceEditorZoom = (configs
-                    .paintEditor.freeStyleHighPerformanceMoving ??
-                !isDesktop) ||
-            (configs.paintEditor.freeStyleHighPerformanceScaling ?? !isDesktop);
 
         controllers.uiLayerCtrl.add(null);
       },
@@ -161,11 +198,20 @@ class MainEditorInteractiveContent extends StatelessWidget {
       },
       onInteractionEnd: (details) {
         callbacks.mainEditorCallbacks?.onEditorZoomScaleEnd?.call(details);
-        layerInteractionManager.freeStyleHighPerformanceEditorZoom = false;
         controllers.uiLayerCtrl.add(null);
         controllers.cropLayerPainterCtrl.add(null);
       },
-      child: _buildContentRecorder(),
+      onMatrix4Change: (value) {
+        controllers.cropLayerPainterCtrl.add(null);
+        callbacks.mainEditorCallbacks?.onEditorZoomMatrix4Change?.call(value);
+      },
+      child: isVideoEditor
+          ? Stack(
+              alignment: Alignment.center,
+              fit: StackFit.expand,
+              children: [buildVideo(), _buildContentRecorder()],
+            )
+          : _buildContentRecorder(),
     );
   }
 
@@ -182,7 +228,9 @@ class MainEditorInteractiveContent extends StatelessWidget {
           buildLayers(),
           if (configs.mainEditor.widgets.bodyItemsRecorded != null)
             ...configs.mainEditor.widgets.bodyItemsRecorded!(
-                state, rebuildController.stream),
+              state,
+              rebuildController.stream,
+            ),
         ],
       ),
     );
@@ -195,30 +243,33 @@ class MainEditorInteractiveContent extends StatelessWidget {
         stream: controllers.cropLayerPainterCtrl.stream,
         builder: (context, snapshot) {
           return CustomPaint(
-            foregroundPainter: configs
-                    .imageGeneration.captureOnlyBackgroundImageArea
-                ? CropLayerPainter(
-                    opacity:
-                        configs.mainEditor.style.outsideCaptureAreaLayerOpacity,
-                    backgroundColor: Colors.transparent,
-                    imgRatio: stateManager.transformConfigs.isNotEmpty
-                        ? stateManager
-                            .transformConfigs.cropRect.size.aspectRatio
-                        : sizesManager.decodedImageSize.aspectRatio,
-                    isRoundCropper: configs.cropRotateEditor.roundCropper,
-                    is90DegRotated:
-                        stateManager.transformConfigs.is90DegRotated,
-                    interactiveViewerScale:
-                        interactiveViewerKey.currentState?.scaleFactor ?? 1.0,
-                    interactiveViewerOffset:
-                        interactiveViewerKey.currentState?.offset ??
-                            Offset.zero,
-                  )
+            foregroundPainter: configs.imageGeneration.cropToImageBounds
+                ? _buildCropLayerPainter()
                 : null,
             child: const SizedBox.expand(),
           );
         },
       ),
+    );
+  }
+
+  CropLayerPainter _buildCropLayerPainter() {
+    final transformConfigs = stateManager.transformConfigs;
+    final hasTransformChanges = transformConfigs.isNotEmpty;
+    final cropMode = transformConfigs.cropMode;
+
+    return CropLayerPainter(
+      opacity: configs.mainEditor.style.outsideCaptureAreaLayerOpacity,
+      backgroundColor: configs.mainEditor.style.background,
+      imgRatio: hasTransformChanges
+          ? transformConfigs.cropRect.size.aspectRatio
+          : sizesManager.decodedImageSize.aspectRatio,
+      isRoundCropper: cropMode == CropMode.oval,
+      is90DegRotated: transformConfigs.is90DegRotated,
+      interactiveViewerScale:
+          interactiveViewerKey.currentState?.scaleFactor ?? 1.0,
+      interactiveViewerOffset:
+          interactiveViewerKey.currentState?.offset ?? Offset.zero,
     );
   }
 }

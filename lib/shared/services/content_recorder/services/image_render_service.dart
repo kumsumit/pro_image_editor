@@ -51,8 +51,8 @@ class ImageRenderService {
     try {
       widgetKey ??= containerKey;
 
-      RenderObject? findRenderObject =
-          widgetKey.currentContext?.findRenderObject();
+      RenderObject? findRenderObject = widgetKey.currentContext
+          ?.findRenderObject();
       if (findRenderObject == null) return null;
 
       // Wait until the render object's paint information is ready.
@@ -68,11 +68,11 @@ class ImageRenderService {
 
       // Determine pixel ratio
       double outputRatio = imageInfos.pixelRatio;
-      if (!configs.captureOnlyDrawingBounds &&
-          context != null &&
-          context.mounted) {
-        outputRatio =
-            max(imageInfos.pixelRatio, MediaQuery.devicePixelRatioOf(context));
+      if (!configs.cropToDrawingBounds && context != null && context.mounted) {
+        outputRatio = max(
+          imageInfos.pixelRatio,
+          MediaQuery.devicePixelRatioOf(context),
+        );
       }
 
       bool isOutputSizeTooLarge = checkOutputSizeIsTooLarge(
@@ -153,7 +153,7 @@ class ImageRenderService {
     double pixelRatio,
   ) async {
     // If cropping is not required, return the image directly
-    if (!configs.captureOnlyBackgroundImageArea) {
+    if (!configs.cropToImageBounds) {
       return boundary.toImage(pixelRatio: pixelRatio);
     }
 

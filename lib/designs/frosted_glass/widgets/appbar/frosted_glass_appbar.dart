@@ -1,10 +1,9 @@
 // Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
-import 'package:pro_image_editor/designs/frosted_glass/frosted_glass.dart';
-import 'package:pro_image_editor/designs/frosted_glass/widgets/frosted_glass_effect.dart';
-import 'package:pro_image_editor/pro_image_editor.dart';
+import '/pro_image_editor.dart';
+import '../../frosted_glass.dart';
+import '../frosted_glass_effect.dart';
 
 /// A custom action bar widget with a frosted glass effect, designed for use
 /// within an image editing application. This widget provides an interface for
@@ -65,12 +64,15 @@ class _FrostedGlassActionBarState extends State<FrostedGlassActionBar> {
                   Hero(
                     tag: 'frosted-glass-close-btn',
                     child: FrostedGlassEffect(
-                      child: IconButton(
-                        tooltip: widget.editor.configs.i18n.cancel,
-                        onPressed: widget.editor.closeEditor,
-                        icon: Icon(
-                            widget.editor.mainEditorConfigs.icons.closeEditor),
-                        color: _foregroundColor,
+                      child: GestureInterceptor(
+                        child: IconButton(
+                          tooltip: widget.editor.configs.i18n.cancel,
+                          onPressed: widget.editor.closeEditor,
+                          icon: Icon(
+                            widget.editor.mainEditorConfigs.icons.closeEditor,
+                          ),
+                          color: _foregroundColor,
+                        ),
                       ),
                     ),
                   ),
@@ -80,25 +82,37 @@ class _FrostedGlassActionBarState extends State<FrostedGlassActionBar> {
                       padding: const EdgeInsets.symmetric(horizontal: 7),
                       child: Row(
                         children: [
-                          IconButton(
-                            tooltip: widget.editor.configs.i18n.undo,
-                            onPressed: widget.editor.undoAction,
-                            icon: Icon(
-                              widget.editor.mainEditorConfigs.icons.undoAction,
-                              color: widget.editor.canUndo
-                                  ? _foregroundColor
-                                  : _foregroundColor.withAlpha(80),
+                          GestureInterceptor(
+                            child: IconButton(
+                              tooltip: widget.editor.configs.i18n.undo,
+                              onPressed: widget.editor.undoAction,
+                              icon: Icon(
+                                widget
+                                    .editor
+                                    .mainEditorConfigs
+                                    .icons
+                                    .undoAction,
+                                color: widget.editor.canUndo
+                                    ? _foregroundColor
+                                    : _foregroundColor.withAlpha(80),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 3),
-                          IconButton(
-                            tooltip: widget.editor.configs.i18n.redo,
-                            onPressed: widget.editor.redoAction,
-                            icon: Icon(
-                              widget.editor.mainEditorConfigs.icons.redoAction,
-                              color: widget.editor.canRedo
-                                  ? _foregroundColor
-                                  : _foregroundColor.withAlpha(80),
+                          GestureInterceptor(
+                            child: IconButton(
+                              tooltip: widget.editor.configs.i18n.redo,
+                              onPressed: widget.editor.redoAction,
+                              icon: Icon(
+                                widget
+                                    .editor
+                                    .mainEditorConfigs
+                                    .icons
+                                    .redoAction,
+                                color: widget.editor.canRedo
+                                    ? _foregroundColor
+                                    : _foregroundColor.withAlpha(80),
+                              ),
                             ),
                           ),
                         ],
@@ -108,12 +122,14 @@ class _FrostedGlassActionBarState extends State<FrostedGlassActionBar> {
                   Hero(
                     tag: 'frosted-glass-done-btn',
                     child: FrostedGlassEffect(
-                      child: IconButton(
-                        tooltip: widget.editor.configs.i18n.done,
-                        onPressed: widget.editor.doneEditing,
-                        icon: Icon(
-                          widget.editor.mainEditorConfigs.icons.doneIcon,
-                          color: _foregroundColor,
+                      child: GestureInterceptor(
+                        child: IconButton(
+                          tooltip: widget.editor.configs.i18n.done,
+                          onPressed: widget.editor.doneEditing,
+                          icon: Icon(
+                            widget.editor.mainEditorConfigs.icons.doneIcon,
+                            color: _foregroundColor,
+                          ),
                         ),
                       ),
                     ),
@@ -137,98 +153,147 @@ class _FrostedGlassActionBarState extends State<FrostedGlassActionBar> {
                     horizontal: 7,
                     vertical: 3,
                   ),
-                  child: Wrap(
-                    spacing: 12,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      if (widget.editor.configs.paintEditor.enabled)
-                        IconButton(
-                          tooltip: widget.editor.configs.i18n.paintEditor
-                              .bottomNavigationBarText,
-                          onPressed: widget.editor.openPaintEditor,
-                          icon: Icon(widget
-                              .editor.paintEditorConfigs.icons.bottomNavBar),
-                        ),
-                      if (widget.editor.configs.textEditor.enabled)
-                        IconButton(
-                          tooltip: widget.editor.configs.i18n.textEditor
-                              .bottomNavigationBarText,
-                          onPressed: () => widget.editor.openTextEditor(
-                            duration: const Duration(milliseconds: 150),
-                          ),
-                          icon: Icon(widget
-                              .editor.textEditorConfigs.icons.bottomNavBar),
-                        ),
-                      if (widget.editor.configs.cropRotateEditor.enabled)
-                        IconButton(
-                          tooltip: widget.editor.configs.i18n.cropRotateEditor
-                              .bottomNavigationBarText,
-                          onPressed: widget.editor.openCropRotateEditor,
-                          icon: Icon(widget.editor.cropRotateEditorConfigs.icons
-                              .bottomNavBar),
-                        ),
-                      if (widget.editor.configs.tuneEditor.enabled)
-                        IconButton(
-                          tooltip: widget.editor.configs.i18n.tuneEditor
-                              .bottomNavigationBarText,
-                          onPressed: () =>
-                              widget.editor.openTuneEditor(enableHero: false),
-                          icon: Icon(widget
-                              .editor.tuneEditorConfigs.icons.bottomNavBar),
-                        ),
-                      if (widget.editor.configs.filterEditor.enabled)
-                        IconButton(
-                          tooltip: widget.editor.configs.i18n.filterEditor
-                              .bottomNavigationBarText,
-                          onPressed: widget.editor.openFilterEditor,
-                          icon: Icon(widget
-                              .editor.filterEditorConfigs.icons.bottomNavBar),
-                        ),
-                      if (widget.editor.configs.blurEditor.enabled)
-                        IconButton(
-                          tooltip: widget.editor.configs.i18n.blurEditor
-                              .bottomNavigationBarText,
-                          onPressed: widget.editor.openBlurEditor,
-                          icon: Icon(widget
-                              .editor.blurEditorConfigs.icons.bottomNavBar),
-                        ),
-                      if (widget.editor.configs.stickerEditor.enabled ||
-                          widget.editor.configs.emojiEditor.enabled)
-                        IconButton(
-                          key: const ValueKey(
-                              'whatsapp-open-sticker-editor-btn'),
-                          tooltip: widget.editor.configs.i18n.stickerEditor
-                              .bottomNavigationBarText,
-                          onPressed: widget.openStickerEditor,
-                          icon: Icon(widget
-                              .editor.stickerEditorConfigs.icons.bottomNavBar),
-                        ),
-                    ],
+                  child: GestureInterceptor(
+                    child: Row(
+                      spacing: 12,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: _buildItemList(),
+                    ),
                   ),
                 ),
               ),
-            )
-          /*  AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 150),
-                  transitionBuilder: (child, animation) => ScaleTransition(
-                    scale: animation,
-                    child: FadeTransition(
-                      opacity: animation,
-                      child: child,
-                    ),
-                  ),
-                  child: widget.editor.canUndo
-                      ?IconButton(
-                          tooltip: widget.editor.configs.i18n.undo,
-                          onPressed: widget.editor.undoAction,
-                          icon: Icon(widget.editor.configs.icons.undoAction),
-                         
-                        )
-                      : const SizedBox.shrink(),
-                ),
-             */
+            ),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildItemList() {
+    final tools = widget.editor.configs.mainEditor.tools;
+
+    return tools
+        .map((tool) {
+          switch (tool) {
+            case SubEditorMode.paint:
+              return IconButton(
+                tooltip: widget
+                    .editor
+                    .configs
+                    .i18n
+                    .paintEditor
+                    .bottomNavigationBarText,
+                onPressed: widget.editor.openPaintEditor,
+                icon: Icon(widget.editor.paintEditorConfigs.icons.bottomNavBar),
+              );
+
+            case SubEditorMode.text:
+              return IconButton(
+                tooltip: widget
+                    .editor
+                    .configs
+                    .i18n
+                    .textEditor
+                    .bottomNavigationBarText,
+                onPressed: () => widget.editor.openTextEditor(
+                  duration: const Duration(milliseconds: 150),
+                ),
+                icon: Icon(widget.editor.textEditorConfigs.icons.bottomNavBar),
+              );
+
+            case SubEditorMode.cropRotate:
+              return IconButton(
+                tooltip: widget
+                    .editor
+                    .configs
+                    .i18n
+                    .cropRotateEditor
+                    .bottomNavigationBarText,
+                onPressed: widget.editor.openCropRotateEditor,
+                icon: Icon(
+                  widget.editor.cropRotateEditorConfigs.icons.bottomNavBar,
+                ),
+              );
+
+            case SubEditorMode.tune:
+              return IconButton(
+                tooltip: widget
+                    .editor
+                    .configs
+                    .i18n
+                    .tuneEditor
+                    .bottomNavigationBarText,
+                onPressed: () =>
+                    widget.editor.openTuneEditor(enableHero: false),
+                icon: Icon(widget.editor.tuneEditorConfigs.icons.bottomNavBar),
+              );
+
+            case SubEditorMode.filter:
+              return IconButton(
+                tooltip: widget
+                    .editor
+                    .configs
+                    .i18n
+                    .filterEditor
+                    .bottomNavigationBarText,
+                onPressed: widget.editor.openFilterEditor,
+                icon: Icon(
+                  widget.editor.filterEditorConfigs.icons.bottomNavBar,
+                ),
+              );
+
+            case SubEditorMode.blur:
+              return IconButton(
+                tooltip: widget
+                    .editor
+                    .configs
+                    .i18n
+                    .blurEditor
+                    .bottomNavigationBarText,
+                onPressed: widget.editor.openBlurEditor,
+                icon: Icon(widget.editor.blurEditorConfigs.icons.bottomNavBar),
+              );
+
+            case SubEditorMode.emoji:
+              return IconButton(
+                tooltip: widget
+                    .editor
+                    .configs
+                    .i18n
+                    .stickerEditor
+                    .bottomNavigationBarText,
+                onPressed: widget.openStickerEditor,
+                icon: Icon(
+                  widget.editor.stickerEditorConfigs.icons.bottomNavBar,
+                ),
+              );
+            case SubEditorMode.sticker:
+              return null;
+            case SubEditorMode.audio:
+              return IconButton(
+                tooltip: widget
+                    .editor
+                    .configs
+                    .i18n
+                    .audioEditor
+                    .bottomNavigationBarText,
+                onPressed: widget.editor.openAudioEditor,
+                icon: Icon(widget.editor.audioEditorConfigs.icons.bottomNavBar),
+              );
+            case SubEditorMode.videoClips:
+              return IconButton(
+                tooltip: widget
+                    .editor
+                    .configs
+                    .i18n
+                    .clipsEditor
+                    .bottomNavigationBarText,
+                onPressed: widget.editor.openClipsEditor,
+                icon: Icon(widget.editor.clipsEditorConfigs.icons.bottomNavBar),
+              );
+          }
+        })
+        .whereType<Widget>()
+        .toList();
   }
 }

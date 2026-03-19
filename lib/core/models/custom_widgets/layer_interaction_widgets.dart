@@ -1,5 +1,7 @@
 import 'utils/custom_widgets_typedef.dart';
 
+export '/shared/widgets/layer/models/layer_item_interaction.dart';
+
 /// A class that defines a layer of interaction for custom widgets,
 /// allowing editing, removing, and rotating/scaling actions.
 ///
@@ -30,12 +32,16 @@ class LayerInteractionWidgets {
   /// * [border]: An optional border to be displayed around the interaction
   /// layer.
   const LayerInteractionWidgets({
+    this.overlayChildBuilder,
     this.editButton,
     this.removeButton,
     this.rotateScaleButton,
     this.children,
     this.border,
   });
+
+  /// This will completely replace the existing overlay when editing a layer.
+  final LayerOverlayBuilder? overlayChildBuilder;
 
   /// The button for the edit interaction, represented by
   /// [LayerInteractionTapButton].
@@ -164,6 +170,7 @@ class LayerInteractionWidgets {
   /// * [children]: Updates the list of child widgets.
   /// * [border]: Updates the border of the interaction layer.
   LayerInteractionWidgets copyWith({
+    LayerOverlayBuilder? overlayChildBuilder,
     LayerInteractionTapButton? editButton,
     LayerInteractionTapButton? removeButton,
     LayerInteractionScaleRotateButton? rotateScaleButton,
@@ -171,6 +178,7 @@ class LayerInteractionWidgets {
     LayerInteractionBorder? border,
   }) {
     return LayerInteractionWidgets(
+      overlayChildBuilder: overlayChildBuilder ?? this.overlayChildBuilder,
       editButton: editButton ?? this.editButton,
       removeButton: removeButton ?? this.removeButton,
       rotateScaleButton: rotateScaleButton ?? this.rotateScaleButton,

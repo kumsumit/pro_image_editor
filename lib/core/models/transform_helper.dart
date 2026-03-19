@@ -2,7 +2,7 @@
 import 'dart:ui';
 
 // Project imports:
-import '/features/crop_rotate_editor/models/transform_factors.dart';
+import '/features/crop_rotate_editor/models/transform_configs.dart';
 
 /// A helper class for managing transformation calculations in the image editor.
 ///
@@ -73,8 +73,8 @@ class TransformHelper {
         : mainImageSize;
     double? cropRectRatio =
         transformConfigs != null && transformConfigs!.isNotEmpty
-            ? transformConfigs?.cropRect.size.aspectRatio
-            : null;
+        ? transformConfigs?.cropRect.size.aspectRatio
+        : null;
     if (transformConfigs?.is90DegRotated == true) {
       cropRectRatio = 1 / cropRectRatio!;
     }

@@ -4,8 +4,7 @@ import 'dart:math';
 // Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
-import 'package:pro_image_editor/pro_image_editor.dart';
+import '/pro_image_editor.dart';
 
 /// A stateless widget that provides a text size slider with a frosted glass
 /// effect.
@@ -41,12 +40,13 @@ class FrostedGlassTextSizeSlider extends StatelessWidget {
         margin: const EdgeInsets.only(right: 16),
         width: 16,
         height: min(
-            280,
-            MediaQuery.sizeOf(context).height -
-                MediaQuery.viewInsetsOf(context).bottom -
-                kToolbarHeight -
-                kBottomNavigationBarHeight -
-                MediaQuery.paddingOf(context).top),
+          280,
+          MediaQuery.sizeOf(context).height -
+              MediaQuery.viewInsetsOf(context).bottom -
+              kToolbarHeight -
+              kBottomNavigationBarHeight -
+              MediaQuery.paddingOf(context).top,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -66,20 +66,22 @@ class FrostedGlassTextSizeSlider extends StatelessWidget {
                   data: SliderThemeData(
                     overlayShape: SliderComponentShape.noThumb,
                   ),
-                  child: StatefulBuilder(builder: (context, setState) {
-                    return Slider(
-                      onChanged: (value) {
-                        textEditor.fontScale = 4.5 - value;
-                        setState(() {});
-                      },
-                      min: 0.5,
-                      max: 4,
-                      value: max(0.5, min(4.5 - textEditor.fontScale, 4)),
-                      thumbColor: Colors.white,
-                      inactiveColor: Colors.white60,
-                      activeColor: Colors.white60,
-                    );
-                  }),
+                  child: StatefulBuilder(
+                    builder: (context, setState) {
+                      return Slider(
+                        onChanged: (value) {
+                          textEditor.fontScale = 4.5 - value;
+                          setState(() {});
+                        },
+                        min: 0.5,
+                        max: 4,
+                        value: max(0.5, min(4.5 - textEditor.fontScale, 4)),
+                        thumbColor: Colors.white,
+                        inactiveColor: Colors.white60,
+                        activeColor: Colors.white60,
+                      );
+                    },
+                  ),
                 ),
               ),
             ),

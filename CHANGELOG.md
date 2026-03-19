@@ -1,31 +1,604 @@
 # Changelog
 
-# 8.1.6
+## 12.0.7
+- **FEAT**(text-editor): Add `leadingDistribution` property to `TextEditorStyle` for configuring how extra line height is distributed. Use `TextLeadingDistribution.even` to vertically center text within rounded background rects at non-default line heights. Defaults to `proportional` for backward compatibility.
+
+## 12.0.6
+- **FEAT**(platform): Add shared Darwin (iOS/macOS) native plugin implementation using Swift Package Manager.
+
+## 12.0.5
+- **FEAT**(editor-audio): Add `safeFilePath` method to `EditorAudio` that returns a file path for the audio source. For file sources, it returns the path directly. For memory, asset, and network sources, it writes the data to a temporary file. File extension is automatically extracted from asset paths and network URLs.
+
+## 12.0.4
+- **FIX**(wasm): Resolve WASM incompatibility caused by unconditional `dart:isolate` import. The `IsolateManager` is now loaded via a conditional import, so web/WASM builds use a stub that falls back to single-threaded processing.
+
+## 12.0.3
+- **FEAT**(crop-rotate-editor): Add `exportOvalMask` to `CropRotateEditorConfigs` (default `true`). When set to `false`, the exported image uses a plain rectangular crop even if `CropMode.oval` is active, while the oval UI remains visible inside the crop editor.
+- **FEAT**(crop-rotate-editor): Add `helperLineWidth` to `CropRotateEditorStyle`, allowing the grid line thickness to be customized or hidden entirely by setting it to `0`.
+
+## 12.0.2
+- **FIX**(main-editor): Resolve crash when `setState` is called after widget disposal, preventing "Cannot add new events after calling close" error.
+
+## 12.0.1
+- **FIX**(layers): Resolve issue where layer interaction button tooltips would absorb pointer events in Flutter 3.41+, preventing scale and rotate gestures from working.
+- **CHORE**: Update minimum Flutter version to 3.41.0 and Dart SDK to 3.11.0.
+
+## 12.0.0
+- **FEAT**(audio-editor): Added a new Audio Editor to the Video Editor, allowing users to add background music. Users can set the audio start time and adjust the balance between the original and overlay tracks.
+- **FEAT**(clips-editor): Introduced a new Clips Editor that lets users combine multiple video clips into a single merged video.
+
+## 11.23.0
+- **FEAT**(paint-editor): Add `customPathBuilders` to `PaintEditorConfigs`, allowing users to register custom `PathBuilderBase` implementations for any paint mode.
+- **FEAT**(paint-editor): Add `custom1`, `custom2`, `custom3` paint modes that require custom path builders to be registered. These can be fully customized with custom icons and i18n labels.
+- **FIX**(paint-editor): Arrow head size now scales proportionally with stroke width for consistent appearance.
+
+## 11.22.2
+- **FEAT**(helper-lines): Helper line stroke width is now configurable via the configs.
+- **FIX**(paint-editor): Fix drawing latency with the Apple Pencil.
+
+## 11.22.1
+- **FIX**(layers): Resolve issue of layers always being clipped and unable to extend beyond the image editor.
+
+## 11.22.0
+- **FEAT**(image-generation): Add `captureImageByteFormat` config to `ImageGenerationConfigs` to control the byte format used when capturing images. Defaults to `ImageByteFormat.rawStraightRgba` which prevents black border artifacts around transparent edges when exporting to PNG.
+- **FEAT**(main-editor): Add `enableKeyboardShortcuts` config to `MainEditorConfigs` to optionally disable library-side keyboard shortcuts, allowing apps to implement their own key bindings without conflicts.
+
+## 11.21.3
+- **FEAT**(video-editor): Add `videoSetupLoadingIndicator` widget to `VideoEditorWidgets` to allow customizing the loading indicator shown while the video player is initializing.
+
+## 11.21.2
+- **FEAT**(video-editor): Add `showControls` config to `VideoEditorConfigs` to allow hiding the video editor controls UI.
+
+## 11.21.1
+- **FEAT**(text-editor): Add `resizeToAvoidBottomInset` config to control whether the editor resizes when the keyboard appears.
+- **FIX**(paint-editor): Resolve issue where erasing would randomly remove other layers.
+
+## 11.21.0
+- **FIX**(keyboard-shortcuts): Block Ctrl-based shortcuts when Alt is pressed to prevent conflicts with keyboard layouts (e.g., Polish) where Ctrl+Alt+Z is used for typing characters. More details in PR [#757](https://github.com/hm21/pro_image_editor/pull/757).
+
+## 11.20.1
+- **FIX**: Resolve issue where DeferPointer shows an error when the hero animations is running for the text layers from the custom screens.
+
+## 11.20.0
+- **FEAT**(main-editor): Add the flag `enableSubEditorPage` which allows sub-editors to be opened with the same constraints as the editor itself. More details in PR [#752](https://github.com/hm21/pro_image_editor/pull/752).
+
+## 11.19.1
+- **FEAT**(main-editor): Add `onEditTextLayer` callback to `MainEditorCallbacks`, allowing users to open a custom text editor when a text layer is tapped.
+- **FEAT**(main-editor): Add `onCreateTextLayer` callback to `MainEditorCallbacks`, allowing users to open a custom text editor when creating a new text layer.
+- **FEAT**(text-editor): Add `bodyItemsOverlay` to `TextEditorWidgets` for placing custom widgets above all other content in the text editor body.
+- **FEAT**(text-editor): Add `textFieldPadding` to `TextEditorStyle` for applying padding outside the scroll area of the text field.
+
+## 11.19.0
+- **FEAT**(CompleteParameters): Add serialization methods (`toMap`, `fromMap`, `toJson`, `fromJson`).
+
+## 11.18.3
+- **FEAT**(paint-editor): Add freestyle arrow modes (`freeStyleArrowStart`, `freeStyleArrowEnd`, `freeStyleArrowStartEnd`) to draw freehand paths with arrowheads at the start, end, or both ends.
+
+## 11.18.2
+- **FEAT**(EditorSafeArea): Add convenience constructors `none`, `symmetric`, and `fromLTRB` for easier safe area configuration.
+- **FIX**(HelperLines): Resolves the issue of horizontal lines not showing up when the editor overflows the screen.
+
+## 11.18.1
+- **FIX**(filter-editor): Ensure that the applied filters can also be removed.
+
+## 11.18.0
+- **FEAT**(filter-editor): Restore previously applied filter when `enableMultiSelection` is disabled, allowing users to toggle between filters instant of stacking filters.
+
+## 11.17.0
+- **FEAT**(paint-editor): Add hexagon shape tool. More details in PR [#738](https://github.com/hm21/pro_image_editor/pull/738).
+
+## 11.16.0
+- **FIX**(text-editor): Persist text shadow properties when exporting and importing state history. More details in PR [#733](https://github.com/hm21/pro_image_editor/pull/733).
+
+## 11.15.6
+- **FEAT**(text-editor): Add an optional background and borders to the text editor input field. More details in PR [#735](https://github.com/hm21/pro_image_editor/pull/735).
+
+## 11.15.5
+- **FEAT**(network-image): Added optional `networkHeaders` to the `EditorImage`. More details in PR [#729](https://github.com/hm21/pro_image_editor/pull/729).
+
+## 11.15.4
+- **FIX**(widget-layer): Resolve the issue of the optional `width` being applied incorrectly.
+
+## 11.15.3
+- **FEAT**(widget-layer): Add optional `width` property.
+
+## 11.15.2
+- **FEAT**(crop-rotate-editor): Add new callback `onTransformUpdateEnd` that returns all transformation changes whenever a value in the crop-rotate editor is modified.
+
+## 11.15.1
+- **FEAT**(text-editor): Add config `enableAutoWrapOnLayer` to the `TextEditorConfigs` which allows for deciding whether the layer applies the editor's auto wrapping or not. More details in PR [#720](https://github.com/hm21/pro_image_editor/pull/720).
+
+## 11.15.0
+- **FEAT**(crop-editor): Add `setScale` method to cropRotateEditor for programmatically setting the scale factor.
+
+## 11.14.2
+- **FIX**(main-editor): Resolve issue where `onLayerTapUp` is never called.
+- **FIX**(main-editor): Prevent the 'getSelectedLayer' function from throwing an exception when a layer is not found.
+
+## 11.14.1
+- **FIX**(main-editor): Prevent dual editor opening (paint and text) when a text layer that is inside a paint layer is tapped with Apple pencil.
+
+## 11.14.0
+- **FEAT**(crop-editor): Add `cropOverlayOpacity` and `cropOverlayInteractionOpacity` to control the opacity outside the crop area when editing an image.
+
+## 11.13.0
+- **FEAT**(text-editor): Add `enableImageBoundaryTextWrap` property to `TextEditorConfigs` to automatically wrap text at the actual image boundaries instead of screen boundaries. More details in PR [#704](https://github.com/hm21/pro_image_editor/pull/704).
+- **FIX**(main-editor): Resolve apple pencil tap detection for text layer editing. More details in PR [#705](https://github.com/hm21/pro_image_editor/pull/705).
+
+## 11.12.2
+- **FEAT**(main-editor): Make scaling actions done through desktop interactions (mouse scroll or keyboard) consistent between layer types and proportional to the current size of the layer.
+
+## 11.12.1
+- **FIX**(RTL): Resolve incorrect layer selection box location. Resolves issue [#698](https://github.com/hm21/pro_image_editor/issues/698). 
+
+## 11.12.0
+- **FEAT**(text-editor): Added `enableTapOutsideToSave` configuration to `TextEditorConfigs` to control whether tapping outside the text field saves the text annotation. 
+- **FIX**(paint-editor): Resolve draw delay in the freestyle mode. Resolves issue [#696](https://github.com/hm21/pro_image_editor/issues/696).
+
+## 11.11.0
+- **FEAT**(dashDotLine): Added new paint-mode "dashDotLine".
+
+## 11.10.1
+- **FIX**(callbacks): Resolve issue where the callback `onDone` in mainEditorCallbacks is not triggered. Resolves issue [#681](https://github.com/hm21/pro_image_editor/issues/681).
+
+## 11.10.0
+- **FEAT**: Add support for blank editors via `ProImageEditor.blank` constructor, allowing creation of editors without an initial image.
+
+## 11.9.1
+- **FIX**(text-editor): Resolve the issue of the theme changing during the hero flight. Resolves issue [#677](https://github.com/hm21/pro_image_editor/issues/677).
+
+## 11.9.0
+- **FEAT**(main-editor): Introduced `tools` in `MainEditorConfigs` to configure available sub-editors and their order, replacing old `enableModeX` flags with a cleaner list-based API.  
+- **FEAT**(paint-editor): Introduced `tools` in `PaintEditorConfigs` to define available paint modes and their order, deprecating individual `enableModeX` flags.  
+- **FEAT**(crop-rotate-editor): Introduced `tools` in `CropRotateEditorConfigs` with a new `CropRotateTool` enum for rotate, flip, aspect ratio, and reset actions, deprecating the old `showXButton` flags.  
+
+## 11.8.0
+- **FEAT**(callbacks): Add `onEditLayer` to `PaintEditorCallbacks`, allowing custom paint-layer editing logic (e.g., via a side menu). This was requested in [#673](https://github.com/hm21/pro_image_editor/issues/673).
+- **FEAT**(layers): Add `copyWith` method to all layer classes for easier cloning and modification.
+
+## 11.7.0
+- **FEAT**(sub-editors): Add `enableGesturePop` config to all sub-editors to control whether user back navigation (hardware back button, predictive back swipe) is allowed.
+
+## 11.6.0
+- **FEAT**(eraser): Extend the eraser in the paint editor so that its size and mode can be changed dynamically.
+
+## 11.5.8
+- **FIX**(eraser): Resolve the issue of delayed erasing. Resolves issue [#662](https://github.com/hm21/pro_image_editor/issues/662).
+
+## 11.5.7
+- **DOCS**(readme): Remove outdated information about HTML renderer support in Flutter.
+
+## 11.5.6
+- **FIX**(image-generation): Resolve issue where updating the background image could throw an error when exporting the image. Resolves issue [#652](https://github.com/hm21/pro_image_editor/issues/652).
+
+## 11.5.5
+- **FIX**(video-trim-bar): Resolve issue where `maxDuration` displayed an incorrect time span when its value exceeded the video duration. Resolves issue [#648](https://github.com/hm21/pro_image_editor/issues/648).
+
+## 11.5.4
+- **FIX**(iOS): Fixes scroll glitch in the bottom bar. Resolves issue [#640](https://github.com/hm21/pro_image_editor/issues/640).
+
+## 11.5.3
+- **FIX**(video-editor): Fixed issue where state history import didn't work in the video editor. Resolves video-editor discussion [#50](https://github.com/hm21/pro_video_editor/discussions/50).
+
+## 11.5.2
+- **FEAT**(style): Add missing `editSheetColor` to paint-editor styles.
+
+## 11.5.1
+- **FIX**(recorder): Fix slow image generation after transforming layers when layer-selection is disabled.
+- **FIX**(emoji-picker): Fix null error in the console from the emoji picker. Resolves issue [#642](https://github.com/hm21/pro_image_editor/issues/642).
+- **FEAT**(debug): Add extensive `debugFillProperties` for better debugging.
+
+## 11.5.0
+- **FEAT**(eraser): The eraser in the PaintEditor now removes only partial areas of the painting by default, instead of the entire object. This behavior can be adjusted in the PaintEditorConfigs using `eraserMode` and `eraserSize`.
+
+## 11.4.1
+- **REFACTOR**(flutter): Fix deprecated APIs after upgrading to flutter `3.35.0`.
+
+## 11.4.0
+- **REFACTOR**(flutter): Adapt the code to make it compatible with Flutter `3.35.0`.
+
+## 11.3.0
+- **FEAT**(text-editor): Replace `EditableText` with `TextField` to enhance text selection and overall input handling.
+
+## 11.2.3
+- **FIX**(multiselect): Resolve issue where layers could still be selected even when `enableSelection` for the layer was set to `false`. This resolves issue [#628](https://github.com/hm21/pro_image_editor/issues/628).
+
+## 11.2.2
+- **FIX**(main-editor): Resolve issue where the `replaceLayer` function broke the logic that ensured layers resized correctly when the screen size changed. This resolves issue [#624](https://github.com/hm21/pro_image_editor/issues/624) and issue [#626](https://github.com/hm21/pro_image_editor/issues/626).
+
+## 11.2.1
+- **FIX**(state-history): Resolve issue where updating the background-image overwrote previous states.
+
+## 11.2.0
+- **FEAT**(state-history): Added support for undo and redo when the background image is changed in the state history.
+
+## 11.1.3
+- **FIX**(text-editor): Fixed an issue where long text didn’t wrap correctly.
+- **FIX**(video-editor): Fixed display issues with the trim bar, especially for maximum and minimum durations.
+
+## 11.1.2
+- **REFACTOR**(text-layer): Remove `colorPickerPosition` from `TextLayer` and related widgets.
+- **FIX**(import/export): Resolve issue of import/export crashing when the minifier is enabled. This resolves issue [#613](https://github.com/hm21/pro_image_editor/issues/613).
+- **FIX**(text-layer): Fixed lag in hero animation.
+- **FIX**(text-layer): Fixed issue where edited text layers didn't update the state history.
+
+## 11.1.1
+- **FIX**(web-build): Fix web-build failure caused by int64 values. This resolves issue [#612](https://github.com/hm21/pro_image_editor/issues/612).
+
+## 11.1.0
+- **FEAT**(import-export): Improved minifier with configurable decimal rounding and boolean value minification.
+
+## 11.0.1
+- **FIX**(video-editor): Resolve incorrect behavior of `maxTrimDuration`.
+
+## 11.0.0
+- **FEAT**(multi-select): Layers can now be selected simultaneously using Ctrl, Shift, or long-press gestures.
+- **FEAT**(grouping): Layers can be grouped for unified selection and movement.
+- **FEAT**(main-editor): Added `selectAllLayers` and `unselectAllLayers` methods for bulk selection control.
+- **FEAT**(main-editor): Introduced `enableMultiSelectMode` to allow instant multi-selection without modifier keys.
+- **FEAT**(drag-selection): Added support for selecting multiple layers by dragging a rectangle around them.
+- **FEAT**(mouse-actions): Added support for different mouse button actions such as pan, multi-select, and drag-select.
+- **FEAT**(layer-configs): Added `enableKeyboardMultiSelection` and `enableLongPressMultiSelection` to `LayerInteractionConfigs` for dynamically enabling or disabling multi-selection via keyboard or long press.
+- **FEAT**(remove-area): Applied `AnimatedSwitcher` to the remove area for smooth fade-in/out transitions.
+- **FEAT**(crop-rotate-editor): Add `enableFlipAnimation` to `CropRotateEditorConfigs`, which enables flip animation by default.
+
+<br/>
+
+- **PERF**(GPU): Improved GPU performance by optimizing transformation and color filter matrices, especially beneficial when multiple filters or tune adjustments are applied.
+- **PERF**(CPU): Replace the `rounded_background_text` package-code with a custom solution that significantly improves the CPU usage required for drawing calculations.
+- **PERF**(RAM): Use cached sizes in the filter editor to display filter previews which reduce RAM usage. 
+
+<br/>
+
+- **FIX**(rounded_background_text): Resolved issue where two text lines with nearly identical widths would not render with correct rounding; now ensures both lines are treated as equally long.
+- **FIX**(crop-rotate-editor): Resolve broken undo/redo functionality in the `CropRotateEditor`.
+
+<br/>
+
+#### Breaking Changes
+- Removed `layerIndex` from `onTapEditSticker` in `StickerEditorCallbacks`.
+- Removed `selectedLayerIndex` from `MainEditor`.
+- Remove `ColorFilterAddons.opacity`.
+- The way the editor handles multiple filters and tune adjustments has changed, so combinations might now appear slightly differently.
+- Removed `enableFreeStyleHighPerformanceScaling`, `enableFreeStyleHighPerformanceMoving` and `enableFreeStyleHighPerformanceHero` from `PaintEditorConfigs`.
+
+## 10.5.4
+- **FEAT**(text-layers): Delete the edited 'TextLayers' if the new text is empty.
+
+## 10.5.3
+- **FIX**(helper-lines): Resolve lint issues after upgrading to `flutter_lints: ^6.0.0`.
+
+## 10.5.2
+- **FIX**(helper-lines): Resolve issue where helper lines are visible when hovering over the layer remove zone. This resolves issue [#561](https://github.com/hm21/pro_image_editor/issues/561).
+
+## 10.5.1
+- **FIX**(import-export): Resolve issue where importing from text layers throws an error and fails.
+
+## 10.5.0
+- **FEAT**(text-editor): Add `enableAutoOverflow` property to `TextEditorConfigs` to automatically wrap text when it exceeds the editor's visible area.
+
+## 10.4.1
+- **FIX**(paint-editor): Resolve issue where custom widgets weren't working in the new paint-layer editor.
+
+## 10.4.0
+- **FEAT**(paint-layer): PaintLayers can now be edited in the main-editor. This adds various new configurations to `I18nPaintEditor`, `PaintEditorConfigs`, `PaintEditorStyle`, and `PaintEditorWidgets`.
+- **FIX**(paint-editor): Resolve issue where setting a color programmatically didn't update the color bar. This resolves issue [#552](https://github.com/hm21/pro_image_editor/issues/552).
+
+## 10.3.2
+- **FIX**(helper-lines): Resolve issue where layers wouldn't release when positioned very close (1–3 pixels) on the same axis.
+- **FIX**(screen-resize): Resolve issue where layers resize incorrectly after image transformation. This resolves issue [#547](https://github.com/hm21/pro_image_editor/issues/547).
+
+## 10.3.1
+- **FIX**(crop-rotate-editor): Resolve rotation reset issue after changing aspect ratio.
+
+## 10.3.0
+- **FIX**(screen-resize): Resolve issue causing layers with custom `FractionalTranslation` to be misplaced.
+- **FIX**(paint-editor): Resolve issue where layers didn't resize with the screen.
+- **FIX**(paint-mode): Resolve issue where creating polygons didn't recognize tap events.
+- **FEAT**(paint-editor): Eraser can now also remove existing paintings from other histories.
+
+## 10.2.8
+- **FIX**(helper-lines): Resolve issue where layers wouldn't release when sharing the same axis.
+- **FIX**(helper-lines): Resolve issue where helperLine configs had no effect.
+
+## 10.2.7
+- **DOCS**(example): Add AI example demonstrating how the image editor can be controlled directly through AI text commands.
+- **DOCS**(example): Add AI example showing how to add AI-generated images as stickers.
+- **DOCS**(example): Add AI example illustrating how to replace the background with a newly generated image.
+- **DOCS**(readme): Update the readme with previews of the new AI-generated content.
+
+## 10.2.6
+- **FIX**(paint-editor): Resolved an issue where the `opacityBottomSheetBackground` was not applying any effect. This resolves issue [#540](https://github.com/hm21/pro_image_editor/issues/540).
+
+## 10.2.5
+- **FEAT**(callbacks): Add `onStateHistoryChange` callback to `MainEditorCallbacks`.
+- **FEAT**(callbacks): Add `onImageDecoded` callback to `MainEditorCallbacks`.
+- **FEAT**(main-editor): Add `autoCorrectZoomOffset` and `AutoCorrectZoomScale` parameters to the `addLayer` method, allowing layers to be added inside the viewport even when the user is zoomed into a specific area of the editor.
+- **FEAT**(main-editor): Add `closeSubEditor` method to close all subeditors.
+
+## 10.2.4
+- **FEAT**(layer-interaction): Add `releaseThreshold` to control snapping behavior for helper lines.
+- **FEAT**(helper-lines): add `isDisabledAtZoom` property to control visibility based on zoom level.
+
+## 10.2.3
+- **FIX**(widget-layer): Resolved an issue where the edit button on editable `WidgetLayer` was visible even when interaction was disabled. This resolves issue [#532](https://github.com/hm21/pro_image_editor/issues/532).
+- **FEAT**(callback): Add `onHoverRemoveAreaChange` to detect hover on remove area. This was requested in [#531](https://github.com/hm21/pro_image_editor/issues/531).
+
+## 10.2.2
+- **FIX**(export): Resolved an issue where exporting multiple layers could overwrite existing ones. This resolves issue [#527](https://github.com/hm21/pro_image_editor/issues/527).
+
+## 10.2.1
+- **FIX**(layer): Resolved an issue where importing a layer didn’t restore the `boxConstraints`.
+
+## 10.2.0
+- **FEAT**(layer): Show alignment guides when layers share the same x or y position.
+
+## 10.1.2
+- **FIX**(compat): Increased minimum Flutter SDK version to 3.32.0 to ensure compatibility with updated OverlayPortal APIs.
+
+## 10.1.1
+- **FIX**(gestures): Add new widget `GestureInterceptor` to prevent unnecessary gesture bubbling up the widget tree.
+
+## 10.1.0
+- **FEAT**(callbacks): Add new `onKeyboardEvent` callback to `MainEditorCallbacks`.
+
+## 10.0.0
+- **FEAT**(layer): Move the layer selection to the overlay to prevent it from being captured. This change allows layers to remain selected even after an interaction. The behavior can be controlled using the `keepSelectionOnInteraction` variable in the `LayerInteractionConfigs`.
+- **FEAT**(layer-stack): Add `moveLayerForward` and `moveLayerBackward` to move a layer one step forward or backward in the stack.
+- **FEAT**(layer-stack): Add `moveLayerToFront` and `moveLayerToBack` to move a layer to the top or bottom of the stack.
+- **FEAT**(layer-stack): Add `getLayerStackIndex` to retrieve a layer's index in the stack.
+- **FEAT**(layer): Add `duplicateLayer` to the `LayerCopyManager`.
+- **FEAT**(callback): Add `onLayerTapDown` and `onLayerTapUp` to the `MainEditorCallbacks`.
+- **FEAT**(layer): Add layer type identification for emoji, text, paint, and widget layers.
+- **FEAT**(cropMode): The `CropMode` can now be dynamically switched inside the `cropRotateEditor` by updating the `cropMode` value.
+- **FEAT**(crop-editor): The `CropEditor` now supports every aspect ratio for the round cropper, not just aspect ratio 1.
+- **FEAT**(crop-editor): Changing the aspect ratio no longer resets other applied changes like flip or rotate.
+- **FEAT**(paint-editor): Add `addPainting` method that allows to programmatically create new paintings.
+
+<br/>
+
+- **FIX**(text-layer): Resolve textLayer opening without requiring double-tap.
+- **FIX**(autoSource): Resolve issue where an error is thrown when the 'file' argument in the 'autoSource' constructor is null. This resolves issue [#509](https://github.com/hm21/pro_image_editor/issues/509).
+- **FIX**(text-editor): Resolve the issue of input text auto-wrapping, which does not happen in the main editor. This resolves issue [#469](https://github.com/hm21/pro_image_editor/issues/469). 
+- **FIX**(paint-editor): Resolve the issue where drawings shift when the AppBar or BottomBar is missing in the main editor. This resolves issue [#410](https://github.com/hm21/pro_image_editor/issues/410). 
+
+<br/>
+
+- **DOCS**(example): Introduce a new [example](https://github.com/hm21/pro_image_editor/blob/stable/example/lib/features/layer_select_design_example.dart) to showcase a more contemporary layer selection design.
+
+<br/>
+
+- **TEST**: Added more than 200 new unit and widget tests to improve coverage and ensure more robust error detection.
+
+<br/>
+
+#### Breaking Changes
+- Removed all deprecated configuration settings.
+- Changed the layer selection system to use an overlay-based approach. This may lead to different results in certain edge cases. If you have implemented a custom selection behavior, review it to ensure compatibility.
+- Remove the configuration `enableRoundCropper` from `CropRotateEditorConfigs` and add the configuration `initialCropMode`.
+
+
+## 9.13.0
+- **FEAT**(Text-Editor): Add the `inputTextFieldAlign` property to the `TextEditorConfigs` to dynamically align the input field. This was requested in [#502](https://github.com/hm21/pro_image_editor/issues/502).
+
+
+## 9.12.0
+- **FEAT**(import): Add `enableInitialEmptyState` to `ImportEditorConfigs` so the editor can replace the existing state history without including an empty first page.
+
+## 9.11.2
+- **FIX**(bottom-sheet): Wrap bottom sheets in `SafeArea` to ensure proper display within device safe zones.
+
+## 9.11.1
+- **FIX**(video-editor): Add missing `image` parameter to `GroundedFilterBar`.
+
+## 9.11.0
+- **FEAT**(video-editor): Added new parameters to `CompleteParameters` required for extending the editor with video editing.
+
+<br/>
+
+
+- **FIX**(video-editor): Fixed issue where filter previews were displayed incorrectly.
+- **FIX**(video-editor): Fixed issue where the trim bar lost its state when moving a layer.
+
+## 9.10.1
+- **FIX**(double-tap): Resolve issue where double tapping still zooms even when `enableZoom` is set to `false`. This resolves issue [#484](https://github.com/hm21/pro_image_editor/issues/484).
+
+## 9.10.0
+- **FEAT**(polygon): Added new paint-mode "polygon".
+
+## 9.9.5
+- **FIX**(widget-layer): `copyWith` now correctly includes `exportConfigs`. 
+
+## 9.9.4
+- **FIX**(Main-Editor): Corrected editor name handling in `openPage` to ensure proper behavior of `onOpenSubEditor`, `onStartCloseSubEditor` and `onEndCloseSubEditor`. This resolves issue [#474](https://github.com/hm21/pro_image_editor/issues/474).
+
+## 9.9.3
+- **FIX**(Layers): Corrected size calculation to prevent layer shifting.
+- **FIX**(Main-Editor): Fixed an issue where disabled layers blocked zoom gestures.
+
+## 9.9.2
+ - **FIX**(Crop-Rotate-Editor): Ensure the editor respects the `maxOutputSize` constraint.
+
+## 9.9.1
+ - **FIX**(Crop-Rotate-Editor): Prevent crashes when clamping values with reversed lower and upper limits. This resolves issue [#462](https://github.com/hm21/pro_image_editor/issues/462).
+
+## 9.9.0
+ - **FEAT**(Sticker-Editor): Added `builder` parameter to `StickerEditorConfigs`, which will replace `buildStickers` in the future. The new `builder` supports directly returning a `WidgetLayer` instead of just a `Widget`, enabling more flexibility and control.
+
+## 9.8.2
+ - **FIX**(Paint-Eraser): Resolved an issue where the layer eraser only worked when the user tapped on a layer.
+
+## 9.8.1
+ - **FIX**(Image-Generation): Resolved an issue that the image generation was slowly.
+
+## 9.8.0
+ - **FEAT**(Layer): Introduce `BoxConstraints` to `Layer` class for enhanced constraint management and layout control.
+
+## 9.7.3
+ - **FEAT**(Main-Editor): Add EditorSafeArea to the Main editor to follow SubEditor logic.
+
+## 9.7.2
+ - **FIX**(Tune-Editor): Ensure the back button works properly. This resolves issue [#449](https://github.com/hm21/pro_image_editor/issues/449).
+
+## 9.7.1
+ - **FIX**(Import): Ensure imported numbers are type-safe even if int and double are incorrect. This resolves issue [#447](https://github.com/hm21/pro_image_editor/issues/447).
+
+## 9.7.0
+- **FEAT**(image-converter): Add singleton `ImageConverter` class for format conversion without the image editor.
+
+## 9.6.1
+- **FIX**(double-tap): Resolved an issue where double-tapping interfered with pinch-to-zoom functionality. Resolves [#439](https://github.com/hm21/pro_image_editor/issues/439).
+- **FIX**(hit-detection): Prevent layer hit detection errors by clamping inner dimensions. Resolves [#440](https://github.com/hm21/pro_image_editor/issues/440).
+
+## 9.6.0
+- **FEAT**(double-tap): Support double-tap to zoom in/out when zoom is enabled. More details in Feature-Request [#429](https://github.com/hm21/pro_image_editor/pull/429).
+
+## 9.5.2
+- **FIX**(zoom): Fixed issue where config `enableMainEditorZoomFactor` had no effect when creating a new text-layer. Resolves [#426](https://github.com/hm21/pro_image_editor/issues/426).
+
+## 9.5.1
+- **FIX**(onCompleteWithParameters): Return correct parameters on completion. Resolves [#403](https://github.com/hm21/pro_image_editor/issues/403).
+
+## 9.5.0
+- **FEAT**(callback): Added `copyWith` method to all callback models. More details in Feature-Request [#424](https://github.com/hm21/pro_image_editor/pull/424).
+- **FEAT**(zoom): Preserved zoom state by sharing Matrix4 between paint and main editor
+
+## 9.4.1
+- **FEAT**(callback): Added `onSelectedLayerChanged` callback to notify when the selected layer changes. More details in PR [#423](https://github.com/hm21/pro_image_editor/pull/423).
+
+## 9.4.0
+- **FEAT**(jpeg-encoder): Add `jpegBackgroundColor` option to `ImageGenerationConfigs` to allow customization of JPEG background color.
+
+<br/>
+
+
+- **FIX**(crop_editor): Add missing copyWith parameters to ensure proper cloning of configuration states.
+- **FIX**(PaintEditor.drawing): Ensure `cropToImageBounds` is `false` to prevent unintended cropping behavior.
+
+## 9.3.0
+- **FEAT**: Video editing has now been fully implemented in the image editor across all platforms except the web, for which support is not planned. For more details and a list of limitations, please refer to [that discussion](https://github.com/hm21/pro_image_editor/discussions/406) thread.
+
+## 9.2.0
+- **FEAT**: Added `clearLayerSelection` method to reset selected layers.
+- **FEAT**: Added `selectLayerByIndex` method to select a layer using its index.
+- **FEAT**: Added `selectLayerById` method to select a layer by its unique ID.
+
+## 9.1.0
+- **FEAT**: Replaced the external packages [`emoji_picker_flutter`](https://pub.dev/packages/emoji_picker_flutter), [`universal_io`](https://pub.dev/packages/universal_io), and [`flutter_web_plugins`](https://api.flutter.dev/flutter/flutter_web_plugins) with lightweight internal implementations.
+  The editor now only relies on official Dart and Flutter packages, reducing dependencies and improving maintainability.
+- **FEAT**: Added a new preview-only constructor for video editing: `ProImageEditor.video`.
+  This feature allows previewing video edits but does not yet support video export.
+  Example usage can be found [here](https://github.com/hm21/pro_image_editor/tree/stable/example/lib/features/video_examples).
+
+## 9.0.7
+- **FIX**(import): Resolve state restoration issue causing layer shift on cropped images. Resolves [#292](https://github.com/hm21/pro_image_editor/issues/292).
+
+## 9.0.6
+- **FIX**(state-history): Resolve issue where the state history limitation does not work when `enableBackgroundGeneration` is set to `false`.
+
+## 9.0.5
+- **FIX**(Wasm): Fixes an issue where image generation fails when using WebAssembly. Resolves [#391](https://github.com/hm21/pro_image_editor/issues/391).
+
+## 9.0.4
+- **DOCS**(readme): simplify README for better readability
+
+## 9.0.3
+- **FEAT**: Add getter `editorScaleFactor` to retrieve current scale factor. See pull request [#392](https://github.com/hm21/pro_image_editor/pull/392) for more details.
+
+## 9.0.2
+- **STYLE**: Improved Dart code formatting
+
+## 9.0.1
+- **FIX**(EditorImage): Support `File` type in addition to file path
+
+## 9.0.0
+- **FEAT**(callbacks): Add new callbacks that are triggered when a layer intersects with a helper line.
+- **FEAT**(TextLayer): Improve the text layer hit box for better gesture recognition.
+- **FEAT**(File): The file constructor in the main editor and sub-editors now supports adding just the file path in addition to the File itself.
+
+<br/>
+
+- **FIX**(Layers): Fix incorrect layer selection when drawing lines overlay other layers
+
+#### Breaking Changes
+- Removed the vibration package dependency and the support for internal feedback vibration. You can read more about this change and see example code on how to implement feedback support [here](https://github.com/hm21/pro_image_editor/discussions/386).
+- Replaced `mime`, `image`, `archive`, and `crypto` packages with smaller, internally versions.
+- Moved configuration `locale` inside `EmojiEditorConfigs` to `I18nEmojiEditor`.
+- Changed the default behavior so that emoji search text is no longer automatically translated, reducing the size of the application by about 1.5MB. The example of how to enable auto-translation or translate a specific locale can be found [here](https://github.com/hm21/pro_image_editor/blob/stable/example/lib/features/emoji_translate_example.dart).
+- Removed all deprecated configuration settings.
+
+
+## 8.3.6
+- **FIX**(design-grounded): Fixed an issue where the scrollbar in the grounded bottombar did not restore correctly after opening a subeditor.
+- **FIX**(design-whatsapp): Fixed an issue where the filter in the WhatsApp design could not be deselected.
+
+## 8.3.5
+- **FIX**(layer-stack): Resolved an issue where the outside overlay color on layers depended on the crop_rotate_editor instead of the active subeditor.
+
+## 8.3.4
+- **FIX**(grounded-design): Resolved an issue in the grounded design where switching between screens caused an error due to the ScrollController.
+
+## 8.3.3
+- **FIX**(layer-interaction): Resolved an issue where layers with blocked interaction also prevented interaction with background layers. Resolves [#374](https://github.com/hm21/pro_image_editor/issues/374)
+
+## 8.3.2
+- **FIX**(emoji-editor): Resolved an issue where categoryViewConfig caused an error. Resolves [#373](https://github.com/hm21/pro_image_editor/issues/373).
+
+## 8.3.1
+- **REFACTOR**(configs): Rename configuration properties for clarity.
+
+## 8.3.0
+- **FEAT**(paint-editor): Add a new 'pixelate' paint mode to censor specific areas. This paint mode is only supported when using the Impeller rendering engine.
+- **FEAT**(CensorConfigs): Add a new configuration option, `enableRoundArea`, which allows the censored area to be rounded instead of rectangular.
+
+## 8.2.0
+- **FEAT**(paint-editor): Add a new 'blur' paint mode to censor specific areas. 
+
+## 8.1.12
+- **FEAT**(layers): Add missing `showLayers` config to enable/disable layers in paint and crop editor.
+
+## 8.1.11
+- **FIX**(export): Resolve an issue where exporting the first state history did return all state histories. Resolves [#353](https://github.com/hm21/pro_image_editor/issues/353).
+
+## 8.1.10
+- **FEAT**(callback): Introduced `onEscapeButton` callback inside `MainEditorCallbacks` to allow external handling of the Escape key logic.
+
+## 8.1.9
+- **FIX**(text-editor): Ensure text editor layer scales correctly when editing.
+Added `enableMainEditorZoomFactor` to `textEditorConfigs` to apply the zoom factor in the text editor as well. Resolves [#349](https://github.com/hm21/pro_image_editor/issues/349).
+
+## 8.1.8
+- **FIX**(export): Ensure filters, tune adjustments, and blur configs are exported for `ExportHistorySpan.current` and `ExportHistorySpan.currentAndForward`.
+
+## 8.1.7
+- **FEAT**(MainEditorConfigs): Add `enableEscapeButton` to enable or disable the escape button listener.
+
+## 8.1.6
 - **FEAT**(layer): Add meta field to layermodels for custom metadata in export/import.
 
-# 8.1.5
-- **FEAT**(export): Optimize the export process by including only parameters that were modified in tune adjustments. This reduces the exported file size.  
+## 8.1.5
+- **FEAT**(export): Optimize the export process by including only parameters that were modified in tune adjustments. This reduces the exported file size.
 
-# 8.1.4
+## 8.1.4
 - **FIX**(generation): Use `captureOnlyBackgroundImageArea` instead of `captureOnlyDrawingBounds` for background cropping.
 
-# 8.1.3
-- **PERF**(capture-image): Improved image capture performance by minimizing its impact on the main thread.  
+## 8.1.3
+- **PERF**(capture-image): Improved image capture performance by minimizing its impact on the main thread.
 
-# 8.1.2
+## 8.1.2
 - **FIX**(paint-editor): Ensure bottombar selection updates in UI when changed.
 - **FIX**(paint-editor): Correct appBar canRedo to use the proper function instead of canUndo.
 - **FIX**(layer): Resolve issue where selecting layers that overlap did not function as expected. Resolves issue [#282](https://github.com/hm21/pro_image_editor/issues/282)
 - **FIX**(import): Resolve issue where transformations exported from the crop-rotate editor were not properly imported.
 
-# 8.1.1
+## 8.1.1
 - **FIX**(crop_rotate_editor): Fixed an issue where the crop-rotate editor would throw multiple errors when reopened. Resolves issue [#236](https://github.com/hm21/pro_image_editor/issues/236) and [#237](https://github.com/hm21/pro_image_editor/issues/237).
-- **PERF**(mediaquery): Replaces MediaQuery.of(...) with MediaQuery.sizeOf(...) to optimize performance and minimize unnecessary widget rebuilds.  
+- **PERF**(mediaquery): Replaces MediaQuery.of(...) with MediaQuery.sizeOf(...) to optimize performance and minimize unnecessary widget rebuilds.
 
-# 8.1.0
+## 8.1.0
 - **FEAT**(layer): Added new methods `lockAllLayers` and `unlockAllLayers` to the main editor, enabling direct locking or unlocking of all layers.
 
-# 8.0.4
+## 8.0.4
 - **FIX**(export/import): Resolve an issue where exported stickers within the JSON file could no longer be imported. Resolves issue [#334](https://github.com/hm21/pro_image_editor/issues/334)
 
 ## 8.0.3
@@ -128,7 +701,6 @@ The current Flutter version `3.27.1` has an open issue with the `ColorFiltered` 
   - `custom widgets`, `icons`, and `theme` files are now located directly in the `configs` directory of the editor.
   - All theme classes are renamed to end with `Style` for consistency.
 
-  
 For more details on why these breaking changes were made and what improvements they bring, check out that [GitHub discussion](https://github.com/hm21/pro_image_editor/discussions/298).
 
 
@@ -355,7 +927,7 @@ Introduced a new loading dialog as a singleton class.
 
 ## 4.1.1
 
-- **FIX**(vibration):  The `Vibration.hasVibrator` check will now only happen if the user has enabled hitVibration in the helper-line configs. This resolves issue [#139](https://github.com/hm21/pro_image_editor/issue/139).
+- **FIX**(vibration): The `Vibration.hasVibrator` check will now only happen if the user has enabled hitVibration in the helper-line configs. This resolves issue [#139](https://github.com/hm21/pro_image_editor/issue/139).
 
 
 ## 4.1.0

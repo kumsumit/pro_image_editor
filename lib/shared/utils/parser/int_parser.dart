@@ -1,3 +1,5 @@
+import 'double_parser.dart';
+
 /// Safely parses a [dynamic] value to an [int].
 ///
 /// This function attempts to convert the provided [value] to an [int].
@@ -23,7 +25,8 @@
 /// safeParseInt(15);          // returns 15 (automatic conversion from int)
 /// ```
 int safeParseInt(dynamic value, {int fallback = 0}) {
-  return int.tryParse((value ?? fallback).toString()) ?? fallback;
+  return int.tryParse(value.toString()) ??
+      safeParseDouble(value, fallback: fallback.toDouble()).toInt();
 }
 
 /// Attempts to parse a [dynamic] value to an [int].

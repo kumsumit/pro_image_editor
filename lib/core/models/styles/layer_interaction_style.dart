@@ -27,6 +27,7 @@ class LayerInteractionStyle {
     this.strokeWidth = 1.2,
     this.borderElementWidth = 7,
     this.borderElementSpace = 5,
+    this.overlayPadding = const EdgeInsets.all(24),
     this.borderColor = Colors.blue,
     this.removeCursor = SystemMouseCursors.click,
     this.rotateScaleCursor = SystemMouseCursors.click,
@@ -40,7 +41,16 @@ class LayerInteractionStyle {
     this.buttonEditTextBackground = Colors.white,
     this.buttonScaleRotateColor = Colors.black,
     this.buttonScaleRotateBackground = Colors.white,
+    this.dragSelectionBackground = const Color(0x2F2195F3),
+    this.dragSelectionBorderColor = const Color(0xFF2196F3),
+    this.dragSelectionBorderWidth = 2,
   });
+
+  /// The padding to apply around the overlay of the layer.
+  ///
+  /// This defines the space between the overlay and its surrounding content,
+  /// allowing for customized spacing and layout adjustments.
+  final EdgeInsets overlayPadding;
 
   /// The radius of buttons used for layer interactions.
   final double buttonRadius;
@@ -123,6 +133,15 @@ class LayerInteractionStyle {
   /// rotate layers, influencing its visual appearance.
   final Color buttonScaleRotateBackground;
 
+  /// The background color of the drag selection area.
+  final Color dragSelectionBackground;
+
+  /// The border color of the drag selection area.
+  final Color dragSelectionBorderColor;
+
+  /// The border width of the drag selection area.
+  final double dragSelectionBorderWidth;
+
   /// Creates a copy of this `LayerInteractionStyle` object with the given
   /// fields replaced with new values.
   ///
@@ -130,6 +149,7 @@ class LayerInteractionStyle {
   /// [LayerInteractionStyle] with some properties updated while keeping the
   /// others unchanged.
   LayerInteractionStyle copyWith({
+    EdgeInsets? overlayPadding,
     double? buttonRadius,
     double? strokeWidth,
     double? borderElementWidth,
@@ -149,8 +169,12 @@ class LayerInteractionStyle {
     Color? buttonEditTextBackground,
     Color? buttonScaleRotateColor,
     Color? buttonScaleRotateBackground,
+    Color? dragSelectionBackground,
+    Color? dragSelectionBorderColor,
+    double? dragSelectionBorderWidth,
   }) {
     return LayerInteractionStyle(
+      overlayPadding: overlayPadding ?? this.overlayPadding,
       buttonRadius: buttonRadius ?? this.buttonRadius,
       strokeWidth: strokeWidth ?? this.strokeWidth,
       borderElementWidth: borderElementWidth ?? this.borderElementWidth,
@@ -176,6 +200,12 @@ class LayerInteractionStyle {
           buttonScaleRotateColor ?? this.buttonScaleRotateColor,
       buttonScaleRotateBackground:
           buttonScaleRotateBackground ?? this.buttonScaleRotateBackground,
+      dragSelectionBackground:
+          dragSelectionBackground ?? this.dragSelectionBackground,
+      dragSelectionBorderColor:
+          dragSelectionBorderColor ?? this.dragSelectionBorderColor,
+      dragSelectionBorderWidth:
+          dragSelectionBorderWidth ?? this.dragSelectionBorderWidth,
     );
   }
 }
