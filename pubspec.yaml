@@ -6,6 +6,7 @@ repository: https://github.com/hm21/pro_image_editor/
 documentation: https://github.com/hm21/pro_image_editor/
 funding:
   - https://github.com/sponsors/hm21
+publish_to: none  
 
 topics:
   - image-editor
@@ -40,7 +41,8 @@ dependencies:
 
   http: ^1.6.0
   plugin_platform_interface: ^2.1.8
-  shared_preferences: ^2.5.4
+  shared_preferences: 
+    git: https://github.com/kumsumit/shared_preferences.git
   vector_math: ^2.2.0
   web: ^1.1.1
 
@@ -48,11 +50,15 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  build_runner: ^2.11.1
+  build_runner: ^2.13.1
   flutter_lints: ^6.0.0
-  import_sorter: ^4.6.0
-  mockito: ^5.6.3
+  import_sorter: ^5.0.0-releasecandidate.1
+  mockito: ^5.6.4
   network_image_mock: ^2.1.1
+
+dependency_overrides:
+  plugin_platform_interface:
+    git: https://github.com/kumsumit/plugin_platform_interface.git  
 
 flutter:
   plugin:
