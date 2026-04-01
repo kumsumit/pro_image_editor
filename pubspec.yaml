@@ -33,15 +33,17 @@ platforms:
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
-  flutter: ">=3.24.0"
+  flutter: ">=3.41.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
   http: ^1.6.0
-  plugin_platform_interface: ^2.1.8
-  shared_preferences: ^2.3.2
+  plugin_platform_interface:
+    git: https://github.com/kumsumit/plugin_platform_interface.git
+  shared_preferences:
+    git: https://github.com/kumsumit/shared_preferences.git
   vector_math: ^2.2.0
   web: ^1.1.1
 
@@ -50,8 +52,8 @@ dev_dependencies:
     sdk: flutter
 
   build_runner: ^2.13.1
-  flutter_lints: ^3.0.2
-  import_sorter: ^4.2.1 # stable version compatible
+  flutter_lints: ^6.0.0
+  import_sorter: ^4.6.0 # stable version compatible
   mockito: ^5.6.4
   network_image_mock: ^2.1.1
 
