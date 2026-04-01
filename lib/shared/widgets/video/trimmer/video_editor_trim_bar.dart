@@ -105,8 +105,7 @@ class _VideoEditorTrimBarState extends State<VideoEditorTrimBar> {
     );
     final endTime = Duration(microseconds: (_trimEnd * _videoDuration).round());
 
-    final span =
-        timeSpan ??
+    final span = timeSpan ??
         TrimDurationSpan(
           start: Duration(seconds: startTime.inSeconds),
           end: Duration(seconds: endTime.inSeconds),
@@ -193,8 +192,7 @@ class _VideoEditorTrimBarState extends State<VideoEditorTrimBar> {
     // Define zoom factor dynamically based on scroll speed
     double factor = 0.05 * (event.scrollDelta.dy / 50).abs().clamp(0.5, 2);
 
-    double deltaY =
-        event.scrollDelta.dy *
+    double deltaY = event.scrollDelta.dy *
         (_player.configs.trimBarInvertMouseScroll ? -1 : 1);
 
     double startZoom = _scale;
@@ -259,8 +257,7 @@ class _VideoEditorTrimBarState extends State<VideoEditorTrimBar> {
               _player.style.trimBarHandlerWidth + 4;
           double effectiveTrimWidth = max(trimWidth, minTrimWidthForHandlers);
 
-          double offsetRightHandler =
-              offsetLeftHandler +
+          double offsetRightHandler = offsetLeftHandler +
               effectiveTrimWidth -
               _player.style.trimBarHandlerWidth;
 
@@ -294,9 +291,8 @@ class _VideoEditorTrimBarState extends State<VideoEditorTrimBar> {
                           horizontal: handlerButtonSize,
                         ),
                         child: GestureDetector(
-                          onHorizontalDragEnd: !isDesktop
-                              ? null
-                              : (_) => _triggerTrimSpanEnd(),
+                          onHorizontalDragEnd:
+                              !isDesktop ? null : (_) => _triggerTrimSpanEnd(),
                           onHorizontalDragUpdate: !isDesktop
                               ? null
                               : (details) {
@@ -391,8 +387,7 @@ class _VideoEditorTrimBarState extends State<VideoEditorTrimBar> {
   ) {
     return Positioned(
       left: offsetLeftHandler,
-      width:
-          offsetRightHandler -
+      width: offsetRightHandler -
           offsetLeftHandler +
           _player.style.trimBarHandlerWidth,
       child: Stack(
@@ -429,9 +424,8 @@ class _VideoEditorTrimBarState extends State<VideoEditorTrimBar> {
   }
 
   Widget _buildResizeHandler(bool isLeft, double offset, double scaledWidth) {
-    var notifier = isLeft
-        ? _leftHandlerActiveNotifier
-        : _rightHandlerActiveNotifier;
+    var notifier =
+        isLeft ? _leftHandlerActiveNotifier : _rightHandlerActiveNotifier;
     return Positioned(
       left: offset,
       child: GestureDetector(
@@ -454,7 +448,7 @@ class _VideoEditorTrimBarState extends State<VideoEditorTrimBar> {
         },
         child: ValueListenableBuilder(
           valueListenable: notifier,
-          builder: (_, value, _) {
+          builder: (_, value, __) {
             return VideoEditorTrimHandle(isSelected: value, isLeft: isLeft);
           },
         ),

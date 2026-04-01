@@ -119,7 +119,7 @@ class _TuneEditorBottombarState extends State<TuneEditorBottombar> {
           height: 40,
           child: ValueListenableBuilder(
             valueListenable: _sliderValue,
-            builder: (_, value, _) {
+            builder: (_, value, __) {
               return widget.tuneEditorConfigs.widgets.slider?.call(
                     widget.state,
                     widget.rebuildController.stream,

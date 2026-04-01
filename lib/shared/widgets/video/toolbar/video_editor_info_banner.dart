@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '/core/models/video/trim_duration_span_model.dart';
 import '/shared/controllers/video_controller.dart';
 import '/shared/extensions/duration_extension.dart';
@@ -30,7 +31,7 @@ class VideoEditorInfoBanner extends StatelessWidget {
 
     return ValueListenableBuilder(
       valueListenable: controller.trimDurationSpanNotifier,
-      builder: (_, durationSpan, _) {
+      builder: (_, durationSpan, __) {
         // If a custom info banner widget is provided, use it
         if (player.configs.widgets.infoBanner != null) {
           return player.configs.widgets.infoBanner!(durationSpan);
@@ -45,8 +46,7 @@ class VideoEditorInfoBanner extends StatelessWidget {
             ),
             child: RichText(
               text: TextSpan(
-                style:
-                    player.style.infoBannerTextStyle ??
+                style: player.style.infoBannerTextStyle ??
                     TextStyle(
                       fontSize: 14,
                       height: 1.2,

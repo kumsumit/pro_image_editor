@@ -32,6 +32,10 @@ class I18nCropRotateEditor {
     this.redo = 'Redo',
     this.smallScreenMoreTooltip = 'More',
     this.reset = 'Reset',
+    this.tilt = 'Tilt',
+    this.tiltRotate = 'Rotate',
+    this.tiltHorizontal = 'Horizontal',
+    this.tiltVertical = 'Vertical',
   });
 
   /// Text for the bottom navigation bar item that opens the Crop and Rotate
@@ -59,6 +63,18 @@ class I18nCropRotateEditor {
   /// Text for the "Reset" button.
   final String reset;
 
+  /// Text for the "Tilt" button.
+  final String tilt;
+
+  /// Text for the rotate tilt mode.
+  final String tiltRotate;
+
+  /// Text for the horizontal tilt mode.
+  final String tiltHorizontal;
+
+  /// Text for the vertical tilt mode.
+  final String tiltVertical;
+
   /// Text for the "Undo" button.
   final String undo;
 
@@ -83,6 +99,10 @@ class I18nCropRotateEditor {
     String? cancel,
     String? done,
     String? reset,
+    String? tilt,
+    String? tiltRotate,
+    String? tiltHorizontal,
+    String? tiltVertical,
     String? undo,
     String? redo,
     String? smallScreenMoreTooltip,
@@ -97,6 +117,10 @@ class I18nCropRotateEditor {
       cancel: cancel ?? this.cancel,
       done: done ?? this.done,
       reset: reset ?? this.reset,
+      tilt: tilt ?? this.tilt,
+      tiltRotate: tiltRotate ?? this.tiltRotate,
+      tiltHorizontal: tiltHorizontal ?? this.tiltHorizontal,
+      tiltVertical: tiltVertical ?? this.tiltVertical,
       undo: undo ?? this.undo,
       redo: redo ?? this.redo,
       smallScreenMoreTooltip:

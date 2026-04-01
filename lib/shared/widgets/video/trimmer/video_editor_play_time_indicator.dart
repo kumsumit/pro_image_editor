@@ -24,13 +24,13 @@ class VideoEditorPlayTimeIndicator extends StatelessWidget {
 
     return ValueListenableBuilder(
       valueListenable: player.controller.trimDurationSpanNotifier,
-      builder: (_, durationSpan, _) {
+      builder: (_, durationSpan, __) {
         Duration startDuration = durationSpan.start;
         int areaDuration = durationSpan.duration.inMicroseconds;
 
         return ValueListenableBuilder(
           valueListenable: player.controller.playTimeNotifier,
-          builder: (_, playTime, _) {
+          builder: (_, playTime, __) {
             int convertedPlay = (playTime - startDuration).inMicroseconds;
 
             double startX = barWidth / areaDuration * convertedPlay;

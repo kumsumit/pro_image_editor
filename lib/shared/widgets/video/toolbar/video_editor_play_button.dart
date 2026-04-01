@@ -34,7 +34,7 @@ class VideoEditorPlayButton extends StatelessWidget {
     return GestureInterceptor(
       child: ValueListenableBuilder(
         valueListenable: player.isPlayingNotifier,
-        builder: (_, isPlaying, _) {
+        builder: (_, isPlaying, __) {
           return player.widgets.playButton?.call != null
               ? player.widgets.playButton!(controller.setMuteState)
               : IconButtonTheme(

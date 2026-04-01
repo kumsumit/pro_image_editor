@@ -191,6 +191,18 @@ mixin CropAreaHistory
   @protected
   Rect get cropRect => _cropRect;
 
+  /// The current rotation angle in radians around the Z axis.
+  @protected
+  double tiltRotate = 0.0;
+
+  /// The current tilt in radians around the Y axis.
+  @protected
+  double tiltHorizontal = 0.0;
+
+  /// The current tilt in radians around the X axis.
+  @protected
+  double tiltVertical = 0.0;
+
   set cropRect(Rect value) {
     _cropRect = value;
     cropPainterKey.currentState?.setForegroundPainter(cropPainter);
@@ -297,6 +309,9 @@ mixin CropAreaHistory
         flipY: flipY,
         offset: translate,
         cropMode: cropMode,
+        tiltRotate: tiltRotate,
+        tiltHorizontal: tiltHorizontal,
+        tiltVertical: tiltVertical,
       ),
     );
     screenshotHistoryPosition++;
@@ -359,6 +374,9 @@ mixin CropAreaHistory
   void _setParametersFromHistory() {
     flipX = activeHistory.flipX;
     flipY = activeHistory.flipY;
+    tiltRotate = activeHistory.tiltRotate;
+    tiltHorizontal = activeHistory.tiltHorizontal;
+    tiltVertical = activeHistory.tiltVertical;
     translate = activeHistory.offset;
     userScaleFactor = activeHistory.scaleUser;
     cropRect = activeHistory.cropRect;
@@ -410,6 +428,9 @@ mixin CropAreaHistory
     flipX = false;
     flipY = false;
     translate = Offset.zero;
+    tiltRotate = 0;
+    tiltHorizontal = 0;
+    tiltVertical = 0;
     setCropMode(cropRotateEditorConfigs.initialCropMode, updateHistory: false);
     int rCount = rotationCount % 4;
     rotateAnimation = Tween<double>(

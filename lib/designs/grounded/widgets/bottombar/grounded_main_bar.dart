@@ -140,7 +140,10 @@ class GroundedMainBarState extends State<GroundedMainBar>
             layoutBuilder: (currentChild, previousChildren) => Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.bottomCenter,
-              children: <Widget>[...previousChildren, ?currentChild],
+              children: <Widget>[
+                ...previousChildren,
+                if (currentChild != null) currentChild
+              ],
             ),
             duration: kGroundedFadeInDuration * 2,
             reverseDuration: const Duration(milliseconds: 0),
@@ -156,8 +159,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
               );
             },
             switchInCurve: Curves.ease,
-            child:
-                widget.editor.isSubEditorOpen &&
+            child: widget.editor.isSubEditorOpen &&
                     !widget.editor.isSubEditorClosing
                 ? SizedBox(width: _contentWidth)
                 : ConstrainedBox(

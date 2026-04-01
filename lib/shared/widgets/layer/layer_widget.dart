@@ -140,8 +140,7 @@ class _LayerWidgetState extends State<LayerWidget>
       _fractionalOffset = configs.stickerEditor.layerFractionalOffset;
     } else if (_layer.isPaintLayer) {
       var layer = _layer as PaintLayer;
-      _layerType =
-          layer.item.mode == PaintMode.blur ||
+      _layerType = layer.item.mode == PaintMode.blur ||
               layer.item.mode == PaintMode.pixelate
           ? LayerWidgetType.censor
           : LayerWidgetType.canvas;
@@ -227,9 +226,8 @@ class _LayerWidgetState extends State<LayerWidget>
       final interaction = _layer.interaction;
       final offsetDistance =
           (event.position - _lastDownEvent!.position).distance;
-      final timeElapsed = DateTime.now()
-          .difference(_tapDownTimestamp)
-          .inMilliseconds;
+      final timeElapsed =
+          DateTime.now().difference(_tapDownTimestamp).inMilliseconds;
 
       // Ignore if pointer moved too much (exceeds tap slop)
       if (offsetDistance >= tapSlop) return;
@@ -311,9 +309,8 @@ class _LayerWidgetState extends State<LayerWidget>
   Widget build(BuildContext context) {
     Matrix4 transformMatrix = _calcTransformMatrix();
 
-    final overlayPadding = _isSelected
-        ? layerInteraction.style.overlayPadding
-        : EdgeInsets.zero;
+    final overlayPadding =
+        _isSelected ? layerInteraction.style.overlayPadding : EdgeInsets.zero;
 
     final adjustedLeft =
         offsetX - overlayPadding.horizontal * (_fractionalOffset.dx + 0.5);
@@ -365,7 +362,7 @@ class _LayerWidgetState extends State<LayerWidget>
       child: _buildCursor(
         child: ValueListenableBuilder(
           valueListenable: _lastHitState,
-          builder: (_, _, _) {
+          builder: (_, __, ___) {
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
               onSecondaryTapUp: isDesktop ? _onSecondaryTapUp : null,
@@ -393,11 +390,10 @@ class _LayerWidgetState extends State<LayerWidget>
   Widget _buildCursor({required Widget child}) {
     return ValueListenableBuilder(
       valueListenable: _showMoveCursor,
-      builder: (_, showCursor, _) {
+      builder: (_, showCursor, __) {
         return MouseRegion(
           hitTestBehavior: HitTestBehavior.translucent,
-          cursor:
-              showCursor &&
+          cursor: showCursor &&
                   _layer.interaction.enableMove &&
                   widget.enableMouseCursor
               ? layerInteraction.style.hoverCursor

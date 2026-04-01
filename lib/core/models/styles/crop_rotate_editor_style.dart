@@ -2,6 +2,7 @@
 import 'package:flutter/services.dart';
 
 import '../../constants/editor_style_constants.dart';
+import 'tilt_style.dart';
 
 /// The `CropRotateEditorStyle` class defines the styles for the crop and rotate
 /// editor in the image editor.
@@ -68,6 +69,7 @@ class CropRotateEditorStyle {
     this.cropCornerThickness = 6,
     this.cropOverlayOpacity = 0.7,
     this.cropOverlayInteractionOpacity = 0.25,
+    this.tiltStyle = const TiltStyle(),
     this.uiOverlayStyle = kImageEditorUiOverlayStyle,
   }) : assert(
          cropOverlayOpacity >= 0.0 && cropOverlayOpacity <= 1.0,
@@ -146,6 +148,9 @@ class CropRotateEditorStyle {
   /// the real opacity during interaction will be 0.45 (0.7 - 0.25).
   final double cropOverlayInteractionOpacity;
 
+  /// Style configuration for tilt controls.
+  final TiltStyle tiltStyle;
+
   /// UI overlay style, defining the appearance of system status bars.
   final SystemUiOverlayStyle uiOverlayStyle;
 
@@ -171,6 +176,7 @@ class CropRotateEditorStyle {
     double? cropCornerThickness,
     double? cropOverlayOpacity,
     double? cropOverlayInteractionOpacity,
+    TiltStyle? tiltStyle,
     SystemUiOverlayStyle? uiOverlayStyle,
   }) {
     return CropRotateEditorStyle(
@@ -194,6 +200,7 @@ class CropRotateEditorStyle {
       cropOverlayOpacity: cropOverlayOpacity ?? this.cropOverlayOpacity,
       cropOverlayInteractionOpacity:
           cropOverlayInteractionOpacity ?? this.cropOverlayInteractionOpacity,
+      tiltStyle: tiltStyle ?? this.tiltStyle,
       uiOverlayStyle: uiOverlayStyle ?? this.uiOverlayStyle,
     );
   }

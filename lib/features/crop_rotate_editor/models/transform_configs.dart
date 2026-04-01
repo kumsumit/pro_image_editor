@@ -48,6 +48,9 @@ class TransformConfigs {
     required this.flipX,
     required this.flipY,
     required this.offset,
+    required this.tiltRotate,
+    required this.tiltHorizontal,
+    required this.tiltVertical,
     this.cropMode = CropMode.rectangular,
   });
 
@@ -56,9 +59,8 @@ class TransformConfigs {
   /// The map should contain keys corresponding to the properties of
   /// `TransformConfigs`, and each key should map to the appropriate value.
   factory TransformConfigs.fromMap(Map<String, dynamic> map) {
-    final cropMode = map['cropMode'] == 'oval'
-        ? CropMode.oval
-        : CropMode.rectangular;
+    final cropMode =
+        map['cropMode'] == 'oval' ? CropMode.oval : CropMode.rectangular;
 
     return TransformConfigs(
       angle: safeParseDouble(map['angle']),
@@ -86,6 +88,9 @@ class TransformConfigs {
         safeParseDouble(map['offset']?['dx']),
         safeParseDouble(map['offset']?['dy']),
       ),
+      tiltRotate: safeParseDouble(map['tiltRotate'], fallback: 0),
+      tiltHorizontal: safeParseDouble(map['tiltHorizontal'], fallback: 0),
+      tiltVertical: safeParseDouble(map['tiltVertical'], fallback: 0),
     );
   }
 
@@ -106,6 +111,9 @@ class TransformConfigs {
       flipY: false,
       offset: const Offset(0, 0),
       cropMode: CropMode.rectangular,
+      tiltRotate: 0,
+      tiltHorizontal: 0,
+      tiltVertical: 0,
     );
   }
 
@@ -176,6 +184,15 @@ class TransformConfigs {
   /// determining its overall shape and proportions.
   final double aspectRatio;
 
+  /// The current rotation angle in radians around the Z axis.
+  final double tiltRotate;
+
+  /// The current tilt in radians around the Y axis.
+  final double tiltHorizontal;
+
+  /// The current tilt in radians around the X axis.
+  final double tiltVertical;
+
   /// Indicates whether the image is flipped horizontally.
   ///
   /// This boolean flag specifies whether the image has been flipped along the
@@ -200,6 +217,9 @@ class TransformConfigs {
         scaleUser == 1 &&
         scaleRotation == 1 &&
         aspectRatio == -1 &&
+        tiltRotate == 0 &&
+        tiltHorizontal == 0 &&
+        tiltVertical == 0 &&
         flipX == false &&
         flipY == false &&
         offset == const Offset(0, 0);
@@ -209,6 +229,10 @@ class TransformConfigs {
   ///
   /// This property returns `true` if any transformations have been applied.
   bool get isNotEmpty => !isEmpty;
+
+  /// Returns `true` if any tilt is applied.
+  bool get isTilted =>
+      tiltRotate != 0 || tiltHorizontal != 0 || tiltVertical != 0;
 
   /// Returns the combined scale from user input and rotation.
   ///
@@ -260,6 +284,9 @@ class TransformConfigs {
         'width': originalSize.width.roundSmart(maxDecimalPlaces),
         'height': originalSize.height.roundSmart(maxDecimalPlaces),
       },
+      'tiltRotate': tiltRotate.roundSmart(maxDecimalPlaces),
+      'tiltHorizontal': tiltHorizontal.roundSmart(maxDecimalPlaces),
+      'tiltVertical': tiltVertical.roundSmart(maxDecimalPlaces),
       'cropEditorScreenRatio': cropEditorScreenRatio.roundSmart(
         maxDecimalPlaces,
       ),
@@ -342,6 +369,9 @@ class TransformConfigs {
     Rect? cropRect,
     Size? originalSize,
     double? cropEditorScreenRatio,
+    double? tiltRotate,
+    double? tiltHorizontal,
+    double? tiltVertical,
   }) {
     return TransformConfigs(
       cropMode: cropMode ?? this.cropMode,
@@ -352,6 +382,9 @@ class TransformConfigs {
       aspectRatio: aspectRatio ?? this.aspectRatio,
       flipX: flipX ?? this.flipX,
       flipY: flipY ?? this.flipY,
+      tiltRotate: tiltRotate ?? this.tiltRotate,
+      tiltHorizontal: tiltHorizontal ?? this.tiltHorizontal,
+      tiltVertical: tiltVertical ?? this.tiltVertical,
       cropRect: cropRect ?? this.cropRect,
       originalSize: originalSize ?? this.originalSize,
       cropEditorScreenRatio:
@@ -374,6 +407,9 @@ class TransformConfigs {
         other.aspectRatio == aspectRatio &&
         other.flipX == flipX &&
         other.flipY == flipY &&
+        other.tiltRotate == tiltRotate &&
+        other.tiltHorizontal == tiltHorizontal &&
+        other.tiltVertical == tiltVertical &&
         other.cropMode == cropMode;
   }
 
@@ -389,6 +425,9 @@ class TransformConfigs {
         aspectRatio.hashCode ^
         flipX.hashCode ^
         flipY.hashCode ^
+        tiltRotate.hashCode ^
+        tiltHorizontal.hashCode ^
+        tiltVertical.hashCode ^
         cropMode.hashCode;
   }
 }

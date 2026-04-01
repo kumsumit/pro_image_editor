@@ -30,7 +30,7 @@ class LayerDragSelectionAreaWidget extends StatelessWidget {
 
     return ValueListenableBuilder(
       valueListenable: service.dragRectNotifier,
-      builder: (_, dragRect, _) {
+      builder: (_, dragRect, __) {
         return Positioned(
           left: dragRect.offset.dx,
           top: dragRect.offset.dy,

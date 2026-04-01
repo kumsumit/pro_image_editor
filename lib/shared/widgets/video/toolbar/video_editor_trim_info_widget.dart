@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import '/shared/extensions/duration_extension.dart';
 
+import '/shared/extensions/duration_extension.dart';
 import '../video_editor_configurable.dart';
 
 /// Displays the trim duration information in the video editor.
@@ -15,7 +15,7 @@ class VideoEditorTrimInfoWidget extends StatelessWidget {
     var player = VideoEditorConfigurable.of(context);
     return ValueListenableBuilder(
       valueListenable: player.showTrimTimeSpanNotifier,
-      builder: (_, showTrimTimeSpan, _) {
+      builder: (_, showTrimTimeSpan, __) {
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           transitionBuilder: (child, animation) {
@@ -41,7 +41,7 @@ class VideoEditorTrimInfoWidget extends StatelessWidget {
   Widget _buildTimeSpanText(VideoEditorConfigurable player) {
     return ValueListenableBuilder(
       valueListenable: player.controller.trimDurationSpanNotifier,
-      builder: (_, value, _) {
+      builder: (_, value, __) {
         if (player.configs.widgets.trimDurationInfo != null) {
           return player.configs.widgets.trimDurationInfo!(value);
         }
@@ -57,8 +57,7 @@ class VideoEditorTrimInfoWidget extends StatelessWidget {
               child: Text(
                 '${value.start.toTimeString()} - '
                 '${(value.end.toTimeString())}',
-                style:
-                    player.style.trimDurationTextStyle ??
+                style: player.style.trimDurationTextStyle ??
                     TextStyle(
                       fontSize: 14,
                       height: 1.2,

@@ -17,7 +17,7 @@ class VideoEditorMuteButton extends StatelessWidget {
     return GestureInterceptor(
       child: ValueListenableBuilder(
         valueListenable: player.isMutedNotifier,
-        builder: (_, isMuted, _) {
+        builder: (_, isMuted, __) {
           // Use custom mute button if provided
           return player.widgets.muteButton?.call != null
               ? player.widgets.muteButton!(player.controller.setMuteState)

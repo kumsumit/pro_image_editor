@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+
 import '../../../mock/layers/emoji_layer_mock.dart';
 import '../../../mock/layers/paint_layer_mock.dart';
 import '../../../mock/layers/text_layer_mock.dart';
@@ -203,6 +204,9 @@ void main() {
           flipX: false,
           flipY: false,
           offset: Offset.zero,
+          tiltRotate: 0,
+          tiltHorizontal: 0,
+          tiltVertical: 0,
         );
 
         editor.addHistory(transformConfigs: transformConfigs);

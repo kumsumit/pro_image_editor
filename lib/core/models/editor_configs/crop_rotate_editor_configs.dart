@@ -4,6 +4,7 @@ import '/features/crop_rotate_editor/enums/crop_mode.enum.dart';
 import '/features/crop_rotate_editor/enums/crop_tool_enum.dart';
 import '/features/crop_rotate_editor/models/aspect_ratio_item.dart';
 import '/features/crop_rotate_editor/models/rotate_direction.dart';
+import 'tilt_configs.dart';
 import '../custom_widgets/crop_rotate_editor_widgets.dart';
 import '../icons/crop_rotate_editor_icons.dart';
 import '../styles/crop_rotate_editor_style.dart';
@@ -13,6 +14,7 @@ import 'utils/editor_safe_area.dart';
 export '/features/crop_rotate_editor/enums/crop_tool_enum.dart';
 export '/features/crop_rotate_editor/models/rotate_direction.dart';
 export '/features/crop_rotate_editor/models/transform_configs.dart';
+export 'tilt_configs.dart';
 export '../custom_widgets/crop_rotate_editor_widgets.dart';
 export '../icons/crop_rotate_editor_icons.dart';
 export '../styles/crop_rotate_editor_style.dart';
@@ -46,6 +48,7 @@ class CropRotateEditorConfigs implements BaseSubEditorConfigs {
       CropRotateTool.rotate,
       CropRotateTool.flip,
       CropRotateTool.aspectRatio,
+      CropRotateTool.tilt,
       CropRotateTool.reset,
     ],
     this.invertMouseScroll = false,
@@ -58,6 +61,7 @@ class CropRotateEditorConfigs implements BaseSubEditorConfigs {
     this.enableFlipAnimation = true,
     this.showLayers = true,
     this.initAspectRatio,
+    this.tiltConfigs = const TiltConfigs(),
     this.rotateAnimationCurve = Curves.decelerate,
     this.scaleAnimationCurve = Curves.decelerate,
     this.cropDragAnimationCurve = Curves.decelerate,
@@ -167,6 +171,9 @@ class CropRotateEditorConfigs implements BaseSubEditorConfigs {
   /// about the edited image. If set to `false`, `imageInfos` will be `null`.
   final bool enableProvideImageInfos;
 
+  /// Configuration settings for tilt functionality.
+  final TiltConfigs tiltConfigs;
+
   /// The initial aspect ratio for cropping.
   ///
   /// For free aspect ratio use `-1` and for original aspect ratio use `0.0`.
@@ -271,6 +278,7 @@ class CropRotateEditorConfigs implements BaseSubEditorConfigs {
     bool? exportOvalMask,
     List<CropRotateTool>? tools,
     bool? enableProvideImageInfos,
+    TiltConfigs? tiltConfigs,
     double? initAspectRatio,
     double? maxScale,
     double? mouseScaleFactor,
@@ -308,6 +316,7 @@ class CropRotateEditorConfigs implements BaseSubEditorConfigs {
       tools: tools ?? this.tools,
       enableProvideImageInfos:
           enableProvideImageInfos ?? this.enableProvideImageInfos,
+      tiltConfigs: tiltConfigs ?? this.tiltConfigs,
       initAspectRatio: initAspectRatio ?? this.initAspectRatio,
       maxScale: maxScale ?? this.maxScale,
       mouseScaleFactor: mouseScaleFactor ?? this.mouseScaleFactor,

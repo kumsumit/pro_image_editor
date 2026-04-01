@@ -9,6 +9,9 @@ enum CropRotateTool {
   /// A tool to change the aspect ratio of the image.
   aspectRatio,
 
+  /// A tool to apply tilt transforms.
+  tilt,
+
   /// A tool to reset all transformations to their original state.
   reset,
 }

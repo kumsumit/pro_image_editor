@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '/core/models/editor_configs/blur_editor_configs.dart';
 
+import '/core/models/editor_configs/blur_editor_configs.dart';
 import '../blur_editor.dart';
 
 /// A widget that represents the bottom bar of the blur editor.
@@ -67,7 +67,7 @@ class BlurEditorBottombar extends StatelessWidget {
             child: RepaintBoundary(
               child: ValueListenableBuilder(
                 valueListenable: blurFactor,
-                builder: (_, value, _) {
+                builder: (_, value, __) {
                   return blurEditorConfigs.widgets.slider?.call(
                         blurEditorState,
                         rebuildController.stream,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+
 import '/shared/widgets/video/video_editor_configurable.dart';
 import 'video_editor_trim_skeleton.dart';
 
@@ -24,12 +25,12 @@ class VideoEditorTrimThumbnailBar extends StatelessWidget {
       ),
       child: ValueListenableBuilder(
         valueListenable: player.controller.thumbnailsNotifier,
-        builder: (_, thumbnails, _) {
+        builder: (_, thumbnails, __) {
           return AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: thumbnails == null
                 ? player.widgets.trimBarSkeletonLoader ??
-                      const VideoEditorTrimSkeleton()
+                    const VideoEditorTrimSkeleton()
                 : Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: thumbnails.map((item) {

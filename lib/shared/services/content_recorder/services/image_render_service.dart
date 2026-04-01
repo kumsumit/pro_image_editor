@@ -157,41 +157,70 @@ class ImageRenderService {
       return boundary.toImage(pixelRatio: pixelRatio);
     }
 
-    /// Start calculate the "real" image bounding
-    double imageWidth = boundary.size.width;
-    double imageHeight = boundary.size.height;
+    final ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
+    return _cropToImageBounds(image, imageInfos);
+  }
 
-    double cropRectRatio = !imageInfos.isRotated
+  /// Crops the rendered image to the visible image bounds.
+  ///
+  /// We intentionally crop after rasterization instead of using
+  /// `RenderRepaintBoundary.toImage(rect: ...)` because subpixel crop rects can
+  /// introduce transparent edge slivers on some devices, which later appear as
+  /// white margins in JPEG output.
+  @visibleForTesting
+  Future<ui.Image> cropToImageBounds(ui.Image image, ImageInfos imageInfos) {
+    return _cropToImageBounds(image, imageInfos);
+  }
+
+  Future<ui.Image> _cropToImageBounds(
+    ui.Image image,
+    ImageInfos imageInfos,
+  ) async {
+    /// Start calculate the "real" image bounding
+    final Rect srcRect = calculateCropRect(
+      imageSize: Size(image.width.toDouble(), image.height.toDouble()),
+      imageInfos: imageInfos,
+    );
+
+    final int outputWidth = max(1, srcRect.width.ceil());
+    final int outputHeight = max(1, srcRect.height.ceil());
+
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    Canvas(recorder).drawImageRect(
+      image,
+      srcRect,
+      Rect.fromLTWH(0, 0, outputWidth.toDouble(), outputHeight.toDouble()),
+      Paint(),
+    );
+
+    return recorder.endRecording().toImage(outputWidth, outputHeight);
+  }
+
+  /// Calculates the source crop rect inside the rendered image.
+  @visibleForTesting
+  Rect calculateCropRect({
+    required Size imageSize,
+    required ImageInfos imageInfos,
+  }) {
+    final double cropRectRatio = !imageInfos.isRotated
         ? imageInfos.cropRectSize.aspectRatio
         : 1 / imageInfos.cropRectSize.aspectRatio;
 
-    Size convertedImgSize = Size(imageWidth, imageHeight);
-
-    double convertedImgWidth = convertedImgSize.width;
-    double convertedImgHeight = convertedImgSize.height;
-
-    if (convertedImgSize.aspectRatio > cropRectRatio) {
-      // Fit to height
-      convertedImgSize = Size(
-        convertedImgHeight * cropRectRatio,
-        convertedImgHeight,
-      );
+    Size cropSize = imageSize;
+    if (imageSize.aspectRatio > cropRectRatio) {
+      cropSize = Size(imageSize.height * cropRectRatio, imageSize.height);
     } else {
-      // Fit to width
-      convertedImgSize = Size(
-        convertedImgWidth,
-        convertedImgWidth / cropRectRatio,
-      );
+      cropSize = Size(imageSize.width, imageSize.width / cropRectRatio);
     }
 
-    double cropWidth = convertedImgSize.width;
-    double cropHeight = convertedImgSize.height;
-    double cropX = max(0, imageWidth - cropWidth) / 2;
-    double cropY = max(0, imageHeight - cropHeight) / 2;
+    final double cropX = max(0, imageSize.width - cropSize.width) / 2;
+    final double cropY = max(0, imageSize.height - cropSize.height) / 2;
 
-    return boundary.toImage(
-      rect: Rect.fromLTWH(cropX, cropY, cropWidth, cropHeight),
-      pixelRatio: pixelRatio,
+    return Rect.fromLTWH(
+      cropX.clamp(0, imageSize.width),
+      cropY.clamp(0, imageSize.height),
+      cropSize.width.clamp(0, imageSize.width - cropX),
+      cropSize.height.clamp(0, imageSize.height - cropY),
     );
   }
 }

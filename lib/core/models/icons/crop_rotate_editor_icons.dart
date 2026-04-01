@@ -27,6 +27,10 @@ class CropRotateEditorIcons {
     this.rotate = Icons.rotate_90_degrees_ccw_outlined,
     this.aspectRatio = Icons.crop,
     this.flip = Icons.flip,
+    this.tilt = Icons.crop,
+    this.tiltRotate = Icons.rotate_right,
+    this.tiltHorizontal = Icons.swap_horiz,
+    this.tiltVertical = Icons.swap_vert,
     this.reset = Icons.restore,
     this.applyChanges = Icons.done,
     this.backButton = Icons.arrow_back,
@@ -45,6 +49,18 @@ class CropRotateEditorIcons {
 
   /// The icon for the flip action.
   final IconData flip;
+
+  /// The icon for opening tilt controls.
+  final IconData tilt;
+
+  /// The icon for rotate tilt mode.
+  final IconData tiltRotate;
+
+  /// The icon for horizontal tilt mode.
+  final IconData tiltHorizontal;
+
+  /// The icon for vertical tilt mode.
+  final IconData tiltVertical;
 
   /// The icon for the reset action.
   final IconData reset;
@@ -72,6 +88,10 @@ class CropRotateEditorIcons {
     IconData? rotate,
     IconData? aspectRatio,
     IconData? flip,
+    IconData? tilt,
+    IconData? tiltRotate,
+    IconData? tiltHorizontal,
+    IconData? tiltVertical,
     IconData? reset,
     IconData? backButton,
     IconData? applyChanges,
@@ -83,6 +103,10 @@ class CropRotateEditorIcons {
       rotate: rotate ?? this.rotate,
       aspectRatio: aspectRatio ?? this.aspectRatio,
       flip: flip ?? this.flip,
+      tilt: tilt ?? this.tilt,
+      tiltRotate: tiltRotate ?? this.tiltRotate,
+      tiltHorizontal: tiltHorizontal ?? this.tiltHorizontal,
+      tiltVertical: tiltVertical ?? this.tiltVertical,
       reset: reset ?? this.reset,
       backButton: backButton ?? this.backButton,
       applyChanges: applyChanges ?? this.applyChanges,

@@ -170,7 +170,7 @@ class WidgetLayer extends Layer {
         maxDecimalPlaces: maxDecimalPlaces,
         enableMinify: enableMinify,
       ),
-      'recordPosition': ?recordPosition,
+      if (recordPosition != null) 'recordPosition': recordPosition,
       if (width != null) 'width': width,
       if (exportConfigMap.isNotEmpty) 'exportConfigs': exportConfigMap,
       'type': 'widget',

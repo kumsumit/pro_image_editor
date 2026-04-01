@@ -143,7 +143,7 @@ class _MainEditorLayersState extends State<MainEditorLayers> {
       onHover: isDesktop ? _layersService.handleMouseHover : null,
       child: ValueListenableBuilder(
         valueListenable: _layersService.deferId,
-        builder: (_, deferId, _) {
+        builder: (_, deferId, __) {
           return DeferredPointerHandler(
             id: deferId,
             selectedLayerId: _layerInteractionManager.selectedLayerId,

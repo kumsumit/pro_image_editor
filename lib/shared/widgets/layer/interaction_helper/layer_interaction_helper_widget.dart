@@ -282,7 +282,7 @@ class _LayerInteractionHelperWidgetState
         if (layerInteraction.widgets.overlayChildBuilder != null) {
           return ValueListenableBuilder(
             valueListenable: _isOverlayVisibleNotifier,
-            builder: (_, isVisible, _) {
+            builder: (_, isVisible, __) {
               if (!isVisible) return const SizedBox.shrink();
               return layerInteraction.widgets.overlayChildBuilder!(
                 _rebuildStream.stream,
@@ -310,7 +310,7 @@ class _LayerInteractionHelperWidgetState
           left: 0,
           child: ValueListenableBuilder(
             valueListenable: _isOverlayVisibleNotifier,
-            builder: (_, isVisible, _) {
+            builder: (_, isVisible, __) {
               if (!isVisible) return const SizedBox.shrink();
 
               return Transform(
@@ -368,17 +368,17 @@ class _LayerInteractionHelperWidgetState
     return [
       if (_isLayerEditable())
         (rebuildStream, layer, interactions) => ReactiveWidget(
-          stream: rebuildStream,
-          builder: (_) => _buildEditButton(interactions),
-        ),
+              stream: rebuildStream,
+              builder: (_) => _buildEditButton(interactions),
+            ),
       (rebuildStream, layer, interactions) => ReactiveWidget(
-        stream: rebuildStream,
-        builder: (_) => _buildRemoveButton(interactions),
-      ),
+            stream: rebuildStream,
+            builder: (_) => _buildRemoveButton(interactions),
+          ),
       (rebuildStream, layer, interactions) => ReactiveWidget(
-        stream: rebuildStream,
-        builder: (_) => _buildRotateScaleButton(interactions),
-      ),
+            stream: rebuildStream,
+            builder: (_) => _buildRotateScaleButton(interactions),
+          ),
     ];
   }
 
