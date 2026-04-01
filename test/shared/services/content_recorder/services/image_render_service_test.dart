@@ -82,8 +82,8 @@ Future<ui.Image> _createSolidImage({
   required Color color,
 }) {
   final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder)
-  ..drawRect(
+  Canvas(recorder)
+  .drawRect(
     Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
     Paint()..color = color,
   );
