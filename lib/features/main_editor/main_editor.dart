@@ -1340,6 +1340,9 @@ class ProImageEditorState extends State<ProImageEditor>
   /// lines and flags.
   void _onScaleEnd(ScaleEndDetails details) async {
     mainEditorCallbacks?.handleScaleEnd(details);
+    if (selectedLayers.isNotEmpty) {
+      mainEditorCallbacks?.handleLayerInteractionEnd(List.of(selectedLayers));
+    }
     layerInteractionManager.activeInteractionLayer = null;
 
     /// Check if layers should be removed.
@@ -1669,28 +1672,58 @@ class ProImageEditorState extends State<ProImageEditor>
 
     if (result == null) return;
 
+    // Deep-copy active layers ONCE, then build history entries incrementally.
+    // This avoids the O(N²) cost of copyLayerList on every addLayer call.
+    final runningLayers = _layerCopyManager.copyLayerList(activeLayers);
+    final historyLimit = stateHistoryConfigs.stateHistoryLimit;
+    final enableScreenshotLimit =
+        imageGenerationConfigs.enableBackgroundGeneration;
+
     String lastLayerId = '';
     for (var i = 0; i < result.layers.length; i++) {
       final layer = result.layers[i];
-      final oldIndex = activeLayers.indexWhere((el) => el.id == layer.id);
+      final oldIndex = runningLayers.indexWhere((el) => el.id == layer.id);
 
       final duplicatedLayer = _layerCopyManager.duplicateLayer(
         layer,
         offset: Offset.zero,
       );
       lastLayerId = duplicatedLayer.id;
-      addLayer(
-        duplicatedLayer,
-        removeLayerIndex: oldIndex,
-        blockSelectLayer: true,
-        blockCaptureScreenshot: true,
-        autoCorrectZoomOffset: false,
-        autoCorrectZoomScale: false,
+
+      if (oldIndex >= 0) {
+        runningLayers.removeAt(oldIndex);
+      }
+      runningLayers.add(duplicatedLayer);
+
+      // Add individual history entry (for per-layer undo) with a shallow
+      // snapshot — the layer objects themselves are already independent copies.
+      stateManager.addHistory(
+        EditorStateHistory(layers: List<Layer>.of(runningLayers)),
+        historyLimit: historyLimit,
+        enableScreenshotLimit: enableScreenshotLimit,
+        skipUpdateActiveItems: true,
+      );
+      _controllers.screenshot.addEmptyScreenshot(
+        screenshots: stateManager.screenshots,
       );
     }
+
     for (Layer layer in result.removedLayers) {
-      removeLayer(layer, blockCaptureScreenshot: true);
+      final layerPos = runningLayers.indexWhere((el) => el.id == layer.id);
+      if (layerPos < 0) continue;
+      runningLayers.removeAt(layerPos);
+      stateManager.addHistory(
+        EditorStateHistory(layers: List<Layer>.of(runningLayers)),
+        historyLimit: historyLimit,
+        enableScreenshotLimit: enableScreenshotLimit,
+        skipUpdateActiveItems: true,
+      );
+      _controllers.screenshot.addEmptyScreenshot(
+        screenshots: stateManager.screenshots,
+      );
     }
+
+    stateManager.updateActiveItems();
 
     if (lastLayerId.isNotEmpty) {
       _selectLayerAfterHeroIsDone(lastLayerId);

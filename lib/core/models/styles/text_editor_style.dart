@@ -130,6 +130,7 @@ class TextEditorStyle {
   /// Height value for the text input style. Set to 0.0 for proper centering
   /// on various platforms. Set to null to use the default line height.
   final double? textHeight;
+
   /// Letter spacing applied to the text input field style.
   ///
   /// Defaults to `0` to fix alignment issues with some fonts.
@@ -207,8 +208,8 @@ class TextEditorStyle {
       textFieldPadding: textFieldPadding ?? this.textFieldPadding,
       fontSizeBottomSheetTitle:
           fontSizeBottomSheetTitle ?? this.fontSizeBottomSheetTitle,
-       inputLetterSpacing: inputLetterSpacing ?? this.inputLetterSpacing,
-      inputShadows: inputShadows ?? this.inputShadows,    
+      inputLetterSpacing: inputLetterSpacing ?? this.inputLetterSpacing,
+      inputShadows: inputShadows ?? this.inputShadows,
     );
   }
 }

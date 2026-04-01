@@ -27,7 +27,7 @@ apply plugin: "kotlin-android"
 android {
     namespace = "ch.waio.pro_image_editor"
 
-    compileSdk = 36
+    compileSdk = 37
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
@@ -44,7 +44,7 @@ android {
     }
 
     defaultConfig {
-        minSdk = 21
+        minSdk = 24
     }
 
     dependencies {

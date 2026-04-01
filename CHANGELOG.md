@@ -1,5 +1,30 @@
 # Changelog
 
+## 12.0.13
+- **FEAT**(text-editor): Add `composingTextDecoration` to `TextEditorConfigs` to control the text decoration of the IME composing region. Defaults to `TextDecoration.none` to remove the underline shown when `enableSuggestions` is active.
+
+## 12.0.12
+- **FEAT**(text-editor): Add `spellCheckConfiguration` to `TextEditorConfigs` for enabling spell checking in the text input field.
+
+## 12.0.11
+- **FEAT**(text-editor): Add `inputLetterSpacing` and `inputShadows` to `TextEditorStyle` for customizing letter spacing and text shadows.
+- **FEAT**(callbacks): Add `onLayerInteractionEnd` callback to `MainEditorCallbacks`, triggered when layer interaction ends.
+- **FEAT**(helper-lines): Allow helper lines to be overridden via custom configurations.
+- **FIX**(sub-editors): Remove hidden `BottomAppBar` `SafeArea` gap in sub-editors.
+
+## 12.0.10
+- **FIX**(iOS, macOS): Restore CocoaPods compatibility for the native Darwin plugin alongside Swift Package Manager support.
+
+## 12.0.9
+- **FIX**(text-editor): Disable system text scale factor in `RoundedBackgroundTextField` to ensure consistent text sizing regardless of user accessibility settings.
+
+## 12.0.8
+- **PERF**(paint-editor): Optimize freestyle path building by reducing redundant `moveTo` calls, eliminating intermediate list allocations, and using `distanceSquared` instead of `distance`.
+- **PERF**(paint-editor): Skip `Opacity` widget wrapping when layer opacity is 1.0.
+- **PERF**(paint-editor): Replace O(N×M) layer filtering in `done()` with Map-based O(1) lookup.
+- **PERF**(main-editor): Replace O(N²) layer copy loop when closing paint editor with single deep-copy and incremental shallow snapshots.
+- **PERF**(main-editor): Batch history entries without redundant `updateActiveItems()` calls via new `skipUpdateActiveItems` parameter on `addHistory()`.
+
 ## 12.0.7
 - **FEAT**(text-editor): Add `leadingDistribution` property to `TextEditorStyle` for configuring how extra line height is distributed. Use `TextLeadingDistribution.even` to vertically center text within rounded background rects at non-default line heights. Defaults to `proportional` for backward compatibility.
 

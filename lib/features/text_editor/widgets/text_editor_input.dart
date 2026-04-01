@@ -207,9 +207,9 @@ class _TextEditorInputState extends State<TextEditorInput> {
             style: widget.selectedTextStyle.copyWith(
               color: widget.textColor,
               fontSize: widget.textFontSize,
-              decoration: TextDecoration.none,
               letterSpacing: widget.configs.style.inputLetterSpacing,
               shadows: widget.configs.style.inputShadows,
+              decoration: TextDecoration.none,
             ),
 
             /// If we edit an layer we focus to the textfield after the
