@@ -57,13 +57,79 @@ class CollageMaker extends StatefulWidget {
 class CollageMakerState extends State<CollageMaker> {
   final _captureKey = GlobalKey();
 
-  final _backgrounds = const [
-    Color(0xFF101317),
-    Color(0xFFF7F3EA),
-    Color(0xFFFFD166),
-    Color(0xFF70C1B3),
-    Color(0xFFEF476F),
-    Color(0xFF5B5F97),
+  final _themes = const [
+    _CollageTheme(
+      name: 'Classic',
+      icon: Icons.auto_awesome_mosaic_outlined,
+      colors: [Color(0xFF101317), Color(0xFF1E293B)],
+      accents: [Color(0xFF38BDF8), Color(0xFFF97316), Color(0xFFA3E635)],
+    ),
+    _CollageTheme(
+      name: 'Wedding',
+      icon: Icons.favorite_border,
+      colors: [Color(0xFFFFF7ED), Color(0xFFFFE4E6)],
+      accents: [Color(0xFFBE185D), Color(0xFFD97706), Color(0xFF7C2D12)],
+    ),
+    _CollageTheme(
+      name: 'Birthday',
+      icon: Icons.celebration_outlined,
+      colors: [Color(0xFFFFD166), Color(0xFFEF476F), Color(0xFF118AB2)],
+      accents: [Color(0xFF073B4C), Color(0xFF06D6A0), Color(0xFFFFFFFF)],
+    ),
+    _CollageTheme(
+      name: 'Holiday',
+      icon: Icons.card_giftcard_outlined,
+      colors: [Color(0xFF064E3B), Color(0xFFB91C1C)],
+      accents: [Color(0xFFFFFBEB), Color(0xFFFBBF24), Color(0xFF10B981)],
+    ),
+    _CollageTheme(
+      name: 'Valentine',
+      icon: Icons.favorite_outline,
+      colors: [Color(0xFF831843), Color(0xFFF472B6), Color(0xFFFFE4E6)],
+      accents: [Color(0xFFFFFFFF), Color(0xFFFB7185), Color(0xFFBE123C)],
+    ),
+    _CollageTheme(
+      name: 'Travel',
+      icon: Icons.flight_takeoff_outlined,
+      colors: [Color(0xFF0F766E), Color(0xFFFDE68A), Color(0xFFF97316)],
+      accents: [Color(0xFF134E4A), Color(0xFFECFEFF), Color(0xFF0284C7)],
+    ),
+    _CollageTheme(
+      name: 'Graduation',
+      icon: Icons.school_outlined,
+      colors: [Color(0xFF111827), Color(0xFFF59E0B)],
+      accents: [Color(0xFFFFFFFF), Color(0xFFFBBF24), Color(0xFF4B5563)],
+    ),
+    _CollageTheme(
+      name: 'Baby',
+      icon: Icons.child_care_outlined,
+      colors: [Color(0xFFDBEAFE), Color(0xFFFCE7F3), Color(0xFFECFCCB)],
+      accents: [Color(0xFF2563EB), Color(0xFFDB2777), Color(0xFF65A30D)],
+    ),
+    _CollageTheme(
+      name: 'Festival',
+      icon: Icons.light_mode_outlined,
+      colors: [Color(0xFF581C87), Color(0xFFF97316), Color(0xFFFFD166)],
+      accents: [Color(0xFFFFFFFF), Color(0xFF22C55E), Color(0xFFEC4899)],
+    ),
+    _CollageTheme(
+      name: 'New Year',
+      icon: Icons.nightlight_round,
+      colors: [Color(0xFF020617), Color(0xFF334155), Color(0xFFFBBF24)],
+      accents: [Color(0xFFFFFFFF), Color(0xFF38BDF8), Color(0xFFF59E0B)],
+    ),
+    _CollageTheme(
+      name: 'Anniversary',
+      icon: Icons.diamond_outlined,
+      colors: [Color(0xFFFDF2F8), Color(0xFF7C3AED), Color(0xFFFBBF24)],
+      accents: [Color(0xFFFFFFFF), Color(0xFFC026D3), Color(0xFFA16207)],
+    ),
+    _CollageTheme(
+      name: 'Halloween',
+      icon: Icons.dark_mode_outlined,
+      colors: [Color(0xFF111827), Color(0xFFF97316), Color(0xFF581C87)],
+      accents: [Color(0xFFFFFFFF), Color(0xFF84CC16), Color(0xFFFACC15)],
+    ),
   ];
 
   late final List<CollageLayout> _layouts = _CollageTemplateCatalog.layouts;
@@ -77,6 +143,7 @@ class CollageMakerState extends State<CollageMaker> {
   bool _isRendering = false;
 
   CollageLayout get _layout => _layouts[_layoutIndex];
+  _CollageTheme get _theme => _themes[_backgroundIndex];
 
   /// Renders the visible collage to PNG bytes.
   Future<Uint8List?> exportPngBytes({double pixelRatio = 3}) async {
@@ -187,7 +254,11 @@ class CollageMakerState extends State<CollageMaker> {
                 ),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: _backgrounds[_backgroundIndex],
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: _theme.colors,
+                    ),
                     borderRadius: BorderRadius.circular(32),
                     boxShadow: const [
                       BoxShadow(
@@ -328,29 +399,28 @@ class CollageMakerState extends State<CollageMaker> {
         ),
         const SizedBox(height: 8),
         Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: List.generate(_backgrounds.length, (index) {
+          spacing: 8,
+          runSpacing: 8,
+          children: List.generate(_themes.length, (index) {
             final selected = index == _backgroundIndex;
-            return Tooltip(
-              message: 'Background',
-              child: InkWell(
-                onTap: () => setState(() => _backgroundIndex = index),
-                borderRadius: BorderRadius.circular(18),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: _backgrounds[index],
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: selected ? Colors.white : Colors.white24,
-                      width: selected ? 3 : 1,
-                    ),
-                  ),
+            final theme = _themes[index];
+            return ChoiceChip(
+              selected: selected,
+              avatar: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: theme.colors),
+                ),
+                child: Icon(
+                  theme.icon,
+                  color: selected
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : Colors.white,
+                  size: 16,
                 ),
               ),
+              label: Text(theme.name),
+              onSelected: (_) => setState(() => _backgroundIndex = index),
             );
           }),
         ),
@@ -395,19 +465,22 @@ class CollageMakerState extends State<CollageMaker> {
         final height = constraints.maxHeight;
         return Stack(
           fit: StackFit.expand,
-          children: List.generate(layout.slots.length, (index) {
-            final slot = layout.slots[index];
-            return Positioned(
-              left: slot.left * width,
-              top: slot.top * height,
-              width: slot.width * width,
-              height: slot.height * height,
-              child: Padding(
-                padding: EdgeInsets.all(_gap / 2),
-                child: _slot(index),
-              ),
-            );
-          }),
+          children: [
+            _OccasionFrame(theme: _theme),
+            ...List.generate(layout.slots.length, (index) {
+              final slot = layout.slots[index];
+              return Positioned(
+                left: slot.left * width,
+                top: slot.top * height,
+                width: slot.width * width,
+                height: slot.height * height,
+                child: Padding(
+                  padding: EdgeInsets.all(_gap / 2),
+                  child: _slot(index),
+                ),
+              );
+            }),
+          ],
         );
       },
     );
@@ -656,6 +729,77 @@ class _EmptySlot extends StatelessWidget {
   }
 }
 
+class _OccasionFrame extends StatelessWidget {
+  const _OccasionFrame({required this.theme});
+
+  final _CollageTheme theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withAlpha(38)),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                left: 12,
+                top: 12,
+                child: Icon(theme.icon, color: Colors.white.withAlpha(120)),
+              ),
+              Positioned(
+                right: 12,
+                bottom: 12,
+                child: Icon(theme.icon, color: Colors.white.withAlpha(105)),
+              ),
+              Positioned(
+                right: -24,
+                top: -24,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.accents.first.withAlpha(44),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const SizedBox.square(dimension: 96),
+                ),
+              ),
+              Positioned(
+                left: -18,
+                bottom: -18,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.accents.last.withAlpha(36),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const SizedBox.square(dimension: 72),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CollageTheme {
+  const _CollageTheme({
+    required this.name,
+    required this.icon,
+    required this.colors,
+    required this.accents,
+  });
+
+  final String name;
+  final IconData icon;
+  final List<Color> colors;
+  final List<Color> accents;
+}
+
 /// Metadata for a collage template.
 class CollageLayout {
   /// Creates a [CollageLayout].
@@ -726,10 +870,47 @@ class CollageSlot {
 class _CollageTemplateCatalog {
   static final List<CollageLayout> layouts = _buildLayouts();
 
+  static const _occasionNames = [
+    'Birthday',
+    'Wedding',
+    'Festival',
+    'Holiday',
+    'Travel',
+    'Graduation',
+    'Anniversary',
+    'Valentine',
+    'Baby',
+    'New Year',
+  ];
+
   static List<int> get slotCounts {
     final counts = layouts.map((layout) => layout.slotCount).toSet().toList()
       ..sort();
     return counts;
+  }
+
+  static List<CollageSlot> _gridFromCuts({
+    required List<int> xCuts,
+    required List<int> yCuts,
+  }) {
+    final xLines = [0, ...xCuts, 12];
+    final yLines = [0, ...yCuts, 12];
+    final slots = <CollageSlot>[];
+
+    for (var y = 0; y < yLines.length - 1; y++) {
+      for (var x = 0; x < xLines.length - 1; x++) {
+        slots.add(
+          CollageSlot.grid(
+            left: xLines[x],
+            top: yLines[y],
+            width: xLines[x + 1] - xLines[x],
+            height: yLines[y + 1] - yLines[y],
+          ),
+        );
+      }
+    }
+
+    return slots;
   }
 
   static List<CollageLayout> _buildLayouts() {
@@ -902,6 +1083,47 @@ class _CollageTemplateCatalog {
           ]);
         }
       }
+    }
+
+    var occasionIndex = 0;
+    for (final x1 in [3, 4, 5]) {
+      for (final x2 in [7, 8, 9]) {
+        for (final y1 in [3, 4, 5]) {
+          for (final y2 in [7, 8, 9]) {
+            add(
+              _occasionNames[occasionIndex % _occasionNames.length],
+              _gridFromCuts(xCuts: [x1, x2], yCuts: [y1, y2]),
+            );
+            occasionIndex++;
+          }
+        }
+      }
+    }
+
+    for (final xCuts in [
+      [2, 5, 8],
+      [2, 5, 9],
+      [2, 6, 9],
+      [3, 5, 8],
+      [3, 5, 9],
+      [3, 6, 9],
+      [3, 7, 10],
+      [4, 6, 9],
+      [4, 7, 10],
+      [5, 7, 10],
+    ]) {
+      for (final yCuts in [
+        [3, 7],
+        [4, 8],
+      ]) {
+        if (occasionIndex >= 100) break;
+        add(
+          _occasionNames[occasionIndex % _occasionNames.length],
+          _gridFromCuts(xCuts: xCuts, yCuts: yCuts),
+        );
+        occasionIndex++;
+      }
+      if (occasionIndex >= 100) break;
     }
 
     return layouts;
