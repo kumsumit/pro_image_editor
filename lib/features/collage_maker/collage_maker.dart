@@ -134,21 +134,24 @@ class CollageMakerState extends State<CollageMaker> {
   ];
 
   late final List<CollageLayout> _layouts = _CollageTemplateCatalog.layouts;
-  final List<_FreestylePlacement> _freestylePlacements = [];
+  final List<_FreestyleLayer> _freestyleLayers = [];
+  final Set<int> _removedFreestyleImageIndexes = {};
 
   int _layoutIndex = 2;
   int _slotFilter = 0;
   int _backgroundIndex = 0;
-  int? _selectedFreestyleIndex;
+  int _canvasPresetIndex = 0;
+  int? _selectedFreestyleLayerIndex;
   double _gap = 10;
   double _radius = 24;
   double _padding = 16;
   bool _isFreestyle = false;
   bool _isRendering = false;
-  _FreestylePlacement? _gestureStartPlacement;
+  _FreestyleLayer? _gestureStartLayer;
 
   CollageLayout get _layout => _layouts[_layoutIndex];
   _CollageTheme get _theme => _themes[_backgroundIndex];
+  _CanvasPreset get _canvasPreset => _CanvasPreset.presets[_canvasPresetIndex];
 
   @override
   void initState() {
@@ -165,25 +168,34 @@ class CollageMakerState extends State<CollageMaker> {
   }
 
   void _syncFreestylePlacements() {
-    if (_freestylePlacements.length > widget.images.length) {
-      _freestylePlacements.removeRange(
-        widget.images.length,
-        _freestylePlacements.length,
-      );
-    }
+    _removedFreestyleImageIndexes.removeWhere(
+      (imageIndex) => imageIndex >= widget.images.length,
+    );
+    _freestyleLayers.removeWhere(
+      (layer) => layer.imageIndex >= widget.images.length,
+    );
 
-    while (_freestylePlacements.length < widget.images.length) {
-      _freestylePlacements.add(
-        _defaultFreestylePlacement(
-          _freestylePlacements.length,
-          math.max(widget.images.length, 1),
+    for (var imageIndex = 0; imageIndex < widget.images.length; imageIndex++) {
+      final hasLayer = _freestyleLayers.any(
+        (layer) => layer.imageIndex == imageIndex,
+      );
+      if (hasLayer || _removedFreestyleImageIndexes.contains(imageIndex)) {
+        continue;
+      }
+      _freestyleLayers.add(
+        _FreestyleLayer(
+          imageIndex: imageIndex,
+          placement: _defaultFreestylePlacement(
+            _freestyleLayers.length,
+            math.max(widget.images.length, 1),
+          ),
         ),
       );
     }
 
-    if (_selectedFreestyleIndex != null &&
-        _selectedFreestyleIndex! >= widget.images.length) {
-      _selectedFreestyleIndex = widget.images.isEmpty ? null : 0;
+    if (_selectedFreestyleLayerIndex != null &&
+        _selectedFreestyleLayerIndex! >= _freestyleLayers.length) {
+      _selectedFreestyleLayerIndex = _freestyleLayers.isEmpty ? null : 0;
     }
   }
 
@@ -215,15 +227,94 @@ class CollageMakerState extends State<CollageMaker> {
 
   void _resetFreestyle() {
     setState(() {
-      _freestylePlacements
+      _removedFreestyleImageIndexes.clear();
+      _freestyleLayers
         ..clear()
         ..addAll(
           List.generate(
             widget.images.length,
-            (index) => _defaultFreestylePlacement(index, widget.images.length),
+            (index) => _FreestyleLayer(
+              imageIndex: index,
+              placement: _defaultFreestylePlacement(
+                index,
+                widget.images.length,
+              ),
+            ),
           ),
         );
-      _selectedFreestyleIndex = widget.images.isEmpty ? null : 0;
+      _selectedFreestyleLayerIndex = _freestyleLayers.isEmpty ? null : 0;
+    });
+  }
+
+  void _moveSelectedFreestyleLayer(int delta) {
+    final index = _selectedFreestyleLayerIndex;
+    if (index == null) return;
+
+    final to = index + delta;
+    if (to < 0 || to >= _freestyleLayers.length) return;
+
+    setState(() {
+      final layer = _freestyleLayers.removeAt(index);
+      _freestyleLayers.insert(to, layer);
+      _selectedFreestyleLayerIndex = to;
+    });
+  }
+
+  void _duplicateSelectedFreestyleLayer() {
+    final index = _selectedFreestyleLayerIndex;
+    if (index == null) return;
+
+    final source = _freestyleLayers[index];
+    final width = source.placement.width;
+    final height = source.placement.height;
+    final placement = source.placement.copyWith(
+      left: (source.placement.left + 0.06).clamp(0.0, 1 - width).toDouble(),
+      top: (source.placement.top + 0.06).clamp(0.0, 1 - height).toDouble(),
+    );
+
+    setState(() {
+      _freestyleLayers.add(
+        source.copyWith(placement: placement, locked: false),
+      );
+      _selectedFreestyleLayerIndex = _freestyleLayers.length - 1;
+    });
+  }
+
+  void _removeSelectedFreestyleLayer() {
+    final index = _selectedFreestyleLayerIndex;
+    if (index == null) return;
+
+    setState(() {
+      final layer = _freestyleLayers.removeAt(index);
+      final hasSibling = _freestyleLayers.any(
+        (item) => item.imageIndex == layer.imageIndex,
+      );
+      if (!hasSibling) _removedFreestyleImageIndexes.add(layer.imageIndex);
+      _selectedFreestyleLayerIndex = _freestyleLayers.isEmpty
+          ? null
+          : math.min(index, _freestyleLayers.length - 1);
+    });
+  }
+
+  void _toggleSelectedFreestyleLock() {
+    final index = _selectedFreestyleLayerIndex;
+    if (index == null) return;
+
+    setState(() {
+      final layer = _freestyleLayers[index];
+      _freestyleLayers[index] = layer.copyWith(locked: !layer.locked);
+    });
+  }
+
+  void _rotateSelectedFreestyleLayer(double radians) {
+    final index = _selectedFreestyleLayerIndex;
+    if (index == null) return;
+
+    setState(() {
+      final layer = _freestyleLayers[index];
+      _freestyleLayers[index] = layer.copyWith(
+        rotation: layer.rotation + radians,
+      );
     });
   }
 
@@ -252,9 +343,88 @@ class CollageMakerState extends State<CollageMaker> {
   }
 
   void _moveImage(int from, int delta) {
+    if (widget.onMoveImage == null) return;
+
     final to = from + delta;
     if (to < 0 || to >= widget.images.length) return;
+
+    setState(() {
+      for (var i = 0; i < _freestyleLayers.length; i++) {
+        final layer = _freestyleLayers[i];
+        var imageIndex = layer.imageIndex;
+        if (imageIndex == from) {
+          imageIndex = to;
+        } else if (from < to && imageIndex > from && imageIndex <= to) {
+          imageIndex--;
+        } else if (from > to && imageIndex >= to && imageIndex < from) {
+          imageIndex++;
+        }
+        _freestyleLayers[i] = layer.copyWith(imageIndex: imageIndex);
+      }
+      _remapRemovedFreestyleIndexes(from, to);
+    });
+
     widget.onMoveImage?.call(from, to);
+  }
+
+  void _removeImage(int index) {
+    if (widget.onRemoveImage == null) return;
+
+    setState(() {
+      _freestyleLayers.removeWhere((layer) => layer.imageIndex == index);
+      for (var i = 0; i < _freestyleLayers.length; i++) {
+        final layer = _freestyleLayers[i];
+        if (layer.imageIndex > index) {
+          _freestyleLayers[i] = layer.copyWith(
+            imageIndex: layer.imageIndex - 1,
+          );
+        }
+      }
+      final removed = _removedFreestyleImageIndexes.toList();
+      _removedFreestyleImageIndexes.clear();
+      for (final imageIndex in removed) {
+        if (imageIndex == index || imageIndex >= widget.images.length - 1) {
+          continue;
+        }
+        _removedFreestyleImageIndexes.add(
+          imageIndex > index ? imageIndex - 1 : imageIndex,
+        );
+      }
+      if (_selectedFreestyleLayerIndex != null &&
+          _selectedFreestyleLayerIndex! >= _freestyleLayers.length) {
+        _selectedFreestyleLayerIndex = _freestyleLayers.isEmpty
+            ? null
+            : _freestyleLayers.length - 1;
+      }
+    });
+    widget.onRemoveImage?.call(index);
+  }
+
+  void _clearImages() {
+    if (widget.onClearImages == null) return;
+
+    setState(() {
+      _freestyleLayers.clear();
+      _removedFreestyleImageIndexes.clear();
+      _selectedFreestyleLayerIndex = null;
+    });
+    widget.onClearImages?.call();
+  }
+
+  void _remapRemovedFreestyleIndexes(int from, int to) {
+    final indexes = _removedFreestyleImageIndexes.toList();
+    _removedFreestyleImageIndexes.clear();
+    for (final index in indexes) {
+      if (index == from) {
+        _removedFreestyleImageIndexes.add(to);
+      } else if (from < to && index > from && index <= to) {
+        _removedFreestyleImageIndexes.add(index - 1);
+      } else if (from > to && index >= to && index < from) {
+        _removedFreestyleImageIndexes.add(index + 1);
+      } else {
+        _removedFreestyleImageIndexes.add(index);
+      }
+    }
   }
 
   @override
@@ -325,15 +495,15 @@ class CollageMakerState extends State<CollageMaker> {
           padding: const EdgeInsets.all(20),
           child: RepaintBoundary(
             key: _captureKey,
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 680,
-                  maxHeight: 680,
-                  minWidth: 280,
-                  minHeight: 280,
-                ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: _canvasPreset.maxPreviewWidth,
+                maxHeight: _canvasPreset.maxPreviewHeight,
+                minWidth: 280,
+                minHeight: _canvasPreset.minPreviewHeight,
+              ),
+              child: AspectRatio(
+                aspectRatio: _canvasPreset.aspectRatio,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -367,6 +537,11 @@ class CollageMakerState extends State<CollageMaker> {
 
   Widget _buildControls() {
     final filteredLayoutIndexes = _filteredLayoutIndexes;
+    final selectedFreestyleLayer =
+        _selectedFreestyleLayerIndex == null ||
+            _selectedFreestyleLayerIndex! >= _freestyleLayers.length
+        ? null
+        : _freestyleLayers[_selectedFreestyleLayerIndex!];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
@@ -401,12 +576,27 @@ class CollageMakerState extends State<CollageMaker> {
           onSelectionChanged: (selection) {
             setState(() {
               _isFreestyle = selection.first;
-              _selectedFreestyleIndex = _isFreestyle && widget.images.isNotEmpty
-                  ? _selectedFreestyleIndex ?? 0
+              _selectedFreestyleLayerIndex =
+                  _isFreestyle && _freestyleLayers.isNotEmpty
+                  ? _selectedFreestyleLayerIndex ?? 0
                   : null;
               _syncFreestylePlacements();
             });
           },
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: List.generate(_CanvasPreset.presets.length, (index) {
+            final preset = _CanvasPreset.presets[index];
+            return ChoiceChip(
+              selected: _canvasPresetIndex == index,
+              avatar: Icon(preset.icon, size: 18),
+              label: Text(preset.label),
+              onSelected: (_) => setState(() => _canvasPresetIndex = index),
+            );
+          }),
         ),
         const SizedBox(height: 10),
         if (_isFreestyle) ...[
@@ -418,6 +608,64 @@ class CollageMakerState extends State<CollageMaker> {
                   icon: const Icon(Icons.refresh_outlined),
                   label: const Text('Reset freestyle'),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _LayerActionButton(
+                icon: Icons.flip_to_front_outlined,
+                tooltip: 'Bring forward',
+                onPressed:
+                    _selectedFreestyleLayerIndex == null ||
+                        _selectedFreestyleLayerIndex ==
+                            _freestyleLayers.length - 1
+                    ? null
+                    : () => _moveSelectedFreestyleLayer(1),
+              ),
+              _LayerActionButton(
+                icon: Icons.flip_to_back_outlined,
+                tooltip: 'Send backward',
+                onPressed:
+                    _selectedFreestyleLayerIndex == null ||
+                        _selectedFreestyleLayerIndex == 0
+                    ? null
+                    : () => _moveSelectedFreestyleLayer(-1),
+              ),
+              _LayerActionButton(
+                icon: Icons.content_copy_outlined,
+                tooltip: 'Duplicate',
+                onPressed: selectedFreestyleLayer == null
+                    ? null
+                    : _duplicateSelectedFreestyleLayer,
+              ),
+              _LayerActionButton(
+                icon: Icons.rotate_90_degrees_cw_outlined,
+                tooltip: 'Rotate',
+                onPressed: selectedFreestyleLayer == null
+                    ? null
+                    : () => _rotateSelectedFreestyleLayer(math.pi / 18),
+              ),
+              _LayerActionButton(
+                icon: selectedFreestyleLayer?.locked == true
+                    ? Icons.lock_outline
+                    : Icons.lock_open_outlined,
+                tooltip: selectedFreestyleLayer?.locked == true
+                    ? 'Unlock'
+                    : 'Lock',
+                onPressed: selectedFreestyleLayer == null
+                    ? null
+                    : _toggleSelectedFreestyleLock,
+              ),
+              _LayerActionButton(
+                icon: Icons.delete_outline,
+                tooltip: 'Remove from canvas',
+                onPressed: selectedFreestyleLayer == null
+                    ? null
+                    : _removeSelectedFreestyleLayer,
               ),
             ],
           ),
@@ -470,7 +718,9 @@ class CollageMakerState extends State<CollageMaker> {
             ),
             const SizedBox(width: 10),
             IconButton.filledTonal(
-              onPressed: widget.images.isEmpty ? null : widget.onClearImages,
+              onPressed: widget.images.isEmpty || widget.onClearImages == null
+                  ? null
+                  : _clearImages,
               tooltip: 'Clear',
               icon: const Icon(Icons.delete_sweep_outlined),
             ),
@@ -491,7 +741,7 @@ class CollageMakerState extends State<CollageMaker> {
                   canMoveForward: index < widget.images.length - 1,
                   onBack: () => _moveImage(index, -1),
                   onForward: () => _moveImage(index, 1),
-                  onRemove: () => widget.onRemoveImage?.call(index),
+                  onRemove: () => _removeImage(index),
                 );
               },
             ),
@@ -593,55 +843,76 @@ class CollageMakerState extends State<CollageMaker> {
           fit: StackFit.expand,
           children: [
             _OccasionFrame(theme: _theme),
-            if (widget.images.isEmpty) const _EmptySlot(index: 1),
-            ...List.generate(widget.images.length, (index) {
-              final placement = _freestylePlacements[index];
-              final selected = index == _selectedFreestyleIndex;
+            if (_freestyleLayers.isEmpty) const _EmptySlot(index: 1),
+            ...List.generate(_freestyleLayers.length, (index) {
+              final layer = _freestyleLayers[index];
+              final placement = layer.placement;
+              final selected = index == _selectedFreestyleLayerIndex;
 
               return Positioned(
                 left: placement.left * width,
                 top: placement.top * height,
                 width: placement.width * width,
                 height: placement.height * height,
-                child: GestureDetector(
-                  onTap: () => setState(() => _selectedFreestyleIndex = index),
-                  onScaleStart: (_) {
-                    _gestureStartPlacement = _freestylePlacements[index];
-                    setState(() => _selectedFreestyleIndex = index);
-                  },
-                  onScaleUpdate: (details) {
-                    final start =
-                        _gestureStartPlacement ?? _freestylePlacements[index];
-                    final current = _freestylePlacements[index];
-                    final nextWidth = (start.width * details.scale)
-                        .clamp(0.18, 0.92)
-                        .toDouble();
-                    final nextHeight = (start.height * details.scale)
-                        .clamp(0.16, 0.92)
-                        .toDouble();
-                    final nextLeft =
-                        (current.left + details.focalPointDelta.dx / width)
-                            .clamp(0.0, 1 - nextWidth)
-                            .toDouble();
-                    final nextTop =
-                        (current.top + details.focalPointDelta.dy / height)
-                            .clamp(0.0, 1 - nextHeight)
-                            .toDouble();
+                child: Transform.rotate(
+                  angle: layer.rotation,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() => _selectedFreestyleLayerIndex = index);
+                    },
+                    onScaleStart: layer.locked
+                        ? null
+                        : (_) {
+                            _gestureStartLayer = _freestyleLayers[index];
+                            setState(
+                              () => _selectedFreestyleLayerIndex = index,
+                            );
+                          },
+                    onScaleUpdate: layer.locked
+                        ? null
+                        : (details) {
+                            final start =
+                                _gestureStartLayer ?? _freestyleLayers[index];
+                            final current = _freestyleLayers[index];
+                            final nextWidth =
+                                (start.placement.width * details.scale)
+                                    .clamp(0.18, 0.92)
+                                    .toDouble();
+                            final nextHeight =
+                                (start.placement.height * details.scale)
+                                    .clamp(0.16, 0.92)
+                                    .toDouble();
+                            final nextLeft =
+                                (current.placement.left +
+                                        details.focalPointDelta.dx / width)
+                                    .clamp(0.0, 1 - nextWidth)
+                                    .toDouble();
+                            final nextTop =
+                                (current.placement.top +
+                                        details.focalPointDelta.dy / height)
+                                    .clamp(0.0, 1 - nextHeight)
+                                    .toDouble();
 
-                    setState(() {
-                      _freestylePlacements[index] = _FreestylePlacement(
-                        left: nextLeft,
-                        top: nextTop,
-                        width: nextWidth,
-                        height: nextHeight,
-                      );
-                    });
-                  },
-                  onScaleEnd: (_) => _gestureStartPlacement = null,
-                  child: _FreestylePhoto(
-                    image: widget.images[index],
-                    selected: selected,
-                    radius: _radius,
+                            setState(() {
+                              _freestyleLayers[index] = current.copyWith(
+                                placement: _FreestylePlacement(
+                                  left: nextLeft,
+                                  top: nextTop,
+                                  width: nextWidth,
+                                  height: nextHeight,
+                                ),
+                              );
+                            });
+                          },
+                    onScaleEnd: layer.locked
+                        ? null
+                        : (_) => _gestureStartLayer = null,
+                    child: _FreestylePhoto(
+                      image: widget.images[layer.imageIndex],
+                      selected: selected,
+                      locked: layer.locked,
+                      radius: _radius,
+                    ),
                   ),
                 ),
               );
@@ -704,11 +975,13 @@ class _FreestylePhoto extends StatelessWidget {
   const _FreestylePhoto({
     required this.image,
     required this.selected,
+    required this.locked,
     required this.radius,
   });
 
   final ImageProvider image;
   final bool selected;
+  final bool locked;
   final double radius;
 
   @override
@@ -757,6 +1030,22 @@ class _FreestylePhoto extends StatelessWidget {
                 child: Icon(
                   Icons.open_with_outlined,
                   color: Theme.of(context).colorScheme.onPrimary,
+                  size: 18,
+                ),
+              ),
+            ),
+          if (locked)
+            Positioned(
+              left: 8,
+              top: 8,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(145),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_outline,
+                  color: Colors.white,
                   size: 18,
                 ),
               ),
@@ -960,6 +1249,26 @@ class _TinyIconButton extends StatelessWidget {
   }
 }
 
+class _LayerActionButton extends StatelessWidget {
+  const _LayerActionButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: IconButton.filledTonal(onPressed: onPressed, icon: Icon(icon)),
+    );
+  }
+}
+
 class _EmptySlot extends StatelessWidget {
   const _EmptySlot({required this.index});
 
@@ -1061,6 +1370,58 @@ class _CollageTheme {
   final List<Color> accents;
 }
 
+class _CanvasPreset {
+  const _CanvasPreset({
+    required this.label,
+    required this.icon,
+    required this.width,
+    required this.height,
+  });
+
+  static const presets = [
+    _CanvasPreset(
+      label: 'Square',
+      icon: Icons.crop_square_outlined,
+      width: 1,
+      height: 1,
+    ),
+    _CanvasPreset(
+      label: 'Story',
+      icon: Icons.stay_current_portrait_outlined,
+      width: 9,
+      height: 16,
+    ),
+    _CanvasPreset(
+      label: 'Portrait',
+      icon: Icons.crop_portrait_outlined,
+      width: 4,
+      height: 5,
+    ),
+    _CanvasPreset(
+      label: 'Landscape',
+      icon: Icons.crop_landscape_outlined,
+      width: 16,
+      height: 9,
+    ),
+    _CanvasPreset(
+      label: 'Wallpaper',
+      icon: Icons.wallpaper_outlined,
+      width: 9,
+      height: 19.5,
+    ),
+  ];
+
+  final String label;
+  final IconData icon;
+  final double width;
+  final double height;
+
+  double get aspectRatio => width / height;
+  double get maxPreviewWidth => aspectRatio >= 1 ? 680 : 680 * aspectRatio;
+  double get maxPreviewHeight => aspectRatio >= 1 ? 680 / aspectRatio : 680;
+  double get minPreviewHeight => 280 / aspectRatio;
+}
+
 class _FreestylePlacement {
   const _FreestylePlacement({
     required this.left,
@@ -1073,6 +1434,48 @@ class _FreestylePlacement {
   final double top;
   final double width;
   final double height;
+
+  _FreestylePlacement copyWith({
+    double? left,
+    double? top,
+    double? width,
+    double? height,
+  }) {
+    return _FreestylePlacement(
+      left: left ?? this.left,
+      top: top ?? this.top,
+      width: width ?? this.width,
+      height: height ?? this.height,
+    );
+  }
+}
+
+class _FreestyleLayer {
+  const _FreestyleLayer({
+    required this.imageIndex,
+    required this.placement,
+    this.rotation = 0,
+    this.locked = false,
+  });
+
+  final int imageIndex;
+  final _FreestylePlacement placement;
+  final double rotation;
+  final bool locked;
+
+  _FreestyleLayer copyWith({
+    int? imageIndex,
+    _FreestylePlacement? placement,
+    double? rotation,
+    bool? locked,
+  }) {
+    return _FreestyleLayer(
+      imageIndex: imageIndex ?? this.imageIndex,
+      placement: placement ?? this.placement,
+      rotation: rotation ?? this.rotation,
+      locked: locked ?? this.locked,
+    );
+  }
 }
 
 /// Metadata for a collage template.
