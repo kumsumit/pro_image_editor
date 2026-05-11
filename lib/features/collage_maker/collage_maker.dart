@@ -1,4 +1,5 @@
 // Dart imports:
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -133,17 +134,98 @@ class CollageMakerState extends State<CollageMaker> {
   ];
 
   late final List<CollageLayout> _layouts = _CollageTemplateCatalog.layouts;
+  final List<_FreestylePlacement> _freestylePlacements = [];
 
   int _layoutIndex = 2;
   int _slotFilter = 0;
   int _backgroundIndex = 0;
+  int? _selectedFreestyleIndex;
   double _gap = 10;
   double _radius = 24;
   double _padding = 16;
+  bool _isFreestyle = false;
   bool _isRendering = false;
+  _FreestylePlacement? _gestureStartPlacement;
 
   CollageLayout get _layout => _layouts[_layoutIndex];
   _CollageTheme get _theme => _themes[_backgroundIndex];
+
+  @override
+  void initState() {
+    super.initState();
+    _syncFreestylePlacements();
+  }
+
+  @override
+  void didUpdateWidget(covariant CollageMaker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.images.length != widget.images.length) {
+      _syncFreestylePlacements();
+    }
+  }
+
+  void _syncFreestylePlacements() {
+    if (_freestylePlacements.length > widget.images.length) {
+      _freestylePlacements.removeRange(
+        widget.images.length,
+        _freestylePlacements.length,
+      );
+    }
+
+    while (_freestylePlacements.length < widget.images.length) {
+      _freestylePlacements.add(
+        _defaultFreestylePlacement(
+          _freestylePlacements.length,
+          math.max(widget.images.length, 1),
+        ),
+      );
+    }
+
+    if (_selectedFreestyleIndex != null &&
+        _selectedFreestyleIndex! >= widget.images.length) {
+      _selectedFreestyleIndex = widget.images.isEmpty ? null : 0;
+    }
+  }
+
+  _FreestylePlacement _defaultFreestylePlacement(int index, int count) {
+    final columns = count <= 4 ? 2 : 3;
+    final rows = (count / columns).ceil();
+    final width = count <= 2 ? 0.46 : (count <= 6 ? 0.34 : 0.29);
+    final height = width * (index.isEven ? 0.82 : 1.08);
+    final cellWidth = 1 / columns;
+    final cellHeight = 1 / rows;
+    final column = index % columns;
+    final row = index ~/ columns;
+    final staggerX = index.isEven ? 0.01 : -0.015;
+    final staggerY = index % 3 == 0 ? -0.01 : 0.015;
+    final left = (column * cellWidth + (cellWidth - width) / 2 + staggerX)
+        .clamp(0.0, 1 - width)
+        .toDouble();
+    final top = (row * cellHeight + (cellHeight - height) / 2 + staggerY)
+        .clamp(0.0, 1 - height)
+        .toDouble();
+
+    return _FreestylePlacement(
+      left: left,
+      top: top,
+      width: width,
+      height: height,
+    );
+  }
+
+  void _resetFreestyle() {
+    setState(() {
+      _freestylePlacements
+        ..clear()
+        ..addAll(
+          List.generate(
+            widget.images.length,
+            (index) => _defaultFreestylePlacement(index, widget.images.length),
+          ),
+        );
+      _selectedFreestyleIndex = widget.images.isEmpty ? null : 0;
+    });
+  }
 
   /// Renders the visible collage to PNG bytes.
   Future<Uint8List?> exportPngBytes({double pixelRatio = 3}) async {
@@ -270,7 +352,9 @@ class CollageMakerState extends State<CollageMaker> {
                   ),
                   child: Padding(
                     padding: EdgeInsets.all(_padding),
-                    child: _buildLayout(_layout),
+                    child: _isFreestyle
+                        ? _buildFreestyleLayout()
+                        : _buildLayout(_layout),
                   ),
                 ),
               ),
@@ -292,47 +376,88 @@ class CollageMakerState extends State<CollageMaker> {
             const Icon(Icons.auto_awesome_mosaic_outlined),
             const SizedBox(width: 10),
             Text(
-              '${_layouts.length} templates',
+              _isFreestyle
+                  ? 'Freestyle canvas'
+                  : '${_layouts.length} templates',
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
         ),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            ChoiceChip(
-              selected: _slotFilter == 0,
-              label: const Text('All'),
-              onSelected: (_) => setState(() => _slotFilter = 0),
+        SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(
+              value: false,
+              icon: Icon(Icons.grid_view_outlined),
+              label: Text('Templates'),
             ),
-            for (final slotCount in _CollageTemplateCatalog.slotCounts)
-              ChoiceChip(
-                selected: _slotFilter == slotCount,
-                label: Text('$slotCount photos'),
-                onSelected: (_) => setState(() => _slotFilter = slotCount),
-              ),
+            ButtonSegment(
+              value: true,
+              icon: Icon(Icons.open_with_outlined),
+              label: Text('Freestyle'),
+            ),
           ],
+          selected: {_isFreestyle},
+          onSelectionChanged: (selection) {
+            setState(() {
+              _isFreestyle = selection.first;
+              _selectedFreestyleIndex = _isFreestyle && widget.images.isNotEmpty
+                  ? _selectedFreestyleIndex ?? 0
+                  : null;
+              _syncFreestylePlacements();
+            });
+          },
         ),
         const SizedBox(height: 10),
-        SizedBox(
-          height: 126,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: filteredLayoutIndexes.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 10),
-            itemBuilder: (context, index) {
-              final layoutIndex = filteredLayoutIndexes[index];
-              final layout = _layouts[layoutIndex];
-              return _TemplateCard(
-                layout: layout,
-                selected: layoutIndex == _layoutIndex,
-                onTap: () => setState(() => _layoutIndex = layoutIndex),
-              );
-            },
+        if (_isFreestyle) ...[
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: widget.images.isEmpty ? null : _resetFreestyle,
+                  icon: const Icon(Icons.refresh_outlined),
+                  label: const Text('Reset freestyle'),
+                ),
+              ),
+            ],
           ),
-        ),
+        ] else ...[
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              ChoiceChip(
+                selected: _slotFilter == 0,
+                label: const Text('All'),
+                onSelected: (_) => setState(() => _slotFilter = 0),
+              ),
+              for (final slotCount in _CollageTemplateCatalog.slotCounts)
+                ChoiceChip(
+                  selected: _slotFilter == slotCount,
+                  label: Text('$slotCount photos'),
+                  onSelected: (_) => setState(() => _slotFilter = slotCount),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 126,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: filteredLayoutIndexes.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final layoutIndex = filteredLayoutIndexes[index];
+                final layout = _layouts[layoutIndex];
+                return _TemplateCard(
+                  layout: layout,
+                  selected: layoutIndex == _layoutIndex,
+                  onTap: () => setState(() => _layoutIndex = layoutIndex),
+                );
+              },
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         Row(
           children: [
@@ -458,6 +583,75 @@ class CollageMakerState extends State<CollageMaker> {
     );
   }
 
+  Widget _buildFreestyleLayout() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final height = constraints.maxHeight;
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            _OccasionFrame(theme: _theme),
+            if (widget.images.isEmpty) const _EmptySlot(index: 1),
+            ...List.generate(widget.images.length, (index) {
+              final placement = _freestylePlacements[index];
+              final selected = index == _selectedFreestyleIndex;
+
+              return Positioned(
+                left: placement.left * width,
+                top: placement.top * height,
+                width: placement.width * width,
+                height: placement.height * height,
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedFreestyleIndex = index),
+                  onScaleStart: (_) {
+                    _gestureStartPlacement = _freestylePlacements[index];
+                    setState(() => _selectedFreestyleIndex = index);
+                  },
+                  onScaleUpdate: (details) {
+                    final start =
+                        _gestureStartPlacement ?? _freestylePlacements[index];
+                    final current = _freestylePlacements[index];
+                    final nextWidth = (start.width * details.scale)
+                        .clamp(0.18, 0.92)
+                        .toDouble();
+                    final nextHeight = (start.height * details.scale)
+                        .clamp(0.16, 0.92)
+                        .toDouble();
+                    final nextLeft =
+                        (current.left + details.focalPointDelta.dx / width)
+                            .clamp(0.0, 1 - nextWidth)
+                            .toDouble();
+                    final nextTop =
+                        (current.top + details.focalPointDelta.dy / height)
+                            .clamp(0.0, 1 - nextHeight)
+                            .toDouble();
+
+                    setState(() {
+                      _freestylePlacements[index] = _FreestylePlacement(
+                        left: nextLeft,
+                        top: nextTop,
+                        width: nextWidth,
+                        height: nextHeight,
+                      );
+                    });
+                  },
+                  onScaleEnd: (_) => _gestureStartPlacement = null,
+                  child: _FreestylePhoto(
+                    image: widget.images[index],
+                    selected: selected,
+                    radius: _radius,
+                  ),
+                ),
+              );
+            }),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildLayout(CollageLayout layout) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -501,6 +695,73 @@ class CollageMakerState extends State<CollageMaker> {
                 filterQuality: FilterQuality.high,
               )
             : _EmptySlot(index: index + 1),
+      ),
+    );
+  }
+}
+
+class _FreestylePhoto extends StatelessWidget {
+  const _FreestylePhoto({
+    required this.image,
+    required this.selected,
+    required this.radius,
+  });
+
+  final ImageProvider image;
+  final bool selected;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = selected
+        ? Theme.of(context).colorScheme.primary
+        : Colors.white.withAlpha(80);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius + 4),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(radius),
+            child: Image(
+              image: image,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(color: borderColor, width: selected ? 3 : 1),
+            ),
+          ),
+          if (selected)
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.open_with_outlined,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  size: 18,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -798,6 +1059,20 @@ class _CollageTheme {
   final IconData icon;
   final List<Color> colors;
   final List<Color> accents;
+}
+
+class _FreestylePlacement {
+  const _FreestylePlacement({
+    required this.left,
+    required this.top,
+    required this.width,
+    required this.height,
+  });
+
+  final double left;
+  final double top;
+  final double width;
+  final double height;
 }
 
 /// Metadata for a collage template.
