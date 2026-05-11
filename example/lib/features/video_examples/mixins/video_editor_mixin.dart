@@ -200,7 +200,7 @@ mixin VideoEditorMixin<T extends StatefulWidget> on State<T> {
       },
       onAddClip: () async {
         // Open video picker
-        final result = await FilePicker.platform.pickFiles(
+        final result = await FilePicker.pickFiles(
           type: FileType.video,
           allowMultiple: false,
         );

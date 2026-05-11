@@ -2,6 +2,7 @@ import 'package:example/features/layer/layer_group_page.dart';
 import 'package:flutter/material.dart';
 
 import '/features/ai/ai_group_page.dart';
+import '/features/collage_maker_example.dart';
 import '/features/crop_to_main_editor.dart';
 import '/features/custom_path_builder_example.dart';
 import '/features/custom_widgets_example.dart';
@@ -54,6 +55,12 @@ List<Example> kImageEditorExamples = const [
     name: 'Designs',
     icon: Icons.palette_outlined,
     page: DesignExample(),
+  ),
+  Example(
+    path: '/collage-maker',
+    name: 'Collage-Maker',
+    icon: Icons.auto_awesome_mosaic_outlined,
+    page: CollageMakerExample(),
   ),
   Example(
     path: '/standalone',

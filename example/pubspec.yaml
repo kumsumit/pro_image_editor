@@ -20,12 +20,12 @@ dependencies:
   cupertino_icons: ^1.0.9
   file_picker: 11.0.2
   gal: ^2.3.2
-  google_fonts: ^8.0.2
+  google_fonts: ^8.1.0
   file_saver: ^0.4.0
   firebase_core: ^4.6.0
   firebase_storage: ^13.2.0
   http: ^1.6.0
-  # supabase_flutter: ^2.12.2
+  supabase_flutter: ^2.12.4
   image_background_remover: ^2.0.0
   image_picker: ^1.2.1
   mime: ^2.0.0
@@ -35,11 +35,11 @@ dependencies:
   vibration: ^3.1.8
 
   # Video-Editing
-  pro_video_editor: ^1.13.0
+  pro_video_editor: ^1.16.2
   audioplayers: ^6.6.0
   ### Choose one player below
   video_player: ^2.11.1
-  chewie: ^1.13.0
+  chewie: ^1.13.1
   flick_video_player: ^0.9.0
   media_kit: ^1.2.6 # Primary package.
   media_kit_video: ^2.0.1 # For video rendering.
