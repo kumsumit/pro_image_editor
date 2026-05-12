@@ -17,10 +17,13 @@ class TiltWidgets {
     ValueChanged<double> onChangeEnd,
   )?
   ruler;
+
   /// The indicator widget.
   final Widget? indicator;
+
   /// A widget builder for tick marks.
   final Widget Function(bool isBig, bool isZero)? tickMark;
+
   /// The bottom bar widget.
   final Widget? bottomBar;
 

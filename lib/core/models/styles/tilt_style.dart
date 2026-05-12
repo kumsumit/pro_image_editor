@@ -20,22 +20,31 @@ class TiltStyle {
 
   /// The color for the selected item in the bottom bar.
   final Color bottomBarSelectedColor;
+
   /// The color for active elements.
   final Color activeColor;
+
   /// The color of the indicator.
   final Color indicatorColor;
+
   /// The color of the tick marks.
   final Color tickMarkColor;
+
   /// The height of the tick marks.
   final double tickMarkHeight;
+
   /// The width of the tick marks.
   final double tickMarkWidth;
+
   /// The height of the indicator.
   final double indicatorHeight;
+
   /// The width of the indicator.
   final double indicatorWidth;
+
   /// The height of the bar.
   final double barHeight;
+
   /// The mouse cursor for interactive elements.
   final MouseCursor cursor;
 }

@@ -104,10 +104,10 @@ class ProImageEditor extends StatefulWidget
     this.videoController,
     this.configs = const ProImageEditorConfigs(),
   }) : assert(
-          editorImage != null || videoController != null || blankSize != null,
-          'Either editorImage or videoController or blankSize must be '
-          'provided.',
-        );
+         editorImage != null || videoController != null || blankSize != null,
+         'Either editorImage or videoController or blankSize must be '
+         'provided.',
+       );
 
   /// This constructor creates a `ProImageEditor` widget configured to edit an
   /// image loaded from the specified `byteArray`.
@@ -307,7 +307,8 @@ class ProImageEditor extends StatefulWidget
   }) {
     return ProImageEditor._(
       key: key,
-      editorImage: editorImage ??
+      editorImage:
+          editorImage ??
           EditorImage(
             byteArray: byteArray,
             file: file,
@@ -428,11 +429,11 @@ class ProImageEditorState extends State<ProImageEditor>
   /// Helper class for managing interactions with layers in the editor.
   late final LayerInteractionManager layerInteractionManager =
       LayerInteractionManager(
-    onSelectedLayerChanged: mainEditorCallbacks?.onSelectedLayerChanged,
-    onSelectedLayersChanged: mainEditorCallbacks?.onSelectedLayersChanged,
-    helperLinesCallbacks: mainEditorCallbacks?.helperLines,
-    configs: configs,
-  );
+        onSelectedLayerChanged: mainEditorCallbacks?.onSelectedLayerChanged,
+        onSelectedLayersChanged: mainEditorCallbacks?.onSelectedLayersChanged,
+        helperLinesCallbacks: mainEditorCallbacks?.helperLines,
+        configs: configs,
+      );
   late final _mouseService = MouseService(
     configs: configs,
     interactionManager: layerInteractionManager,
@@ -744,7 +745,8 @@ class ProImageEditorState extends State<ProImageEditor>
       EditorStateHistory(
         transformConfigs: transformConfigs,
         blur: blur,
-        layers: layers ??
+        layers:
+            layers ??
             (newLayer != null
                 ? [...activeLayerList, newLayer]
                 : activeLayerList),
@@ -861,7 +863,8 @@ class ProImageEditorState extends State<ProImageEditor>
 
         final scaledSize = bodySize * scaleDelta;
 
-        final zoomOffset = Offset(
+        final zoomOffset =
+            Offset(
               scaledSize.width - bodySize.width,
               scaledSize.height - bodySize.height,
             ) /
@@ -1048,7 +1051,8 @@ class ProImageEditorState extends State<ProImageEditor>
       );
     }
 
-    _imageInfos = imageInfos ??
+    _imageInfos =
+        imageInfos ??
         await decodeImageInfos(
           bytes: await editorImage!.safeByteArray(context),
           screenSize: Size(
@@ -1084,7 +1088,8 @@ class ProImageEditorState extends State<ProImageEditor>
     if (renderedBottomBarHeight != null) {
       sizesManager
         ..bottomBarHeight = renderedBottomBarHeight
-        ..appBarHeight = sizesManager.editorSize.height -
+        ..appBarHeight =
+            sizesManager.editorSize.height -
             sizesManager.bodySize.height -
             sizesManager.bottomBarHeight;
     }
@@ -1454,10 +1459,12 @@ class ProImageEditorState extends State<ProImageEditor>
                   paintEditorConfigs.widgets.editBottomSheet?.call(layer) ??
                   SafeArea(
                     child: PaintEditorLayerEditor(
-                      layer: _layerCopyManager.duplicateLayer(
-                        layer,
-                        offset: Offset.zero,
-                      ) as PaintLayer,
+                      layer:
+                          _layerCopyManager.duplicateLayer(
+                                layer,
+                                offset: Offset.zero,
+                              )
+                              as PaintLayer,
                       configs: configs,
                     ),
                   ),
@@ -1535,7 +1542,8 @@ class ProImageEditorState extends State<ProImageEditor>
       barrierDismissible: subEditorStyle.barrierDismissible,
       transitionDuration: duration,
       reverseTransitionDuration: duration,
-      transitionsBuilder: subEditorStyle.transitionsBuilder ??
+      transitionsBuilder:
+          subEditorStyle.transitionsBuilder ??
           (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -1964,7 +1972,8 @@ class ProImageEditorState extends State<ProImageEditor>
     _checkInteractiveViewer();
     ServicesBinding.instance.keyboard.removeHandler(_onKeyEvent);
     final effectiveBoxConstraints = emojiEditorConfigs
-        .style.editorBoxConstraintsBuilder
+        .style
+        .editorBoxConstraintsBuilder
         ?.call(context, configs);
 
     DraggableSheetStyle sheetTheme =
@@ -1980,7 +1989,8 @@ class ProImageEditorState extends State<ProImageEditor>
       builder: (BuildContext context) => SafeArea(
         child: !useDraggableSheet
             ? ConstrainedBox(
-                constraints: effectiveBoxConstraints ??
+                constraints:
+                    effectiveBoxConstraints ??
                     BoxConstraints(
                       maxHeight: 300 + MediaQuery.viewInsetsOf(context).bottom,
                     ),
@@ -2020,7 +2030,8 @@ class ProImageEditorState extends State<ProImageEditor>
     _checkInteractiveViewer();
     ServicesBinding.instance.keyboard.removeHandler(_onKeyEvent);
     final effectiveBoxConstraints = stickerEditorConfigs
-        .style.editorBoxConstraintsBuilder
+        .style
+        .editorBoxConstraintsBuilder
         ?.call(context, configs);
     var sheetTheme = stickerEditorConfigs.style.draggableSheetStyle;
     WidgetLayer? layer = await showModalBottomSheet(
@@ -2072,7 +2083,8 @@ class ProImageEditorState extends State<ProImageEditor>
       );
     }
 
-    bool isEditSheetAvailable = audioEditorConfigs.enableEditBalance ||
+    bool isEditSheetAvailable =
+        audioEditorConfigs.enableEditBalance ||
         audioEditorConfigs.enableEditStartTime;
 
     if (!enforceChooseTrackPage &&
@@ -2409,7 +2421,8 @@ class ProImageEditorState extends State<ProImageEditor>
     if (!mounted) return Uint8List.fromList([]);
 
     bool hasChanges = stateManager.canUndo;
-    bool useOriginalImage = !_isVideoEditor &&
+    bool useOriginalImage =
+        !_isVideoEditor &&
         !hasChanges &&
         imageGenerationConfigs.enableUseOriginalBytes;
 
@@ -2419,8 +2432,9 @@ class ProImageEditorState extends State<ProImageEditor>
 
     return await _controllers.screenshot.captureFinalScreenshot(
           imageInfos: _imageInfos!,
-          backgroundScreenshot:
-              useOriginalImage ? null : stateManager.activeScreenshot,
+          backgroundScreenshot: useOriginalImage
+              ? null
+              : stateManager.activeScreenshot,
           originalImageBytes: useOriginalImage
               ? await editorImage!.safeByteArray(context)
               : null,
@@ -2668,7 +2682,8 @@ class ProImageEditorState extends State<ProImageEditor>
 
   @override
   Widget build(BuildContext context) {
-    _theme = configs.theme ??
+    _theme =
+        configs.theme ??
         ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
@@ -2680,7 +2695,8 @@ class ProImageEditorState extends State<ProImageEditor>
     return RecordInvisibleWidget(
       controller: _controllers.screenshot,
       child: ExtendedPopScope(
-        canPop: (isPopScopeDisabled ||
+        canPop:
+            (isPopScopeDisabled ||
                 !stateManager.canUndo ||
                 _isProcessingFinalImage) &&
             (!mainEditorConfigs.enableSubEditorPage || !isSubEditorOpen),
@@ -2781,7 +2797,7 @@ class ProImageEditorState extends State<ProImageEditor>
                                       },
                                     )
                                   : _buildBottomNavBar() ??
-                                      const SizedBox.shrink(),
+                                        const SizedBox.shrink(),
                             );
                           },
                         ),
@@ -2798,10 +2814,10 @@ class ProImageEditorState extends State<ProImageEditor>
                                   key: _navigatorKey,
                                   onGenerateRoute: (settings) =>
                                       PageRouteBuilder(
-                                    opaque: false,
-                                    pageBuilder: (context, _, _) =>
-                                        const SizedBox.shrink(),
-                                  ),
+                                        opaque: false,
+                                        pageBuilder: (context, _, _) =>
+                                            const SizedBox.shrink(),
+                                      ),
                                 ),
                               ),
                             ),
@@ -2896,8 +2912,10 @@ class ProImageEditorState extends State<ProImageEditor>
                         final hasMultiSelection = selectedLayers.length > 1;
 
                         final zoomEnabled = mainEditorConfigs.enableZoom;
-                        final zoomGestureActive = interactiveViewer
-                                .currentState?.isInteractionEnabled ==
+                        final zoomGestureActive =
+                            interactiveViewer
+                                .currentState
+                                ?.isInteractionEnabled ==
                             true;
 
                         if ((hasMultiSelection && zoomEnabled) ||
@@ -2924,7 +2942,8 @@ class ProImageEditorState extends State<ProImageEditor>
                   onScaleStart: _onScaleStart,
                   onScaleUpdate: _onScaleUpdate,
                   onScaleEnd: _onScaleEnd,
-                  child: mainEditorConfigs.widgets.wrapBody?.call(
+                  child:
+                      mainEditorConfigs.widgets.wrapBody?.call(
                         this,
                         _rebuildController.stream,
                         _buildInteractiveContent(),
@@ -3057,12 +3076,14 @@ class ProImageEditorState extends State<ProImageEditor>
 
   Widget _buildImage() {
     return MainEditorBackgroundImage(
-      backgroundImageColorFilterKey:
-          _isVideoEditor ? GlobalKey() : _backgroundImageColorFilterKey,
+      backgroundImageColorFilterKey: _isVideoEditor
+          ? GlobalKey()
+          : _backgroundImageColorFilterKey,
       heroTag: _isVideoEditor ? 'image-${configs.heroTag}' : configs.heroTag,
       configs: configs,
       editorImage: editorImage,
-      isInitialized: _isInitialized ||
+      isInitialized:
+          _isInitialized ||
           stateHistoryConfigs.initStateHistory != null ||
           _stateHistoryService.isImportInProgress,
       sizesManager: sizesManager,

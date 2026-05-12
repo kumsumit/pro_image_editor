@@ -59,8 +59,9 @@ class TransformConfigs {
   /// The map should contain keys corresponding to the properties of
   /// `TransformConfigs`, and each key should map to the appropriate value.
   factory TransformConfigs.fromMap(Map<String, dynamic> map) {
-    final cropMode =
-        map['cropMode'] == 'oval' ? CropMode.oval : CropMode.rectangular;
+    final cropMode = map['cropMode'] == 'oval'
+        ? CropMode.oval
+        : CropMode.rectangular;
 
     return TransformConfigs(
       angle: safeParseDouble(map['angle']),

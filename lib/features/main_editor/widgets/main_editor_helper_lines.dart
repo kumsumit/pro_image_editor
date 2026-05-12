@@ -84,7 +84,8 @@ class MainEditorHelperLines extends StatelessWidget {
                     if (helperLines.showVerticalLine)
                       _buildLine(
                         key: const ValueKey('Screen-Vertical-Guide-Line'),
-                        width: layerInteractionManager.showVerticalHelperLine &&
+                        width:
+                            layerInteractionManager.showVerticalHelperLine &&
                                 !_isLayerInRemovalZone
                             ? _strokeWidth
                             : 0,
@@ -99,19 +100,19 @@ class MainEditorHelperLines extends StatelessWidget {
                         width: screenSize.width * scale,
                         height:
                             layerInteractionManager.showHorizontalHelperLine &&
-                                    !_isLayerInRemovalZone
-                                ? _strokeWidth
-                                : 0,
+                                !_isLayerInRemovalZone
+                            ? _strokeWidth
+                            : 0,
                         left: 0,
                         top: editorBodySize.height / 2 * scale,
                         color: helperLines.style.horizontalColor,
                         margin:
                             configs.layerInteraction.hideToolbarOnInteraction
-                                ? EdgeInsets.only(
-                                    top: sizesManager.appBarHeight,
-                                    bottom: sizesManager.bottomBarHeight,
-                                  )
-                                : null,
+                            ? EdgeInsets.only(
+                                top: sizesManager.appBarHeight,
+                                bottom: sizesManager.bottomBarHeight,
+                              )
+                            : null,
                       ),
                     if (helperLines.showRotateLine)
                       _buildRotateLine(scale, screenSize.height * 2),
@@ -161,7 +162,8 @@ class MainEditorHelperLines extends StatelessWidget {
           child: AnimatedContainer(
             key: const ValueKey('Rotation-Guide-Line'),
             duration: const Duration(milliseconds: _duration),
-            width: layerInteractionManager.showRotationHelperLine &&
+            width:
+                layerInteractionManager.showRotationHelperLine &&
                     !_isLayerInRemovalZone
                 ? _strokeWidth
                 : 0,
@@ -177,19 +179,23 @@ class MainEditorHelperLines extends StatelessWidget {
     final editorCenter = sizesManager.bodySize / 2;
     final halfStroke = _strokeWidth / 2;
 
-    final verticalOffset = (editorCenter.width +
+    final verticalOffset =
+        (editorCenter.width +
             layerInteractionManager.verticalGuideOffset.dx -
             halfStroke) *
         scale;
 
-    final horizontalOffset = (editorCenter.height +
+    final horizontalOffset =
+        (editorCenter.height +
             layerInteractionManager.horizontalGuideOffset.dy -
             halfStroke) *
         scale;
 
-    final showHorizontal = layerInteractionManager.isHorizontalGuideVisible &&
+    final showHorizontal =
+        layerInteractionManager.isHorizontalGuideVisible &&
         !_isLayerInRemovalZone;
-    final showVertical = layerInteractionManager.isVerticalGuideVisible &&
+    final showVertical =
+        layerInteractionManager.isVerticalGuideVisible &&
         !_isLayerInRemovalZone;
 
     return [

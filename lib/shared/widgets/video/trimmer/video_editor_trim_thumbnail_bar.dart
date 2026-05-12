@@ -30,7 +30,7 @@ class VideoEditorTrimThumbnailBar extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             child: thumbnails == null
                 ? player.widgets.trimBarSkeletonLoader ??
-                    const VideoEditorTrimSkeleton()
+                      const VideoEditorTrimSkeleton()
                 : Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: thumbnails.map((item) {

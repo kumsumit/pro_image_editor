@@ -368,17 +368,17 @@ class _LayerInteractionHelperWidgetState
     return [
       if (_isLayerEditable())
         (rebuildStream, layer, interactions) => ReactiveWidget(
-              stream: rebuildStream,
-              builder: (_) => _buildEditButton(interactions),
-            ),
+          stream: rebuildStream,
+          builder: (_) => _buildEditButton(interactions),
+        ),
       (rebuildStream, layer, interactions) => ReactiveWidget(
-            stream: rebuildStream,
-            builder: (_) => _buildRemoveButton(interactions),
-          ),
+        stream: rebuildStream,
+        builder: (_) => _buildRemoveButton(interactions),
+      ),
       (rebuildStream, layer, interactions) => ReactiveWidget(
-            stream: rebuildStream,
-            builder: (_) => _buildRotateScaleButton(interactions),
-          ),
+        stream: rebuildStream,
+        builder: (_) => _buildRotateScaleButton(interactions),
+      ),
     ];
   }
 

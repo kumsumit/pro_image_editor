@@ -5,7 +5,10 @@ import '../../enums/tilt_mode_enum.dart';
 import '../../providers/tilt_provider.dart';
 import 'tilt_ruler.dart';
 
+/// A widget that chooses and displays the appropriate tilt ruler based
+///  on the current tilt mode.
 class TiltRulerChooser extends StatelessWidget {
+  /// Creates a [TiltRulerChooser].
   const TiltRulerChooser({super.key});
 
   @override

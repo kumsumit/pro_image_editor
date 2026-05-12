@@ -136,8 +136,8 @@ class _DefaultExampleState extends State<DefaultExample>
             onTap: kIsWeb
                 ? null
                 : () async {
-                    FilePickerResult? result = await FilePicker
-                        .pickFiles(type: FileType.image);
+                    FilePickerResult? result =
+                        await FilePicker.pickFiles(type: FileType.image);
 
                     if (result != null && context.mounted) {
                       File file = File(result.files.single.path!);

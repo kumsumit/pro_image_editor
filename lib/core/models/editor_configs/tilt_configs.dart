@@ -27,22 +27,31 @@ class TiltConfigs {
 
   /// Whether to show the tilt button.
   final bool showTiltButton;
+
   /// Whether to show the tilt rotate option.
   final bool showTiltRotate;
+
   /// Whether to show the tilt vertical option.
   final bool showTiltVertical;
+
   /// Whether to show the tilt horizontal option.
   final bool showTiltHorizontal;
+
   /// The minimum tilt rotate value.
   final double tiltRotateMin;
+
   /// The maximum tilt rotate value.
   final double tiltRotateMax;
+
   /// The minimum tilt vertical value.
   final double tiltVerticalMin;
+
   /// The maximum tilt vertical value.
   final double tiltVerticalMax;
+
   /// The minimum tilt horizontal value.
   final double tiltHorizontalMin;
+
   /// The maximum tilt horizontal value.
   final double tiltHorizontalMax;
 

@@ -4,35 +4,87 @@ import 'package:flutter/material.dart';
 
 import '/core/models/styles/crop_rotate_editor_style.dart';
 
+/// A custom painter for drawing crop corners and related UI elements.
 class CropCornerPainter extends CustomPainter {
+  /// Creates a [CropCornerPainter] with the given parameters.
   CropCornerPainter({
+    /// Whether to draw the circle indicator.
     required this.drawCircle,
+
+    /// The offset for positioning.
     required this.offset,
+
+    /// The rectangle representing the crop area.
     required this.cropRect,
+
+    /// The opacity for fade-in animation.
     required this.fadeInOpacity,
+
+    /// The opacity for interaction feedback.
     required this.interactionOpacity,
+
+    /// The rectangle representing the view area.
     required this.viewRect,
+
+    /// The size of the screen.
     required this.screenSize,
+
+    /// The scale factor for the crop area.
     required this.scaleFactor,
+
+    /// The style configuration for the crop rotate editor.
     required this.style,
+
+    /// The scale factor for rotation.
     required this.rotationScaleFactor,
+
+    /// The rotation angle for tilt.
     this.tiltRotate = 0,
+
+    /// The horizontal tilt value.
     this.tiltHorizontal = 0,
+
+    /// The vertical tilt value.
     this.tiltVertical = 0,
   });
 
+  /// The rectangle representing the crop area.
   final Rect cropRect;
+
+  /// The rectangle representing the view area.
   final Rect viewRect;
+
+  /// The size of the screen.
   final Size screenSize;
+
+  /// The style configuration for the crop rotate editor.
   final CropRotateEditorStyle style;
+
+  /// Whether to draw the circle indicator.
   final bool drawCircle;
+
+  /// The offset for positioning.
   final Offset offset;
+
+  /// The opacity for fade-in animation.
   final double fadeInOpacity;
+
+  /// The opacity for interaction feedback.
   final double interactionOpacity;
+
+  /// The scale factor for the crop area.
   final double scaleFactor;
+
+  /// The rotation angle for tilt.
   final double tiltRotate;
+
+  /// The horizontal tilt value.
   final double tiltHorizontal;
+
+  /// The vertical tilt value.
   final double tiltVertical;
+
+  /// The scale factor for rotation.
   final double rotationScaleFactor;
 
   double get _cropOffsetLeft => cropRect.left;
@@ -276,6 +328,8 @@ class CropCornerPainter extends CustomPainter {
     canvas.drawPath(path, cornerPaint);
   }
 
+  /// Determines whether the painter should repaint based on changes 
+  /// in the delegate.
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return oldDelegate is! CropCornerPainter ||
@@ -294,6 +348,7 @@ class CropCornerPainter extends CustomPainter {
         oldDelegate.tiltVertical != tiltVertical;
   }
 
+  /// Creates a copy of this painter with optional parameter overrides.
   CropCornerPainter copyWith({double? fadeInOpacity}) {
     return CropCornerPainter(
       drawCircle: drawCircle,

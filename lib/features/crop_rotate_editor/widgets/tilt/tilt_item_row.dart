@@ -4,7 +4,9 @@ import '/shared/widgets/flat_icon_text_button.dart';
 import '../../enums/tilt_mode_enum.dart';
 import '../../providers/tilt_provider.dart';
 
+/// A widget that displays a row of tilt control buttons.
 class TiltItemRow extends StatelessWidget {
+  /// Creates a [TiltItemRow].
   const TiltItemRow({super.key});
 
   @override

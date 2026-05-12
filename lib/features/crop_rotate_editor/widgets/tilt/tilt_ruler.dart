@@ -5,22 +5,47 @@ import '/core/models/custom_widgets/tilt_widgets.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/core/models/styles/tilt_style.dart';
 
+/// A widget that provides a ruler interface for adjusting tilt values.
 class TiltRuler extends StatefulWidget {
+  /// Creates a [TiltRuler] with the given parameters.
   const TiltRuler({
     super.key,
+
+    /// The current value of the tilt ruler.
     required this.value,
+
+    /// The minimum value of the tilt ruler.
     required this.min,
+
+    /// The maximum value of the tilt ruler.
     required this.max,
+
+    /// Callback invoked when the value changes during interaction.
     required this.onChangeUpdate,
+
+    /// Callback invoked when the interaction ends.
     required this.onChangeEnd,
+
+    /// The configuration for the crop rotate editor.
     required this.configs,
   });
 
+  /// The current value of the tilt ruler.
   final double value;
+
+  /// The minimum value of the tilt ruler.
   final double min;
+
+  /// The maximum value of the tilt ruler.
   final double max;
+
+  /// Callback invoked when the value changes during interaction.
   final ValueChanged<double> onChangeUpdate;
+
+  /// Callback invoked when the interaction ends.
   final ValueChanged<double> onChangeEnd;
+
+  /// The configuration for the crop rotate editor.
   final CropRotateEditorConfigs configs;
 
   @override
@@ -52,14 +77,14 @@ class _TiltRulerState extends State<TiltRuler> {
       _isResetActive = true;
       _scrollController
           .animateTo(
-        _offsetFromValue,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.ease,
-      )
+            _offsetFromValue,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.ease,
+          )
           .whenComplete(() {
-        _isResetActive = false;
-        if (mounted) setState(() {});
-      });
+            _isResetActive = false;
+            if (mounted) setState(() {});
+          });
     }
   }
 
@@ -115,10 +140,7 @@ class _TiltRulerState extends State<TiltRuler> {
             cursor: _style.cursor,
             child: Stack(
               alignment: Alignment.bottomCenter,
-              children: [
-                _buildTickMarks(),
-                _buildIndicator(),
-              ],
+              children: [_buildTickMarks(), _buildIndicator()],
             ),
           ),
         ),
@@ -161,8 +183,9 @@ class _TiltRulerState extends State<TiltRuler> {
                       child: Container(
                         width: _style.tickMarkWidth * (isBig ? 1.5 : 1),
                         height: _style.tickMarkHeight,
-                        color:
-                            _style.tickMarkColor.withAlpha(isBig ? 255 : 128),
+                        color: _style.tickMarkColor.withAlpha(
+                          isBig ? 255 : 128,
+                        ),
                       ),
                     ),
                   ],
@@ -188,9 +211,9 @@ class _TiltRulerState extends State<TiltRuler> {
 class _DragScrollBehavior extends ScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.stylus,
-        PointerDeviceKind.trackpad,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.trackpad,
+  };
 }

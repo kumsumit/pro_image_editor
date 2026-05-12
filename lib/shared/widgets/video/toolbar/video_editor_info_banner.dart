@@ -46,7 +46,8 @@ class VideoEditorInfoBanner extends StatelessWidget {
             ),
             child: RichText(
               text: TextSpan(
-                style: player.style.infoBannerTextStyle ??
+                style:
+                    player.style.infoBannerTextStyle ??
                     TextStyle(
                       fontSize: 14,
                       height: 1.2,

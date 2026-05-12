@@ -383,15 +383,35 @@ mixin VideoEditorMixin<T extends StatefulWidget> on State<T> {
     // Use videoSegments when multiple clips exist, otherwise use single video
     final useSegments = videoSegments.length > 1;
 
+    // Always use videoSegments
+    final List<VideoSegment> finalVideoSegments;
+    if (useSegments) {
+      finalVideoSegments = videoSegments
+          .map((seg) => seg.copyWith(volume: audioVolumes.originalVolume))
+          .toList();
+    } else {
+      finalVideoSegments = [
+        VideoSegment(
+          video: video,
+          startTime: parameters.startTime,
+          endTime: parameters.endTime,
+          volume: audioVolumes.originalVolume,
+        )
+      ];
+    }
+
     var exportModel = VideoRenderData(
       id: taskId,
-      video: useSegments ? null : video,
-      videoSegments: useSegments ? videoSegments : null,
-      imageBytes: parameters.layers.isNotEmpty ? parameters.image : null,
+      videoSegments: finalVideoSegments,
+      imageLayers: parameters.layers.isNotEmpty
+          ? [
+              ImageLayer(
+                  image: EditorLayerImage.memory(parameters.image),
+                  offset: Offset.zero)
+            ]
+          : null,
       blur: parameters.blur,
-      colorMatrixList: [parameters.colorFiltersCombined],
-      startTime: useSegments ? null : parameters.startTime,
-      endTime: useSegments ? null : parameters.endTime,
+      colorFilters: [ColorFilter(matrix: parameters.colorFiltersCombined)],
       transform: parameters.isTransformed
           ? ExportTransform(
               width: parameters.cropWidth,
@@ -406,9 +426,14 @@ mixin VideoEditorMixin<T extends StatefulWidget> on State<T> {
       enableAudio: proVideoController?.isAudioEnabled ?? true,
       outputFormat: outputFormat,
       bitrate: videoMetadata.bitrate,
-      customAudioPath: customAudioPath,
-      originalAudioVolume: audioVolumes.originalVolume,
-      customAudioVolume: audioVolumes.customVolume,
+      audioTracks: customAudioPath != null
+          ? [
+              VideoAudioTrack(
+                path: customAudioPath,
+                volume: audioVolumes.customVolume,
+              )
+            ]
+          : [],
     );
 
     final now = DateTime.now().millisecondsSinceEpoch;

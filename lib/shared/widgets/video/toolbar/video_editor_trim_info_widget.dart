@@ -57,7 +57,8 @@ class VideoEditorTrimInfoWidget extends StatelessWidget {
               child: Text(
                 '${value.start.toTimeString()} - '
                 '${(value.end.toTimeString())}',
-                style: player.style.trimDurationTextStyle ??
+                style:
+                    player.style.trimDurationTextStyle ??
                     TextStyle(
                       fontSize: 14,
                       height: 1.2,

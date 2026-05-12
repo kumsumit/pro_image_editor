@@ -3,6 +3,8 @@ import 'dart:ui';
 import '../enums/crop_area_part.dart';
 import '../enums/crop_mode.enum.dart';
 
+/// Determines which part of the crop area is being interacted with based 
+/// on the local position.
 CropAreaPart determineCropAreaPart({
   required Offset localPosition,
   required Offset translate,
@@ -90,6 +92,7 @@ CropAreaPart determineCropAreaPart({
   return CropAreaPart.inside;
 }
 
+/// Converts the crop hit point based on zoom and position.
 Offset convertCropHitPoint({
   required double zoom,
   required Offset position,
