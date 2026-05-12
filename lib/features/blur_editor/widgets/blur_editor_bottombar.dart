@@ -67,7 +67,7 @@ class BlurEditorBottombar extends StatelessWidget {
             child: RepaintBoundary(
               child: ValueListenableBuilder(
                 valueListenable: blurFactor,
-                builder: (_, value, __) {
+                builder: (_, value, _) {
                   return blurEditorConfigs.widgets.slider?.call(
                         blurEditorState,
                         rebuildController.stream,

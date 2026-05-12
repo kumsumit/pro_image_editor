@@ -1,5 +1,6 @@
 /// Configuration options for the tilt editor.
 class TiltConfigs {
+  /// Creates a new instance of [TiltConfigs].
   const TiltConfigs({
     this.showTiltButton = true,
     this.showTiltRotate = true,
@@ -24,17 +25,28 @@ class TiltConfigs {
          '[tiltHorizontalMin] must be <= [tiltHorizontalMax]',
        );
 
+  /// Whether to show the tilt button.
   final bool showTiltButton;
+  /// Whether to show the tilt rotate option.
   final bool showTiltRotate;
+  /// Whether to show the tilt vertical option.
   final bool showTiltVertical;
+  /// Whether to show the tilt horizontal option.
   final bool showTiltHorizontal;
+  /// The minimum tilt rotate value.
   final double tiltRotateMin;
+  /// The maximum tilt rotate value.
   final double tiltRotateMax;
+  /// The minimum tilt vertical value.
   final double tiltVerticalMin;
+  /// The maximum tilt vertical value.
   final double tiltVerticalMax;
+  /// The minimum tilt horizontal value.
   final double tiltHorizontalMin;
+  /// The maximum tilt horizontal value.
   final double tiltHorizontalMax;
 
+  /// Creates a copy of this [TiltConfigs] with optional overrides.
   TiltConfigs copyWith({
     bool? showTiltButton,
     bool? showTiltRotate,

@@ -142,7 +142,7 @@ class GroundedMainBarState extends State<GroundedMainBar>
               alignment: Alignment.bottomCenter,
               children: <Widget>[
                 ...previousChildren,
-                if (currentChild != null) currentChild
+                ?currentChild
               ],
             ),
             duration: kGroundedFadeInDuration * 2,

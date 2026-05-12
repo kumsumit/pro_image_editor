@@ -3,7 +3,9 @@ import 'package:flutter/widgets.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '../enums/tilt_mode_enum.dart';
 
+/// A provider for tilt editor state.
 class TiltProvider extends InheritedWidget {
+  /// Creates a new instance of [TiltProvider].
   const TiltProvider({
     required super.child,
     required this.tiltRotate,
@@ -21,32 +23,48 @@ class TiltProvider extends InheritedWidget {
     super.key,
   });
 
+  /// The current tilt rotate value.
   final double tiltRotate;
+  /// The current tilt vertical value.
   final double tiltVertical;
+  /// The current tilt horizontal value.
   final double tiltHorizontal;
+  /// Callback for tilt value updates.
   final Function(TiltMode mode, double value) onTiltChangeUpdate;
+  /// Callback for tilt value change end.
   final Function(TiltMode mode, double value) onTiltChangeEnd;
+  /// Callback to toggle tilt bar visibility.
   final Function(bool isVisible) onToggleTiltBar;
+  /// Callback to update reset count.
   final Function() onUpdateResetCount;
+  /// The crop rotate editor configurations.
   final CropRotateEditorConfigs cropRotateConfigs;
   TiltConfigs get tiltConfigs => cropRotateConfigs.tiltConfigs;
+  /// The internationalization for crop rotate editor.
   final I18nCropRotateEditor i18n;
+  /// Whether the tilt editor is visible.
   final bool isTiltEditorVisible;
+  /// The current tilt mode.
   final TiltMode tiltMode;
+  /// The number of resets performed.
   final int tiltResetCount;
 
+  /// Gets the nearest [TiltProvider] ancestor.
   static TiltProvider of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<TiltProvider>()!;
   }
 
+  /// Gets the nearest [TiltProvider] ancestor, or null if none exists.
   static TiltProvider? maybeOf(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<TiltProvider>();
   }
 
+  /// Sets the visibility of the tilt editor.
   void setTiltEditorState(bool value) {
     onToggleTiltBar(value);
   }
 
+  /// Sets the current tilt mode.
   void setTiltMode(TiltMode mode) {
     switch (mode) {
       case TiltMode.rotate:
@@ -61,6 +79,7 @@ class TiltProvider extends InheritedWidget {
     }
   }
 
+  /// Resets all tilt values to zero.
   void reset() {
     onTiltChangeUpdate(TiltMode.rotate, 0);
     onTiltChangeUpdate(TiltMode.horizontal, 0);

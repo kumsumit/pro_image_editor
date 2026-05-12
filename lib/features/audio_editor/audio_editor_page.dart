@@ -226,7 +226,7 @@ class AudioEditorPageState extends State<AudioEditorPage>
             color: Colors.black45,
             child: ValueListenableBuilder(
               valueListenable: _selectedTrackNotifier,
-              builder: (_, selectedTrack, __) {
+              builder: (_, selectedTrack, _) {
                 return ListView.builder(
                   reverse: audioEditorConfigs.style.reversedTrackList,
                   padding: audioEditorConfigs.style.bodyPadding,
