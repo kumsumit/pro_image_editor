@@ -31,7 +31,7 @@ class VideoEditorInfoBanner extends StatelessWidget {
 
     return ValueListenableBuilder(
       valueListenable: controller.trimDurationSpanNotifier,
-      builder: (_, durationSpan, __) {
+      builder: (_, durationSpan, _) {
         // If a custom info banner widget is provided, use it
         if (player.configs.widgets.infoBanner != null) {
           return player.configs.widgets.infoBanner!(durationSpan);

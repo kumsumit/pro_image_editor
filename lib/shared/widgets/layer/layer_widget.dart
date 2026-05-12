@@ -362,7 +362,7 @@ class _LayerWidgetState extends State<LayerWidget>
       child: _buildCursor(
         child: ValueListenableBuilder(
           valueListenable: _lastHitState,
-          builder: (_, __, ___) {
+          builder: (_, _, _) {
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
               onSecondaryTapUp: isDesktop ? _onSecondaryTapUp : null,
@@ -390,7 +390,7 @@ class _LayerWidgetState extends State<LayerWidget>
   Widget _buildCursor({required Widget child}) {
     return ValueListenableBuilder(
       valueListenable: _showMoveCursor,
-      builder: (_, showCursor, __) {
+      builder: (_, showCursor, _) {
         return MouseRegion(
           hitTestBehavior: HitTestBehavior.translucent,
           cursor: showCursor &&

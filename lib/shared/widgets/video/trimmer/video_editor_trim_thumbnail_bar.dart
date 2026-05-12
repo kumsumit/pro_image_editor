@@ -25,7 +25,7 @@ class VideoEditorTrimThumbnailBar extends StatelessWidget {
       ),
       child: ValueListenableBuilder(
         valueListenable: player.controller.thumbnailsNotifier,
-        builder: (_, thumbnails, __) {
+        builder: (_, thumbnails, _) {
           return AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: thumbnails == null

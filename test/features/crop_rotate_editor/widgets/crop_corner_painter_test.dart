@@ -39,8 +39,8 @@ void main() {
         final Color topCenter = await _pixelAt(image, x: 50, y: 0);
         final Color cropCenter = await _pixelAt(image, x: 50, y: 50);
 
-        expect(topCenter.alpha, 255);
-        expect(cropCenter.alpha, 0);
+        expect(topCenter.a, 255);
+        expect(cropCenter.a, 0);
       },
     );
   });

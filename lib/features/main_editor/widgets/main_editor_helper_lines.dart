@@ -60,7 +60,7 @@ class MainEditorHelperLines extends StatelessWidget {
     return RepaintBoundary(
       child: StreamBuilder(
         stream: controllers.removeBtnCtrl.stream,
-        builder: (_, __) {
+        builder: (_, _) {
           return StreamBuilder<void>(
             stream: controllers.helperLineCtrl.stream,
             builder: (context, snapshot) {

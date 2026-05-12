@@ -16,7 +16,7 @@ class VideoEditorStateWidget extends StatelessWidget {
     return Center(
       child: ValueListenableBuilder(
         valueListenable: player.isPlayingNotifier,
-        builder: (_, isPlaying, __) {
+        builder: (_, isPlaying, _) {
           return AnimatedSwitcher(
             duration: player.configs.animatedIndicatorDuration,
             switchInCurve: player.configs.animatedIndicatorSwitchInCurve,

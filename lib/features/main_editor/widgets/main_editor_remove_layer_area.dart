@@ -68,7 +68,7 @@ class MainEditorRemoveLayerArea extends StatelessWidget {
             bottom: false,
             child: StreamBuilder(
               stream: controllers.removeBtnCtrl.stream,
-              builder: (_, __) => _buildRemoveWidget(),
+              builder: (_, _) => _buildRemoveWidget(),
             ),
           ),
         );

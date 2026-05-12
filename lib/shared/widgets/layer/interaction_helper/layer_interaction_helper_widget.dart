@@ -282,7 +282,7 @@ class _LayerInteractionHelperWidgetState
         if (layerInteraction.widgets.overlayChildBuilder != null) {
           return ValueListenableBuilder(
             valueListenable: _isOverlayVisibleNotifier,
-            builder: (_, isVisible, __) {
+            builder: (_, isVisible, _) {
               if (!isVisible) return const SizedBox.shrink();
               return layerInteraction.widgets.overlayChildBuilder!(
                 _rebuildStream.stream,
@@ -310,7 +310,7 @@ class _LayerInteractionHelperWidgetState
           left: 0,
           child: ValueListenableBuilder(
             valueListenable: _isOverlayVisibleNotifier,
-            builder: (_, isVisible, __) {
+            builder: (_, isVisible, _) {
               if (!isVisible) return const SizedBox.shrink();
 
               return Transform(

@@ -61,7 +61,7 @@ class ExtendedPopScope<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: LoadingDialog.instance,
-      builder: (_, __) {
+      builder: (_, _) {
         return PopScope<T>(
           canPop: canPop && !LoadingDialog.instance.hasActiveOverlay,
           onPopInvokedWithResult: (didPop, result) {

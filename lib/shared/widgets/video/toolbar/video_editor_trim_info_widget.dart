@@ -15,7 +15,7 @@ class VideoEditorTrimInfoWidget extends StatelessWidget {
     var player = VideoEditorConfigurable.of(context);
     return ValueListenableBuilder(
       valueListenable: player.showTrimTimeSpanNotifier,
-      builder: (_, showTrimTimeSpan, __) {
+      builder: (_, showTrimTimeSpan, _) {
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           transitionBuilder: (child, animation) {
@@ -41,7 +41,7 @@ class VideoEditorTrimInfoWidget extends StatelessWidget {
   Widget _buildTimeSpanText(VideoEditorConfigurable player) {
     return ValueListenableBuilder(
       valueListenable: player.controller.trimDurationSpanNotifier,
-      builder: (_, value, __) {
+      builder: (_, value, _) {
         if (player.configs.widgets.trimDurationInfo != null) {
           return player.configs.widgets.trimDurationInfo!(value);
         }

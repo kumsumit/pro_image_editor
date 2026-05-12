@@ -136,8 +136,10 @@ class CollageMakerState extends State<CollageMaker> {
   late final List<CollageLayout> _layouts = _CollageTemplateCatalog.layouts;
   final List<_FreestyleLayer> _freestyleLayers = [];
   final Set<int> _removedFreestyleImageIndexes = {};
+  final List<_CollageDraft> _drafts = [];
 
   int _layoutIndex = 2;
+  int _draftCounter = 1;
   int _slotFilter = 0;
   int _categoryFilterIndex = 0;
   int _backgroundIndex = 0;
@@ -397,6 +399,105 @@ class CollageMakerState extends State<CollageMaker> {
 
     _freestyleLayers.shuffle(random);
     _selectedFreestyleLayerIndex = random.nextInt(_freestyleLayers.length);
+  }
+
+  void _saveDraft() {
+    setState(() {
+      _drafts.add(
+        _CollageDraft(
+          label: 'Draft ${_draftCounter++}',
+          imageCount: widget.images.length,
+          layoutIndex: _layoutIndex,
+          slotFilter: _slotFilter,
+          categoryFilterIndex: _categoryFilterIndex,
+          backgroundIndex: _backgroundIndex,
+          backgroundStyleIndex: _backgroundStyleIndex,
+          canvasPresetIndex: _canvasPresetIndex,
+          frameStyleIndex: _frameStyleIndex,
+          borderColorIndex: _borderColorIndex,
+          shadowStyleIndex: _shadowStyleIndex,
+          selectedFreestyleLayerIndex: _selectedFreestyleLayerIndex,
+          gap: _gap,
+          radius: _radius,
+          padding: _padding,
+          borderWidth: _borderWidth,
+          isFreestyle: _isFreestyle,
+          removedFreestyleImageIndexes: {..._removedFreestyleImageIndexes},
+          freestyleLayers: [
+            for (final layer in _freestyleLayers) layer.copyWith(),
+          ],
+        ),
+      );
+    });
+  }
+
+  void _loadDraft(_CollageDraft draft) {
+    setState(() {
+      _layoutIndex = draft.layoutIndex.clamp(0, _layouts.length - 1);
+      _slotFilter = draft.slotFilter;
+      _categoryFilterIndex = draft.categoryFilterIndex.clamp(
+        0,
+        _TemplateCategory.categories.length - 1,
+      );
+      _backgroundIndex = draft.backgroundIndex.clamp(0, _themes.length - 1);
+      _backgroundStyleIndex = draft.backgroundStyleIndex.clamp(
+        0,
+        _BackgroundStyle.styles.length - 1,
+      );
+      if (_BackgroundStyle.styles[_backgroundStyleIndex].requiresImage &&
+          widget.images.isEmpty) {
+        _backgroundStyleIndex = 1;
+      }
+      _canvasPresetIndex = draft.canvasPresetIndex.clamp(
+        0,
+        _CanvasPreset.presets.length - 1,
+      );
+      _frameStyleIndex = draft.frameStyleIndex.clamp(
+        0,
+        _PhotoFrameStyle.styles.length - 1,
+      );
+      _borderColorIndex = draft.borderColorIndex.clamp(
+        0,
+        _PhotoBorderPalette.colors.length - 1,
+      );
+      _shadowStyleIndex = draft.shadowStyleIndex.clamp(
+        0,
+        _PhotoShadowStyle.styles.length - 1,
+      );
+      _gap = draft.gap;
+      _radius = draft.radius;
+      _padding = draft.padding;
+      _borderWidth = draft.borderWidth;
+      _isFreestyle = draft.isFreestyle;
+
+      _removedFreestyleImageIndexes
+        ..clear()
+        ..addAll(
+          draft.removedFreestyleImageIndexes.where(
+            (index) => index < widget.images.length,
+          ),
+        );
+      _freestyleLayers
+        ..clear()
+        ..addAll(
+          draft.freestyleLayers
+              .where((layer) => layer.imageIndex < widget.images.length)
+              .map((layer) => layer.copyWith()),
+        );
+      _syncFreestylePlacements();
+
+      _selectedFreestyleLayerIndex = draft.selectedFreestyleLayerIndex;
+      if (!_isFreestyle ||
+          _selectedFreestyleLayerIndex == null ||
+          _selectedFreestyleLayerIndex! >= _freestyleLayers.length) {
+        _selectedFreestyleLayerIndex =
+            _isFreestyle && _freestyleLayers.isNotEmpty ? 0 : null;
+      }
+    });
+  }
+
+  void _deleteDraft(int index) {
+    setState(() => _drafts.removeAt(index));
   }
 
   /// Renders the visible collage to PNG bytes.
@@ -681,6 +782,54 @@ class CollageMakerState extends State<CollageMaker> {
             icon: const Icon(Icons.shuffle_outlined),
             label: const Text('Shuffle design'),
           ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _saveDraft,
+                icon: const Icon(Icons.bookmark_add_outlined),
+                label: const Text('Save draft'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            PopupMenuButton<int>(
+              enabled: _drafts.isNotEmpty,
+              tooltip: 'Load draft',
+              icon: const Icon(Icons.folder_open_outlined),
+              onSelected: (value) {
+                if (value >= 0) {
+                  _loadDraft(_drafts[value]);
+                } else {
+                  _deleteDraft(-value - 1);
+                }
+              },
+              itemBuilder: (context) {
+                return [
+                  for (var i = 0; i < _drafts.length; i++) ...[
+                    PopupMenuItem(
+                      value: i,
+                      child: ListTile(
+                        leading: const Icon(Icons.restore_outlined),
+                        title: Text(_drafts[i].label),
+                        subtitle: Text('${_drafts[i].imageCount} photos'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: -i - 1,
+                      child: ListTile(
+                        leading: const Icon(Icons.delete_outline),
+                        title: Text('Delete ${_drafts[i].label}'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ];
+              },
+            ),
+          ],
         ),
         const SizedBox(height: 10),
         Wrap(
@@ -2050,6 +2199,50 @@ class _FreestyleLayer {
       locked: locked ?? this.locked,
     );
   }
+}
+
+class _CollageDraft {
+  const _CollageDraft({
+    required this.label,
+    required this.imageCount,
+    required this.layoutIndex,
+    required this.slotFilter,
+    required this.categoryFilterIndex,
+    required this.backgroundIndex,
+    required this.backgroundStyleIndex,
+    required this.canvasPresetIndex,
+    required this.frameStyleIndex,
+    required this.borderColorIndex,
+    required this.shadowStyleIndex,
+    required this.selectedFreestyleLayerIndex,
+    required this.gap,
+    required this.radius,
+    required this.padding,
+    required this.borderWidth,
+    required this.isFreestyle,
+    required this.removedFreestyleImageIndexes,
+    required this.freestyleLayers,
+  });
+
+  final String label;
+  final int imageCount;
+  final int layoutIndex;
+  final int slotFilter;
+  final int categoryFilterIndex;
+  final int backgroundIndex;
+  final int backgroundStyleIndex;
+  final int canvasPresetIndex;
+  final int frameStyleIndex;
+  final int borderColorIndex;
+  final int shadowStyleIndex;
+  final int? selectedFreestyleLayerIndex;
+  final double gap;
+  final double radius;
+  final double padding;
+  final double borderWidth;
+  final bool isFreestyle;
+  final Set<int> removedFreestyleImageIndexes;
+  final List<_FreestyleLayer> freestyleLayers;
 }
 
 /// Metadata for a collage template.

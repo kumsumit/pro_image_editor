@@ -2746,7 +2746,7 @@ class ProImageEditorState extends State<ProImageEditor>
                         body: _buildBody(),
                         bottomNavigationBar: ValueListenableBuilder(
                           valueListenable: _audioBottomBarNotifier,
-                          builder: (_, showAudioBar, __) {
+                          builder: (_, showAudioBar, _) {
                             return AnimatedSwitcher(
                               duration: const Duration(milliseconds: 220),
                               switchInCurve: Curves.ease,
@@ -2763,7 +2763,7 @@ class ProImageEditorState extends State<ProImageEditor>
                                   alignment: Alignment.bottomCenter,
                                   children: [
                                     ...previousChildren,
-                                    if (currentChild != null) currentChild,
+                                    ?currentChild,
                                   ],
                                 );
                               },
@@ -2799,7 +2799,7 @@ class ProImageEditorState extends State<ProImageEditor>
                                   onGenerateRoute: (settings) =>
                                       PageRouteBuilder(
                                     opaque: false,
-                                    pageBuilder: (context, _, __) =>
+                                    pageBuilder: (context, _, _) =>
                                         const SizedBox.shrink(),
                                   ),
                                 ),
