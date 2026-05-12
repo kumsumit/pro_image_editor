@@ -23,3 +23,37 @@ Status: [ ] Not started | [ ] In progress | [x] Pending verification
 
 Next action: Complete step by step.
 
+
+
+
+Todo 
+
+1. **Text overlays**
+   Add title/caption stickers like “Happy Birthday”, “Our Wedding”, “Trip 2026”, with font, color, size, rotation, and shadow controls.
+
+2. **Stickers / occasion decorations**
+   Hearts, balloons, confetti, stars, rings, graduation caps, festive lights, travel stamps, etc. Especially useful for the “special occasion” themes.
+
+3. **Per-photo editing inside collage**
+   Tap a photo to change crop position, zoom, rotate, flip, replace image, or apply a filter only to that photo.
+
+4. **Freestyle layer controls**
+   Bring forward, send backward, duplicate, lock position, delete from canvas, rotate photo, snap to center/edges.
+
+5. **More export sizes**
+   Square, Instagram story `9:16`, portrait `4:5`, landscape `16:9`, wallpaper, custom size.
+
+6. **Template categories**
+   Instead of only “2 photos / 3 photos”, add tabs like `Classic`, `Wedding`, `Birthday`, `Travel`, `Festival`, `Minimal`, `Magazine`.
+
+7. **Borders and frames**
+   Photo border color, border width, shadow style, paper/photo-frame look, polaroid style.
+
+8. **Background controls**
+   Solid colors, gradients, patterns, blur background from selected image, custom background image.
+
+9. **Auto shuffle**
+   One button that randomizes template, photo order, theme, spacing, and radius until the user likes a design.
+
+10. **Save/load draft**
+   Store selected layout, theme, image order, freestyle positions, spacing, radius, captions, stickers.

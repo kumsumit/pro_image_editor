@@ -139,19 +139,41 @@ class CollageMakerState extends State<CollageMaker> {
 
   int _layoutIndex = 2;
   int _slotFilter = 0;
+  int _categoryFilterIndex = 0;
   int _backgroundIndex = 0;
+  int _backgroundStyleIndex = 1;
   int _canvasPresetIndex = 0;
+  int _frameStyleIndex = 0;
+  int _borderColorIndex = 0;
+  int _shadowStyleIndex = 1;
   int? _selectedFreestyleLayerIndex;
   double _gap = 10;
   double _radius = 24;
   double _padding = 16;
+  double _borderWidth = 2;
   bool _isFreestyle = false;
   bool _isRendering = false;
   _FreestyleLayer? _gestureStartLayer;
 
   CollageLayout get _layout => _layouts[_layoutIndex];
   _CollageTheme get _theme => _themes[_backgroundIndex];
+  _BackgroundStyle get _backgroundStyle =>
+      _BackgroundStyle.styles[_backgroundStyleIndex];
   _CanvasPreset get _canvasPreset => _CanvasPreset.presets[_canvasPresetIndex];
+  _PhotoFrameStyle get _frameStyle => _PhotoFrameStyle.styles[_frameStyleIndex];
+  Color get _borderColor => _PhotoBorderPalette.colors[_borderColorIndex];
+  _PhotoShadowStyle get _shadowStyle =>
+      _PhotoShadowStyle.styles[_shadowStyleIndex];
+  ImageProvider? get _backgroundImage {
+    if (widget.images.isEmpty) return null;
+    final selectedLayerIndex = _selectedFreestyleLayerIndex;
+    if (_isFreestyle &&
+        selectedLayerIndex != null &&
+        selectedLayerIndex < _freestyleLayers.length) {
+      return widget.images[_freestyleLayers[selectedLayerIndex].imageIndex];
+    }
+    return widget.images.first;
+  }
 
   @override
   void initState() {
@@ -506,11 +528,6 @@ class CollageMakerState extends State<CollageMaker> {
                 aspectRatio: _canvasPreset.aspectRatio,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: _theme.colors,
-                    ),
                     borderRadius: BorderRadius.circular(32),
                     boxShadow: const [
                       BoxShadow(
@@ -520,11 +537,24 @@ class CollageMakerState extends State<CollageMaker> {
                       ),
                     ],
                   ),
-                  child: Padding(
-                    padding: EdgeInsets.all(_padding),
-                    child: _isFreestyle
-                        ? _buildFreestyleLayout()
-                        : _buildLayout(_layout),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _CanvasBackground(
+                          theme: _theme,
+                          style: _backgroundStyle,
+                          image: _backgroundImage,
+                        ),
+                        Padding(
+                          padding: EdgeInsets.all(_padding),
+                          child: _isFreestyle
+                              ? _buildFreestyleLayout()
+                              : _buildLayout(_layout),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -553,7 +583,7 @@ class CollageMakerState extends State<CollageMaker> {
             Text(
               _isFreestyle
                   ? 'Freestyle canvas'
-                  : '${_layouts.length} templates',
+                  : '${filteredLayoutIndexes.length} templates',
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
@@ -673,6 +703,22 @@ class CollageMakerState extends State<CollageMaker> {
           Wrap(
             spacing: 6,
             runSpacing: 6,
+            children: List.generate(_TemplateCategory.categories.length, (
+              index,
+            ) {
+              final category = _TemplateCategory.categories[index];
+              return ChoiceChip(
+                selected: _categoryFilterIndex == index,
+                avatar: Icon(category.icon, size: 18),
+                label: Text(category.label),
+                onSelected: (_) => setState(() => _categoryFilterIndex = index),
+              );
+            }),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
             children: [
               ChoiceChip(
                 selected: _slotFilter == 0,
@@ -772,6 +818,86 @@ class CollageMakerState extends State<CollageMaker> {
           max: 42,
           onChanged: (value) => setState(() => _padding = value),
         ),
+        _buildSlider(
+          icon: Icons.border_outer_outlined,
+          label: 'Border',
+          value: _borderWidth,
+          min: 0,
+          max: 16,
+          onChanged: (value) => setState(() => _borderWidth = value),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: List.generate(_PhotoFrameStyle.styles.length, (index) {
+            final style = _PhotoFrameStyle.styles[index];
+            return ChoiceChip(
+              selected: _frameStyleIndex == index,
+              avatar: Icon(style.icon, size: 18),
+              label: Text(style.label),
+              onSelected: (_) => setState(() => _frameStyleIndex = index),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: List.generate(_PhotoShadowStyle.styles.length, (index) {
+            final style = _PhotoShadowStyle.styles[index];
+            return ChoiceChip(
+              selected: _shadowStyleIndex == index,
+              avatar: Icon(style.icon, size: 18),
+              label: Text(style.label),
+              onSelected: (_) => setState(() => _shadowStyleIndex = index),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: List.generate(_PhotoBorderPalette.colors.length, (index) {
+            final selected = _borderColorIndex == index;
+            return Tooltip(
+              message: 'Photo border',
+              child: InkWell(
+                onTap: () => setState(() => _borderColorIndex = index),
+                borderRadius: BorderRadius.circular(18),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: _PhotoBorderPalette.colors[index],
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: selected ? Colors.white : Colors.white24,
+                      width: selected ? 3 : 1,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: List.generate(_BackgroundStyle.styles.length, (index) {
+            final style = _BackgroundStyle.styles[index];
+            return ChoiceChip(
+              selected: _backgroundStyleIndex == index,
+              avatar: Icon(style.icon, size: 18),
+              label: Text(style.label),
+              onSelected: style.requiresImage && widget.images.isEmpty
+                  ? null
+                  : (_) => setState(() => _backgroundStyleIndex = index),
+            );
+          }),
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -804,11 +930,13 @@ class CollageMakerState extends State<CollageMaker> {
   }
 
   List<int> get _filteredLayoutIndexes {
+    final category = _TemplateCategory.categories[_categoryFilterIndex];
     final indexes = <int>[];
     for (var i = 0; i < _layouts.length; i++) {
-      if (_slotFilter == 0 || _layouts[i].slotCount == _slotFilter) {
-        indexes.add(i);
-      }
+      final layout = _layouts[i];
+      final matchesCategory = category.matches(layout);
+      final matchesSlot = _slotFilter == 0 || layout.slotCount == _slotFilter;
+      if (matchesCategory && matchesSlot) indexes.add(i);
     }
     return indexes;
   }
@@ -912,6 +1040,10 @@ class CollageMakerState extends State<CollageMaker> {
                       selected: selected,
                       locked: layer.locked,
                       radius: _radius,
+                      borderColor: _borderColor,
+                      borderWidth: _borderWidth,
+                      frameStyle: _frameStyle,
+                      shadowStyle: _shadowStyle,
                     ),
                   ),
                 ),
@@ -952,13 +1084,14 @@ class CollageMakerState extends State<CollageMaker> {
   }
 
   Widget _slot(int index) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(_radius),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(24),
-          border: Border.all(color: Colors.white.withAlpha(28)),
-        ),
+    return _FramedPhoto(
+      radius: _radius,
+      borderColor: _borderColor,
+      borderWidth: _borderWidth,
+      frameStyle: _frameStyle,
+      shadowStyle: _shadowStyle,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_frameStyle.contentRadius(_radius)),
         child: index < widget.images.length
             ? Image(
                 image: widget.images[index],
@@ -977,35 +1110,36 @@ class _FreestylePhoto extends StatelessWidget {
     required this.selected,
     required this.locked,
     required this.radius,
+    required this.borderColor,
+    required this.borderWidth,
+    required this.frameStyle,
+    required this.shadowStyle,
   });
 
   final ImageProvider image;
   final bool selected;
   final bool locked;
   final double radius;
+  final Color borderColor;
+  final double borderWidth;
+  final _PhotoFrameStyle frameStyle;
+  final _PhotoShadowStyle shadowStyle;
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = selected
-        ? Theme.of(context).colorScheme.primary
-        : Colors.white.withAlpha(80);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius + 4),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x66000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
+    return _FramedPhoto(
+      radius: radius,
+      borderColor: borderColor,
+      borderWidth: borderWidth,
+      frameStyle: frameStyle,
+      shadowStyle: shadowStyle,
       child: Stack(
         fit: StackFit.expand,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(radius),
+            borderRadius: BorderRadius.circular(
+              frameStyle.contentRadius(radius),
+            ),
             child: Image(
               image: image,
               fit: BoxFit.cover,
@@ -1014,8 +1148,15 @@ class _FreestylePhoto extends StatelessWidget {
           ),
           DecoratedBox(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(radius),
-              border: Border.all(color: borderColor, width: selected ? 3 : 1),
+              borderRadius: BorderRadius.circular(
+                frameStyle.contentRadius(radius),
+              ),
+              border: Border.all(
+                color: selected
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.transparent,
+                width: selected ? 3 : 0,
+              ),
             ),
           ),
           if (selected)
@@ -1052,6 +1193,49 @@ class _FreestylePhoto extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _FramedPhoto extends StatelessWidget {
+  const _FramedPhoto({
+    required this.child,
+    required this.radius,
+    required this.borderColor,
+    required this.borderWidth,
+    required this.frameStyle,
+    required this.shadowStyle,
+  });
+
+  final Widget child;
+  final double radius;
+  final Color borderColor;
+  final double borderWidth;
+  final _PhotoFrameStyle frameStyle;
+  final _PhotoShadowStyle shadowStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveBorderWidth = frameStyle.borderWidth(borderWidth);
+    final padding = frameStyle.padding(borderWidth);
+    final content = Padding(
+      padding: EdgeInsets.fromLTRB(
+        padding,
+        padding,
+        padding,
+        padding + frameStyle.bottomExtra,
+      ),
+      child: child,
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: frameStyle.backgroundColor(borderColor),
+        borderRadius: BorderRadius.circular(frameStyle.outerRadius(radius)),
+        border: Border.all(color: borderColor, width: effectiveBorderWidth),
+        boxShadow: shadowStyle.shadows,
+      ),
+      child: content,
     );
   }
 }
@@ -1370,6 +1554,166 @@ class _CollageTheme {
   final List<Color> accents;
 }
 
+class _CanvasBackground extends StatelessWidget {
+  const _CanvasBackground({
+    required this.theme,
+    required this.style,
+    required this.image,
+  });
+
+  final _CollageTheme theme;
+  final _BackgroundStyle style;
+  final ImageProvider? image;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (style.kind) {
+      _BackgroundKind.solid => ColoredBox(color: theme.colors.first),
+      _BackgroundKind.gradient => DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: theme.colors,
+          ),
+        ),
+      ),
+      _BackgroundKind.pattern => Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: theme.colors,
+              ),
+            ),
+          ),
+          CustomPaint(
+            painter: _BackgroundPatternPainter(
+              primary: theme.accents.first,
+              secondary: theme.accents.last,
+            ),
+          ),
+        ],
+      ),
+      _BackgroundKind.blurImage =>
+        image == null
+            ? DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: theme.colors,
+                  ),
+                ),
+              )
+            : Stack(
+                fit: StackFit.expand,
+                children: [
+                  ImageFiltered(
+                    imageFilter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Image(
+                      image: image!,
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.low,
+                    ),
+                  ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          theme.colors.first.withAlpha(112),
+                          theme.colors.last.withAlpha(150),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+    };
+  }
+}
+
+class _BackgroundPatternPainter extends CustomPainter {
+  const _BackgroundPatternPainter({
+    required this.primary,
+    required this.secondary,
+  });
+
+  final Color primary;
+  final Color secondary;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = primary.withAlpha(42)
+      ..strokeWidth = 2;
+    for (var offset = -size.height; offset < size.width; offset += 28) {
+      canvas.drawLine(
+        Offset(offset, size.height),
+        Offset(offset + size.height, 0),
+        linePaint,
+      );
+    }
+
+    final dotPaint = Paint()..color = secondary.withAlpha(54);
+    for (var y = 18.0; y < size.height; y += 42) {
+      for (var x = 18.0; x < size.width; x += 42) {
+        canvas.drawCircle(Offset(x, y), 2.2, dotPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BackgroundPatternPainter oldDelegate) {
+    return oldDelegate.primary != primary || oldDelegate.secondary != secondary;
+  }
+}
+
+enum _BackgroundKind { solid, gradient, pattern, blurImage }
+
+class _BackgroundStyle {
+  const _BackgroundStyle({
+    required this.label,
+    required this.icon,
+    required this.kind,
+    this.requiresImage = false,
+  });
+
+  static const styles = [
+    _BackgroundStyle(
+      label: 'Solid',
+      icon: Icons.format_color_fill_outlined,
+      kind: _BackgroundKind.solid,
+    ),
+    _BackgroundStyle(
+      label: 'Gradient',
+      icon: Icons.gradient_outlined,
+      kind: _BackgroundKind.gradient,
+    ),
+    _BackgroundStyle(
+      label: 'Pattern',
+      icon: Icons.grid_4x4_outlined,
+      kind: _BackgroundKind.pattern,
+    ),
+    _BackgroundStyle(
+      label: 'Blur',
+      icon: Icons.blur_on_outlined,
+      kind: _BackgroundKind.blurImage,
+      requiresImage: true,
+    ),
+  ];
+
+  final String label;
+  final IconData icon;
+  final _BackgroundKind kind;
+  final bool requiresImage;
+}
+
 class _CanvasPreset {
   const _CanvasPreset({
     required this.label,
@@ -1420,6 +1764,168 @@ class _CanvasPreset {
   double get maxPreviewWidth => aspectRatio >= 1 ? 680 : 680 * aspectRatio;
   double get maxPreviewHeight => aspectRatio >= 1 ? 680 / aspectRatio : 680;
   double get minPreviewHeight => 280 / aspectRatio;
+}
+
+class _TemplateCategory {
+  const _TemplateCategory({
+    required this.label,
+    required this.icon,
+    required this.prefixes,
+  });
+
+  static const categories = [
+    _TemplateCategory(label: 'All', icon: Icons.apps_outlined, prefixes: []),
+    _TemplateCategory(
+      label: 'Classic',
+      icon: Icons.grid_view_outlined,
+      prefixes: ['Duo', 'Story', 'Feature', 'Grid', 'Mosaic', 'Gallery'],
+    ),
+    _TemplateCategory(
+      label: 'Wedding',
+      icon: Icons.favorite_border,
+      prefixes: ['Wedding', 'Anniversary', 'Valentine'],
+    ),
+    _TemplateCategory(
+      label: 'Birthday',
+      icon: Icons.celebration_outlined,
+      prefixes: ['Birthday', 'Baby'],
+    ),
+    _TemplateCategory(
+      label: 'Travel',
+      icon: Icons.flight_takeoff_outlined,
+      prefixes: ['Travel'],
+    ),
+    _TemplateCategory(
+      label: 'Festival',
+      icon: Icons.light_mode_outlined,
+      prefixes: ['Festival', 'Holiday', 'New Year', 'Halloween'],
+    ),
+    _TemplateCategory(
+      label: 'Graduation',
+      icon: Icons.school_outlined,
+      prefixes: ['Graduation'],
+    ),
+  ];
+
+  final String label;
+  final IconData icon;
+  final List<String> prefixes;
+
+  bool matches(CollageLayout layout) {
+    if (prefixes.isEmpty) return true;
+    return prefixes.any(layout.label.startsWith);
+  }
+}
+
+class _PhotoFrameStyle {
+  const _PhotoFrameStyle({
+    required this.label,
+    required this.icon,
+    required this.extraPadding,
+    required this.bottomExtra,
+    required this.forceBorderWidth,
+    this.forceWhiteBackground = false,
+  });
+
+  static const styles = [
+    _PhotoFrameStyle(
+      label: 'Clean',
+      icon: Icons.crop_square_outlined,
+      extraPadding: 0,
+      bottomExtra: 0,
+      forceBorderWidth: null,
+    ),
+    _PhotoFrameStyle(
+      label: 'Border',
+      icon: Icons.border_outer_outlined,
+      extraPadding: 2,
+      bottomExtra: 0,
+      forceBorderWidth: null,
+    ),
+    _PhotoFrameStyle(
+      label: 'Polaroid',
+      icon: Icons.photo_size_select_actual_outlined,
+      extraPadding: 8,
+      bottomExtra: 16,
+      forceBorderWidth: 0,
+      forceWhiteBackground: true,
+    ),
+  ];
+
+  final String label;
+  final IconData icon;
+  final double extraPadding;
+  final double bottomExtra;
+  final double? forceBorderWidth;
+  final bool forceWhiteBackground;
+
+  double padding(double borderWidth) => extraPadding + borderWidth / 2;
+  double borderWidth(double borderWidth) => forceBorderWidth ?? borderWidth;
+  double outerRadius(double radius) => radius + extraPadding;
+  double contentRadius(double radius) => math.max(0, radius - extraPadding / 2);
+
+  Color backgroundColor(Color borderColor) {
+    if (forceWhiteBackground) return const Color(0xFFFFFBF5);
+    if (borderColor == const Color(0x00000000)) return Colors.transparent;
+    return borderColor.withAlpha(210);
+  }
+}
+
+class _PhotoShadowStyle {
+  const _PhotoShadowStyle({
+    required this.label,
+    required this.icon,
+    required this.shadows,
+  });
+
+  static const styles = [
+    _PhotoShadowStyle(
+      label: 'Flat',
+      icon: Icons.crop_din_outlined,
+      shadows: [],
+    ),
+    _PhotoShadowStyle(
+      label: 'Soft',
+      icon: Icons.blur_on_outlined,
+      shadows: [
+        BoxShadow(
+          color: Color(0x4D000000),
+          blurRadius: 14,
+          offset: Offset(0, 7),
+        ),
+      ],
+    ),
+    _PhotoShadowStyle(
+      label: 'Deep',
+      icon: Icons.layers_outlined,
+      shadows: [
+        BoxShadow(
+          color: Color(0x73000000),
+          blurRadius: 24,
+          offset: Offset(0, 14),
+        ),
+      ],
+    ),
+  ];
+
+  final String label;
+  final IconData icon;
+  final List<BoxShadow> shadows;
+}
+
+class _PhotoBorderPalette {
+  const _PhotoBorderPalette._();
+
+  static const colors = [
+    Color(0xFFFFFFFF),
+    Color(0xFF111827),
+    Color(0xFFFFD166),
+    Color(0xFFEF476F),
+    Color(0xFF70C1B3),
+    Color(0xFF7C3AED),
+    Color(0xFFF97316),
+    Color(0x00000000),
+  ];
 }
 
 class _FreestylePlacement {
