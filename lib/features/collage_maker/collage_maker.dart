@@ -340,6 +340,65 @@ class CollageMakerState extends State<CollageMaker> {
     });
   }
 
+  void _shuffleDesign() {
+    final random = math.Random();
+    final visibleLayouts = _filteredLayoutIndexes;
+    final backgroundStyleChoices =
+        List.generate(_BackgroundStyle.styles.length, (index) => index)
+          ..removeWhere((index) {
+            return _BackgroundStyle.styles[index].requiresImage &&
+                widget.images.isEmpty;
+          });
+
+    setState(() {
+      if (!_isFreestyle && visibleLayouts.isNotEmpty) {
+        _layoutIndex = visibleLayouts[random.nextInt(visibleLayouts.length)];
+      }
+
+      _canvasPresetIndex = random.nextInt(_CanvasPreset.presets.length);
+      _backgroundIndex = random.nextInt(_themes.length);
+      _backgroundStyleIndex =
+          backgroundStyleChoices[random.nextInt(backgroundStyleChoices.length)];
+      _frameStyleIndex = random.nextInt(_PhotoFrameStyle.styles.length);
+      _borderColorIndex = random.nextInt(_PhotoBorderPalette.colors.length);
+      _shadowStyleIndex = random.nextInt(_PhotoShadowStyle.styles.length);
+
+      _gap = 4 + random.nextDouble() * 18;
+      _radius = random.nextDouble() * 36;
+      _padding = 8 + random.nextDouble() * 26;
+      _borderWidth = random.nextDouble() * 8;
+
+      if (_isFreestyle && _freestyleLayers.isNotEmpty) {
+        _shuffleFreestyleLayers(random);
+      }
+    });
+  }
+
+  void _shuffleFreestyleLayers(math.Random random) {
+    for (var i = 0; i < _freestyleLayers.length; i++) {
+      final layer = _freestyleLayers[i];
+      final width = 0.24 + random.nextDouble() * 0.22;
+      final height = width * (0.78 + random.nextDouble() * 0.5);
+      final left = random.nextDouble() * (1 - width);
+      final top = random.nextDouble() * (1 - height);
+      final rotation = (random.nextDouble() - 0.5) * math.pi / 5;
+
+      _freestyleLayers[i] = layer.copyWith(
+        locked: false,
+        rotation: rotation,
+        placement: _FreestylePlacement(
+          left: left,
+          top: top,
+          width: width,
+          height: height,
+        ),
+      );
+    }
+
+    _freestyleLayers.shuffle(random);
+    _selectedFreestyleLayerIndex = random.nextInt(_freestyleLayers.length);
+  }
+
   /// Renders the visible collage to PNG bytes.
   Future<Uint8List?> exportPngBytes({double pixelRatio = 3}) async {
     await WidgetsBinding.instance.endOfFrame;
@@ -613,6 +672,15 @@ class CollageMakerState extends State<CollageMaker> {
               _syncFreestylePlacements();
             });
           },
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonalIcon(
+            onPressed: _shuffleDesign,
+            icon: const Icon(Icons.shuffle_outlined),
+            label: const Text('Shuffle design'),
+          ),
         ),
         const SizedBox(height: 10),
         Wrap(
