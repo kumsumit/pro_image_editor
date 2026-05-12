@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.LibraryExtension
+import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -14,7 +16,7 @@ repositories {
     }
 
 
-android {
+extensions.configure<LibraryExtension>("android") {
     namespace = "ch.waio.pro_image_editor"
 
     compileSdk = 37
@@ -26,28 +28,26 @@ android {
 
     sourceSets {
         getByName("main") {
-            java.setSrcDirs("src/main/kotlin")
+            java.srcDir("src/main/kotlin")
         }
         getByName("test") {
-            java.setSrcDirs("src/test/kotlin")
+            java.srcDir("src/test/kotlin")
         }
     }
 
     defaultConfig {
         minSdk = 24
     }
+}
 
-    testOptions {
-        unitTests.all {
-            useJUnitPlatform()
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 
-            testLogging {
-               events("passed", "skipped", "failed", "standardOut", "standardError")
-               outputs.upToDateWhen {false}
-               showStandardStreams = true
-            }
-        }
+    testLogging {
+       events("passed", "skipped", "failed", "standardOut", "standardError")
+       showStandardStreams = true
     }
+    outputs.upToDateWhen { false }
 }
 
 kotlin {
