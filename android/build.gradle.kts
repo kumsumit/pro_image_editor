@@ -1,10 +1,8 @@
 import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.tasks.testing.Test
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.android")
 }
 
 group = "ch.waio.pro_image_editor"
@@ -28,10 +26,10 @@ extensions.configure<LibraryExtension>("android") {
 
     sourceSets {
         getByName("main") {
-            java.srcDir("src/main/kotlin")
+            kotlin.srcDir("src/main/kotlin")
         }
         getByName("test") {
-            java.srcDir("src/test/kotlin")
+            kotlin.srcDir("src/test/kotlin")
         }
     }
 
@@ -51,10 +49,10 @@ tasks.withType<Test>().configureEach {
 }
 
 kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_21)
-        }
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
     }
+}
 
 dependencies {
         testImplementation("org.jetbrains.kotlin:kotlin-test")
