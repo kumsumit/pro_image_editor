@@ -13,7 +13,7 @@ A Flutter image editor: Seamlessly enhance your images with user-friendly editin
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'hm21' => 'info@waio.ch' }
   s.source           = { :path => '.' }
-  s.source_files     = 'Classes/**/*'
+  s.source_files     = 'Sources/**/*'
   s.dependency 'Flutter'
   s.platform         = :ios, '12.0'
 
