@@ -33,7 +33,7 @@ class AiReplaceBackgroundToolbarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
       valueListenable: alignTopNotifier,
-      builder: (_, alignTop, __) {
+      builder: (_, alignTop, _) {
         return AnimatedAlign(
           duration: _animationDuration,
           curve: Curves.ease,
@@ -85,7 +85,7 @@ class AiReplaceBackgroundToolbarWidget extends StatelessWidget {
       decoration: BoxDecoration(boxShadow: kElevationToShadow[6]),
       child: ValueListenableBuilder(
           valueListenable: isProcessingNotifier,
-          builder: (_, isProcessing, __) {
+          builder: (_, isProcessing, _) {
             return TextField(
               readOnly: isProcessing,
               onEditingComplete: onSend,

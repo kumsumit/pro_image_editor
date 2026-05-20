@@ -1,6 +1,5 @@
 // ignore_for_file: public_member_api_docs
 
-import '../../util/image_exception.dart';
 import '../../util/input_buffer.dart';
 
 class TiffFaxDecoder {
@@ -78,10 +77,10 @@ class TiffFaxDecoder {
           _updatePointer(4 - bits);
         } else if (bits == 0) {
           // ERROR
-          throw ImageException('TIFFFaxDecoder0');
+          return;
         } else if (bits == 15) {
           // EOL
-          throw ImageException('TIFFFaxDecoder1');
+          return;
         } else {
           // 11 bits - 0000 0111 1111 1111 = 0x07ff
           code = (entry >> 5) & 0x07ff;
@@ -137,7 +136,7 @@ class TiffFaxDecoder {
             _updatePointer(4 - bits);
           } else if (bits == 15) {
             // EOL code
-            throw ImageException('TIFFFaxDecoder2');
+            return;
           } else {
             _setToBlack(buffer, lineOffset, bitOffset, code);
             bitOffset += code;
@@ -218,7 +217,7 @@ class TiffFaxDecoder {
 
     // The data must start with an EOL code
     if (_readEOL() != 1) {
-      throw ImageException('TIFFFaxDecoder3');
+      return;
     }
 
     var lineOffset = 0;
@@ -317,7 +316,7 @@ class TiffFaxDecoder {
 
             _updatePointer(7 - bits);
           } else {
-            throw ImageException('TIFFFaxDecoder4');
+            break;
           }
         }
 
@@ -464,7 +463,7 @@ class TiffFaxDecoder {
           _updatePointer(7 - bits);
         } else if (code == 11) {
           if (_nextLesserThan8Bits(3) != 7) {
-            throw ImageException('TIFFFaxDecoder5');
+            break;
           }
 
           var zeros = 0;
@@ -529,7 +528,7 @@ class TiffFaxDecoder {
             }
           }
         } else {
-          throw ImageException('TIFFFaxDecoder5 $code');
+          break;
         }
       }
 
@@ -571,10 +570,10 @@ class TiffFaxDecoder {
         _updatePointer(4 - bits);
       } else if (bits == 0) {
         // ERROR
-        throw ImageException('TIFFFaxDecoder0');
+        break;
       } else if (bits == 15) {
         // EOL
-        throw ImageException('TIFFFaxDecoder1');
+        break;
       } else {
         // 11 bits - 0000 0111 1111 1111 = 0x07ff
         code = (entry >> 5) & 0x07ff;
@@ -625,7 +624,7 @@ class TiffFaxDecoder {
           _updatePointer(4 - bits);
         } else if (bits == 15) {
           // EOL code
-          throw ImageException('TIFFFaxDecoder2');
+          break;
         } else {
           runLength += code;
           _updatePointer(9 - bits);
@@ -656,7 +655,7 @@ class TiffFaxDecoder {
   int _readEOL() {
     if (fillBits == 0) {
       if (_nextNBits(12) != 1) {
-        throw ImageException('TIFFFaxDecoder6');
+        return 0;
       }
     } else if (fillBits == 1) {
       // First EOL code word xxxx 0000 0000 0001 will occur
@@ -665,7 +664,7 @@ class TiffFaxDecoder {
       final bitsLeft = 8 - bitPointer!;
 
       if (_nextNBits(bitsLeft) != 0) {
-        throw ImageException('TIFFFaxDecoder8');
+        return 0;
       }
 
       // If the number of bitsLeft is less than 8, then to have a 12
@@ -674,7 +673,7 @@ class TiffFaxDecoder {
       // that.
       if (bitsLeft < 4) {
         if (_nextNBits(8) != 0) {
-          throw ImageException('TIFFFaxDecoder8');
+          return 0;
         }
       }
 
@@ -685,7 +684,7 @@ class TiffFaxDecoder {
       while ((n = _nextNBits(8)) != 1) {
         // If not all zeros
         if (n != 0) {
-          throw ImageException('TIFFFaxDecoder8');
+          return 0;
         }
       }
     }
@@ -801,7 +800,7 @@ class TiffFaxDecoder {
         next2next = _flipTable[data[bp + 2] & 0xff];
       }
     } else {
-      throw ImageException('TIFFFaxDecoder7');
+      return 0;
     }
 
     final bitsLeft = 8 - bitPointer!;
@@ -858,7 +857,7 @@ class TiffFaxDecoder {
         next = _flipTable[data[bp + 1] & 0xff];
       }
     } else {
-      throw ImageException('TIFFFaxDecoder7');
+      return 0;
     }
 
     final bitsLeft = 8 - bitPointer!;

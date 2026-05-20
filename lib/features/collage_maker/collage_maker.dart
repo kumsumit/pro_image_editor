@@ -157,6 +157,19 @@ class CollageMakerState extends State<CollageMaker> {
   bool _isRendering = false;
   _FreestyleLayer? _gestureStartLayer;
 
+  // Text overlay state
+  final List<_TextLayer> _textLayers = [];
+  int? _selectedTextLayerIndex;
+  _TextLayer? _gestureStartTextLayer;
+
+  // Sticker layer state
+  final List<_StickerLayer> _stickerLayers = [];
+  int? _selectedStickerLayerIndex;
+  _StickerLayer? _gestureStartStickerLayer;
+
+  // Per-photo editing state (keyed by image index in template mode)
+  final Map<int, _PhotoEditState> _photoEditStates = {};
+
   CollageLayout get _layout => _layouts[_layoutIndex];
   _CollageTheme get _theme => _themes[_backgroundIndex];
   _BackgroundStyle get _backgroundStyle =>
@@ -426,6 +439,9 @@ class CollageMakerState extends State<CollageMaker> {
           freestyleLayers: [
             for (final layer in _freestyleLayers) layer.copyWith(),
           ],
+          textLayers: [for (final l in _textLayers) l.copyWith()],
+          stickerLayers: [for (final l in _stickerLayers) l.copyWith()],
+          photoEditStates: Map.from(_photoEditStates),
         ),
       );
     });
@@ -493,6 +509,18 @@ class CollageMakerState extends State<CollageMaker> {
         _selectedFreestyleLayerIndex =
             _isFreestyle && _freestyleLayers.isNotEmpty ? 0 : null;
       }
+
+      _textLayers
+        ..clear()
+        ..addAll([for (final l in draft.textLayers) l.copyWith()]);
+      _stickerLayers
+        ..clear()
+        ..addAll([for (final l in draft.stickerLayers) l.copyWith()]);
+      _photoEditStates
+        ..clear()
+        ..addAll(draft.photoEditStates);
+      _selectedTextLayerIndex = null;
+      _selectedStickerLayerIndex = null;
     });
   }
 
@@ -609,6 +637,747 @@ class CollageMakerState extends State<CollageMaker> {
     }
   }
 
+  // ── Text overlay methods ──────────────────────────────────────────────────
+
+  Future<void> _showAddTextDialog({int? editIndex}) async {
+    final controller = TextEditingController(
+      text: editIndex != null ? _textLayers[editIndex].text : '',
+    );
+    final text = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(editIndex != null ? 'Edit Text' : 'Add Text'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'Enter your text…',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (value) => Navigator.of(context).pop(value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (text == null || text.trim().isEmpty) return;
+    setState(() {
+      if (editIndex != null) {
+        _textLayers[editIndex] = _textLayers[editIndex].copyWith(
+          text: text.trim(),
+        );
+      } else {
+        _textLayers.add(
+          _TextLayer(
+            text: text.trim(),
+            placement: const _FreestylePlacement(
+              left: 0.05,
+              top: 0.08,
+              width: 0.9,
+              height: 0.16,
+            ),
+          ),
+        );
+        _selectedTextLayerIndex = _textLayers.length - 1;
+        _selectedStickerLayerIndex = null;
+        _selectedFreestyleLayerIndex = null;
+      }
+    });
+  }
+
+  void _removeSelectedTextLayer() {
+    final index = _selectedTextLayerIndex;
+    if (index == null) return;
+    setState(() {
+      _textLayers.removeAt(index);
+      _selectedTextLayerIndex = _textLayers.isEmpty
+          ? null
+          : math.min(index, _textLayers.length - 1);
+    });
+  }
+
+  void _rotateSelectedTextLayer(double radians) {
+    final index = _selectedTextLayerIndex;
+    if (index == null) return;
+    setState(() {
+      _textLayers[index] = _textLayers[index].copyWith(
+        rotation: _textLayers[index].rotation + radians,
+      );
+    });
+  }
+
+  void _toggleSelectedTextLayerLock() {
+    final index = _selectedTextLayerIndex;
+    if (index == null) return;
+    setState(() {
+      final layer = _textLayers[index];
+      _textLayers[index] = layer.copyWith(locked: !layer.locked);
+    });
+  }
+
+  // ── Sticker overlay methods ───────────────────────────────────────────────
+
+  void _showStickerPicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Pick a Sticker',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            SizedBox(
+              height: 220,
+              child: GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 10,
+                  childAspectRatio: 1,
+                ),
+                itemCount: _StickerCatalog.emojis.length,
+                itemBuilder: (context, index) => InkWell(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _addSticker(_StickerCatalog.emojis[index]);
+                  },
+                  child: Center(
+                    child: Text(
+                      _StickerCatalog.emojis[index],
+                      style: const TextStyle(fontSize: 28),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _addSticker(String emoji) {
+    setState(() {
+      _stickerLayers.add(
+        _StickerLayer(emoji: emoji, left: 0.35, top: 0.35),
+      );
+      _selectedStickerLayerIndex = _stickerLayers.length - 1;
+      _selectedTextLayerIndex = null;
+      _selectedFreestyleLayerIndex = null;
+    });
+  }
+
+  void _removeSelectedSticker() {
+    final index = _selectedStickerLayerIndex;
+    if (index == null) return;
+    setState(() {
+      _stickerLayers.removeAt(index);
+      _selectedStickerLayerIndex = _stickerLayers.isEmpty
+          ? null
+          : math.min(index, _stickerLayers.length - 1);
+    });
+  }
+
+  void _rotateSelectedStickerLayer(double radians) {
+    final index = _selectedStickerLayerIndex;
+    if (index == null) return;
+    setState(() {
+      _stickerLayers[index] = _stickerLayers[index].copyWith(
+        rotation: _stickerLayers[index].rotation + radians,
+      );
+    });
+  }
+
+  void _toggleSelectedStickerLock() {
+    final index = _selectedStickerLayerIndex;
+    if (index == null) return;
+    setState(() {
+      final layer = _stickerLayers[index];
+      _stickerLayers[index] = layer.copyWith(locked: !layer.locked);
+    });
+  }
+
+  // ── Per-photo editing ─────────────────────────────────────────────────────
+
+  void _showPhotoEditSheet(int slotIndex) {
+    if (slotIndex >= widget.images.length) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheet) {
+          _PhotoEditState state() =>
+              _photoEditStates[slotIndex] ?? const _PhotoEditState();
+
+          void update(_PhotoEditState next) {
+            setState(() => _photoEditStates[slotIndex] = next);
+            setSheet(() {});
+          }
+
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Photo ${slotIndex + 1}',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          setState(
+                            () => _photoEditStates.remove(slotIndex),
+                          );
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('Reset'),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.zoom_in_outlined),
+                      const SizedBox(width: 8),
+                      const SizedBox(width: 52, child: Text('Zoom')),
+                      Expanded(
+                        child: Slider(
+                          value: state().zoom,
+                          min: 1,
+                          max: 3,
+                          onChanged: (v) => update(state().copyWith(zoom: v)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.swap_horiz_outlined),
+                      const SizedBox(width: 8),
+                      const SizedBox(width: 52, child: Text('Pan X')),
+                      Expanded(
+                        child: Slider(
+                          value: state().panX,
+                          min: -1,
+                          max: 1,
+                          onChanged: (v) =>
+                              update(state().copyWith(panX: v)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.swap_vert_outlined),
+                      const SizedBox(width: 8),
+                      const SizedBox(width: 52, child: Text('Pan Y')),
+                      Expanded(
+                        child: Slider(
+                          value: state().panY,
+                          min: -1,
+                          max: 1,
+                          onChanged: (v) =>
+                              update(state().copyWith(panY: v)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.rotate_right_outlined),
+                      const SizedBox(width: 8),
+                      const SizedBox(width: 52, child: Text('Rotate')),
+                      Expanded(
+                        child: Slider(
+                          value: state().rotation,
+                          min: -math.pi,
+                          max: math.pi,
+                          onChanged: (v) =>
+                              update(state().copyWith(rotation: v)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      FilterChip(
+                        label: const Text('Flip H'),
+                        selected: state().flipH,
+                        avatar: const Icon(Icons.flip_outlined),
+                        onSelected: (v) =>
+                            update(state().copyWith(flipH: v)),
+                      ),
+                      FilterChip(
+                        label: const Text('Flip V'),
+                        selected: state().flipV,
+                        avatar: const Icon(Icons.flip_outlined),
+                        onSelected: (v) =>
+                            update(state().copyWith(flipV: v)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── Canvas overlay builders ───────────────────────────────────────────────
+
+  Widget _buildPhotoWithEdit(int index, _PhotoEditState? e) {
+    final img = Image(
+      image: widget.images[index],
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.high,
+    );
+    if (e == null) return img;
+    return Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.identity()
+        ..scaleByDouble(e.zoom, e.zoom, 1.0, 1.0)
+        ..rotateZ(e.rotation),
+      child: FractionalTranslation(
+        translation: Offset(e.panX * 0.35, e.panY * 0.35),
+        child: Transform.flip(
+          flipX: e.flipH,
+          flipY: e.flipV,
+          child: img,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextStickerOverlay() {
+    if (_textLayers.isEmpty && _stickerLayers.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            ..._stickerLayers.asMap().entries.map(
+              (e) => _buildStickerLayerWidget(context, e.key, e.value, w, h),
+            ),
+            ..._textLayers.asMap().entries.map(
+              (e) => _buildTextLayerWidget(context, e.key, e.value, w, h),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTextLayerWidget(
+    BuildContext context,
+    int index,
+    _TextLayer layer,
+    double w,
+    double h,
+  ) {
+    final selected = index == _selectedTextLayerIndex;
+    return Positioned(
+      left: layer.placement.left * w,
+      top: layer.placement.top * h,
+      width: layer.placement.width * w,
+      height: layer.placement.height * h,
+      child: Transform.rotate(
+        angle: layer.rotation,
+        child: GestureDetector(
+          onTap: () => setState(() {
+            _selectedTextLayerIndex = index;
+            _selectedStickerLayerIndex = null;
+            _selectedFreestyleLayerIndex = null;
+          }),
+          onDoubleTap: () => _showAddTextDialog(editIndex: index),
+          onScaleStart: layer.locked
+              ? null
+              : (_) {
+                  _gestureStartTextLayer = layer;
+                  setState(() {
+                    _selectedTextLayerIndex = index;
+                    _selectedStickerLayerIndex = null;
+                    _selectedFreestyleLayerIndex = null;
+                  });
+                },
+          onScaleUpdate: layer.locked
+              ? null
+              : (details) {
+                  final start = _gestureStartTextLayer ?? layer;
+                  final current = _textLayers[index];
+                  final nextWidth =
+                      (start.placement.width * details.scale)
+                          .clamp(0.1, 0.95)
+                          .toDouble();
+                  final nextHeight =
+                      (start.placement.height * details.scale)
+                          .clamp(0.04, 0.95)
+                          .toDouble();
+                  final nextLeft =
+                      (current.placement.left +
+                              details.focalPointDelta.dx / w)
+                          .clamp(0.0, 1 - nextWidth)
+                          .toDouble();
+                  final nextTop =
+                      (current.placement.top +
+                              details.focalPointDelta.dy / h)
+                          .clamp(0.0, 1 - nextHeight)
+                          .toDouble();
+                  setState(() {
+                    _textLayers[index] = current.copyWith(
+                      placement: _FreestylePlacement(
+                        left: nextLeft,
+                        top: nextTop,
+                        width: nextWidth,
+                        height: nextHeight,
+                      ),
+                    );
+                  });
+                },
+          onScaleEnd:
+              layer.locked ? null : (_) => _gestureStartTextLayer = null,
+          child: _TextLayerContent(layer: layer, selected: selected),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStickerLayerWidget(
+    BuildContext context,
+    int index,
+    _StickerLayer layer,
+    double w,
+    double h,
+  ) {
+    final selected = index == _selectedStickerLayerIndex;
+    final pixelSize = layer.size * w;
+    return Positioned(
+      left: layer.left * w,
+      top: layer.top * h,
+      width: pixelSize,
+      height: pixelSize,
+      child: Transform.rotate(
+        angle: layer.rotation,
+        child: GestureDetector(
+          onTap: () => setState(() {
+            _selectedStickerLayerIndex = index;
+            _selectedTextLayerIndex = null;
+            _selectedFreestyleLayerIndex = null;
+          }),
+          onScaleStart: layer.locked
+              ? null
+              : (_) {
+                  _gestureStartStickerLayer = layer;
+                  setState(() {
+                    _selectedStickerLayerIndex = index;
+                    _selectedTextLayerIndex = null;
+                    _selectedFreestyleLayerIndex = null;
+                  });
+                },
+          onScaleUpdate: layer.locked
+              ? null
+              : (details) {
+                  final start = _gestureStartStickerLayer ?? layer;
+                  final current = _stickerLayers[index];
+                  final nextSize =
+                      (start.size * details.scale).clamp(0.05, 0.5).toDouble();
+                  final nextLeft =
+                      (current.left + details.focalPointDelta.dx / w)
+                          .clamp(0.0, 1 - nextSize)
+                          .toDouble();
+                  final nextTop =
+                      (current.top + details.focalPointDelta.dy / h)
+                          .clamp(0.0, 1.0)
+                          .toDouble();
+                  setState(() {
+                    _stickerLayers[index] = current.copyWith(
+                      size: nextSize,
+                      left: nextLeft,
+                      top: nextTop,
+                    );
+                  });
+                },
+          onScaleEnd:
+              layer.locked ? null : (_) => _gestureStartStickerLayer = null,
+          child: Container(
+            decoration: selected
+                ? BoxDecoration(
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                  )
+                : null,
+            child: FittedBox(
+              child: Text(
+                layer.emoji,
+                style: const TextStyle(fontSize: 100),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Controls sub-sections ─────────────────────────────────────────────────
+
+  Widget _buildTextSection() {
+    final selIdx = _selectedTextLayerIndex;
+    final sel = (selIdx != null && selIdx < _textLayers.length)
+        ? _textLayers[selIdx]
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.title_outlined),
+            const SizedBox(width: 10),
+            Text(
+              'Text Overlays',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: _showAddTextDialog,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        if (_textLayers.isNotEmpty && sel == null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Tap a text on the canvas to edit it',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.white54),
+            ),
+          ),
+        if (sel != null) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _LayerActionButton(
+                icon: Icons.edit_outlined,
+                tooltip: 'Edit text',
+                onPressed: () => _showAddTextDialog(editIndex: selIdx),
+              ),
+              _LayerActionButton(
+                icon: Icons.rotate_90_degrees_cw_outlined,
+                tooltip: 'Rotate',
+                onPressed: () => _rotateSelectedTextLayer(math.pi / 18),
+              ),
+              _LayerActionButton(
+                icon: sel.fontWeight == FontWeight.bold
+                    ? Icons.format_bold
+                    : Icons.format_bold,
+                tooltip: sel.fontWeight == FontWeight.bold
+                    ? 'Regular weight'
+                    : 'Bold',
+                onPressed: () => setState(() {
+                  _textLayers[selIdx!] = sel.copyWith(
+                    fontWeight: sel.fontWeight == FontWeight.bold
+                        ? FontWeight.normal
+                        : FontWeight.bold,
+                  );
+                }),
+              ),
+              _LayerActionButton(
+                icon: Icons.format_italic,
+                tooltip: sel.fontStyle == FontStyle.italic
+                    ? 'Remove italic'
+                    : 'Italic',
+                onPressed: () => setState(() {
+                  _textLayers[selIdx!] = sel.copyWith(
+                    fontStyle: sel.fontStyle == FontStyle.italic
+                        ? FontStyle.normal
+                        : FontStyle.italic,
+                  );
+                }),
+              ),
+              _LayerActionButton(
+                icon: Icons.wb_sunny_outlined,
+                tooltip: sel.hasShadow ? 'Remove shadow' : 'Add shadow',
+                onPressed: () => setState(() {
+                  _textLayers[selIdx!] =
+                      sel.copyWith(hasShadow: !sel.hasShadow);
+                }),
+              ),
+              _LayerActionButton(
+                icon: sel.locked
+                    ? Icons.lock_outline
+                    : Icons.lock_open_outlined,
+                tooltip: sel.locked ? 'Unlock' : 'Lock',
+                onPressed: _toggleSelectedTextLayerLock,
+              ),
+              _LayerActionButton(
+                icon: Icons.delete_outline,
+                tooltip: 'Remove',
+                onPressed: _removeSelectedTextLayer,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildSlider(
+            icon: Icons.format_size_outlined,
+            label: 'Size',
+            value: sel.fontSize.clamp(12, 200),
+            min: 12,
+            max: 200,
+            onChanged: (v) => setState(() {
+              _textLayers[selIdx!] = sel.copyWith(fontSize: v);
+            }),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: _TextColorPalette.colors.map((color) {
+              final isSelected = sel.color.toARGB32() == color.toARGB32();
+              return Tooltip(
+                message: 'Text color',
+                child: InkWell(
+                  onTap: () => setState(() {
+                    _textLayers[selIdx!] = sel.copyWith(color: color);
+                  }),
+                  borderRadius: BorderRadius.circular(18),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.white24,
+                        width: isSelected ? 3 : 1,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildStickerSection() {
+    final selIdx = _selectedStickerLayerIndex;
+    final sel = (selIdx != null && selIdx < _stickerLayers.length)
+        ? _stickerLayers[selIdx]
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.emoji_emotions_outlined),
+            const SizedBox(width: 10),
+            Text(
+              'Stickers',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: _showStickerPicker,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        if (_stickerLayers.isNotEmpty && sel == null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Tap a sticker on the canvas to edit it',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.white54),
+            ),
+          ),
+        if (sel != null) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _LayerActionButton(
+                icon: Icons.rotate_90_degrees_cw_outlined,
+                tooltip: 'Rotate',
+                onPressed: () => _rotateSelectedStickerLayer(math.pi / 18),
+              ),
+              _LayerActionButton(
+                icon: sel.locked
+                    ? Icons.lock_outline
+                    : Icons.lock_open_outlined,
+                tooltip: sel.locked ? 'Unlock' : 'Lock',
+                onPressed: _toggleSelectedStickerLock,
+              ),
+              _LayerActionButton(
+                icon: Icons.delete_outline,
+                tooltip: 'Remove',
+                onPressed: _removeSelectedSticker,
+              ),
+            ],
+          ),
+          _buildSlider(
+            icon: Icons.photo_size_select_small_outlined,
+            label: 'Size',
+            value: (sel.size * 100).clamp(5, 50),
+            min: 5,
+            max: 50,
+            onChanged: (v) => setState(() {
+              _stickerLayers[selIdx!] = sel.copyWith(size: v / 100);
+            }),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final body = SafeArea(
@@ -713,6 +1482,7 @@ class CollageMakerState extends State<CollageMaker> {
                               ? _buildFreestyleLayout()
                               : _buildLayout(_layout),
                         ),
+                        _buildTextStickerOverlay(),
                       ],
                     ),
                   ),
@@ -1120,6 +1890,7 @@ class CollageMakerState extends State<CollageMaker> {
           spacing: 8,
           runSpacing: 8,
           children: List.generate(_themes.length, (index) {
+
             final selected = index == _backgroundIndex;
             final theme = _themes[index];
             return ChoiceChip(
@@ -1142,6 +1913,12 @@ class CollageMakerState extends State<CollageMaker> {
             );
           }),
         ),
+        const SizedBox(height: 16),
+        const Divider(),
+        _buildTextSection(),
+        const SizedBox(height: 8),
+        const Divider(),
+        _buildStickerSection(),
       ],
     );
   }
@@ -1203,15 +1980,21 @@ class CollageMakerState extends State<CollageMaker> {
                   angle: layer.rotation,
                   child: GestureDetector(
                     onTap: () {
-                      setState(() => _selectedFreestyleLayerIndex = index);
+                      setState(() {
+                        _selectedFreestyleLayerIndex = index;
+                        _selectedTextLayerIndex = null;
+                        _selectedStickerLayerIndex = null;
+                      });
                     },
                     onScaleStart: layer.locked
                         ? null
                         : (_) {
                             _gestureStartLayer = _freestyleLayers[index];
-                            setState(
-                              () => _selectedFreestyleLayerIndex = index,
-                            );
+                            setState(() {
+                              _selectedFreestyleLayerIndex = index;
+                              _selectedTextLayerIndex = null;
+                              _selectedStickerLayerIndex = null;
+                            });
                           },
                     onScaleUpdate: layer.locked
                         ? null
@@ -1301,21 +2084,23 @@ class CollageMakerState extends State<CollageMaker> {
   }
 
   Widget _slot(int index) {
-    return _FramedPhoto(
-      radius: _radius,
-      borderColor: _borderColor,
-      borderWidth: _borderWidth,
-      frameStyle: _frameStyle,
-      shadowStyle: _shadowStyle,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(_frameStyle.contentRadius(_radius)),
-        child: index < widget.images.length
-            ? Image(
-                image: widget.images[index],
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.high,
-              )
-            : _EmptySlot(index: index + 1),
+    final editState = _photoEditStates[index];
+    final hasImage = index < widget.images.length;
+    return GestureDetector(
+      onTap: hasImage ? () => _showPhotoEditSheet(index) : null,
+      child: _FramedPhoto(
+        radius: _radius,
+        borderColor: _borderColor,
+        borderWidth: _borderWidth,
+        frameStyle: _frameStyle,
+        shadowStyle: _shadowStyle,
+        child: ClipRRect(
+          borderRadius:
+              BorderRadius.circular(_frameStyle.contentRadius(_radius)),
+          child: hasImage
+              ? _buildPhotoWithEdit(index, editState)
+              : _EmptySlot(index: index + 1),
+        ),
       ),
     );
   }
@@ -2222,6 +3007,9 @@ class _CollageDraft {
     required this.isFreestyle,
     required this.removedFreestyleImageIndexes,
     required this.freestyleLayers,
+    required this.textLayers,
+    required this.stickerLayers,
+    required this.photoEditStates,
   });
 
   final String label;
@@ -2243,6 +3031,9 @@ class _CollageDraft {
   final bool isFreestyle;
   final Set<int> removedFreestyleImageIndexes;
   final List<_FreestyleLayer> freestyleLayers;
+  final List<_TextLayer> textLayers;
+  final List<_StickerLayer> stickerLayers;
+  final Map<int, _PhotoEditState> photoEditStates;
 }
 
 /// Metadata for a collage template.
@@ -2311,6 +3102,227 @@ class CollageSlot {
         '${(height * 1000).round()}';
   }
 }
+
+// ─── Text overlay ───────────────────────────────────────────────────────────
+
+class _TextLayer {
+  const _TextLayer({
+    required this.text,
+    required this.placement,
+    this.fontSize = 64,
+    this.color = const Color(0xFFFFFFFF),
+    this.fontWeight = FontWeight.bold,
+    this.fontStyle = FontStyle.normal,
+    this.hasShadow = true,
+    this.rotation = 0,
+    this.locked = false,
+  });
+
+  final String text;
+  final _FreestylePlacement placement;
+  final double fontSize;
+  final Color color;
+  final FontWeight fontWeight;
+  final FontStyle fontStyle;
+  final bool hasShadow;
+  final double rotation;
+  final bool locked;
+
+  _TextLayer copyWith({
+    String? text,
+    _FreestylePlacement? placement,
+    double? fontSize,
+    Color? color,
+    FontWeight? fontWeight,
+    FontStyle? fontStyle,
+    bool? hasShadow,
+    double? rotation,
+    bool? locked,
+  }) {
+    return _TextLayer(
+      text: text ?? this.text,
+      placement: placement ?? this.placement,
+      fontSize: fontSize ?? this.fontSize,
+      color: color ?? this.color,
+      fontWeight: fontWeight ?? this.fontWeight,
+      fontStyle: fontStyle ?? this.fontStyle,
+      hasShadow: hasShadow ?? this.hasShadow,
+      rotation: rotation ?? this.rotation,
+      locked: locked ?? this.locked,
+    );
+  }
+}
+
+class _TextLayerContent extends StatelessWidget {
+  const _TextLayerContent({required this.layer, required this.selected});
+
+  final _TextLayer layer;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final shadows = layer.hasShadow
+        ? const [
+            Shadow(
+              color: Color(0xCC000000),
+              blurRadius: 6,
+              offset: Offset(2, 2),
+            ),
+          ]
+        : <Shadow>[];
+
+    return Container(
+      alignment: Alignment.center,
+      decoration: selected
+          ? BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(4),
+            )
+          : null,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          layer.text,
+          style: TextStyle(
+            fontSize: layer.fontSize,
+            color: layer.color,
+            fontWeight: layer.fontWeight,
+            fontStyle: layer.fontStyle,
+            shadows: shadows,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+class _TextColorPalette {
+  const _TextColorPalette._();
+
+  static const colors = [
+    Color(0xFFFFFFFF),
+    Color(0xFF111827),
+    Color(0xFFFFD166),
+    Color(0xFFEF476F),
+    Color(0xFF70C1B3),
+    Color(0xFF7C3AED),
+    Color(0xFFF97316),
+    Color(0xFF10B981),
+    Color(0xFF3B82F6),
+    Color(0xFFFEC5CA),
+  ];
+}
+
+// ─── Sticker overlay ────────────────────────────────────────────────────────
+
+class _StickerLayer {
+  const _StickerLayer({
+    required this.emoji,
+    required this.left,
+    required this.top,
+    this.size = 0.14,
+    this.rotation = 0,
+    this.locked = false,
+  });
+
+  final String emoji;
+  final double left;
+  final double top;
+  final double size;
+  final double rotation;
+  final bool locked;
+
+  _StickerLayer copyWith({
+    String? emoji,
+    double? left,
+    double? top,
+    double? size,
+    double? rotation,
+    bool? locked,
+  }) {
+    return _StickerLayer(
+      emoji: emoji ?? this.emoji,
+      left: left ?? this.left,
+      top: top ?? this.top,
+      size: size ?? this.size,
+      rotation: rotation ?? this.rotation,
+      locked: locked ?? this.locked,
+    );
+  }
+}
+
+class _StickerCatalog {
+  const _StickerCatalog._();
+
+  static const emojis = [
+    // Hearts & love
+    '❤️', '💕', '💖', '💗', '💓', '💝', '💘', '🧡', '💛', '💚',
+    '💙', '💜', '🤍', '🖤', '💑',
+    // Celebration
+    '🎈', '🎉', '🎊', '🥳', '🎂', '🎁', '🎀', '🎆', '🎇', '✨',
+    // Stars & sparkles
+    '⭐', '🌟', '💫', '⚡', '🔥', '🌈', '☀️', '🌙', '🌸', '🌺',
+    // Nature & flowers
+    '🌹', '💐', '🌻', '🍀', '🌿', '🍃', '🦋', '🐝', '🌊', '🏔️',
+    // Travel & adventure
+    '✈️', '🗺️', '📸', '🏖️', '🏕️', '🗽', '🗼', '🏝️', '🚀', '🌍',
+    // Wedding & romance
+    '💍', '💒', '👰', '🤵', '🥂', '🍾', '🌠', '🎵', '🎶', '🫶',
+    // Graduation & achievement
+    '🎓', '📚', '🏆', '🥇', '📜', '🎯', '💡', '🔑', '🌱', '🙌',
+    // Baby & cute
+    '👶', '🍼', '🦄', '🐣', '🐥', '🧸', '🎠', '🍭', '🍦', '🌈',
+    // Faces & expressions
+    '😊', '😍', '🥰', '😎', '🤩', '😂', '🥹', '😘', '🤗', '😁',
+    // Misc fun
+    '🦁', '🐶', '🍕', '☕', '🎸', '🎨', '🎬', '🏄', '🧘', '🪄',
+  ];
+}
+
+// ─── Per-photo edit state ────────────────────────────────────────────────────
+
+class _PhotoEditState {
+  const _PhotoEditState({
+    this.zoom = 1.0,
+    this.panX = 0.0,
+    this.panY = 0.0,
+    this.rotation = 0.0,
+    this.flipH = false,
+    this.flipV = false,
+  });
+
+  final double zoom;
+  final double panX;
+  final double panY;
+  final double rotation;
+  final bool flipH;
+  final bool flipV;
+
+  _PhotoEditState copyWith({
+    double? zoom,
+    double? panX,
+    double? panY,
+    double? rotation,
+    bool? flipH,
+    bool? flipV,
+  }) {
+    return _PhotoEditState(
+      zoom: zoom ?? this.zoom,
+      panX: panX ?? this.panX,
+      panY: panY ?? this.panY,
+      rotation: rotation ?? this.rotation,
+      flipH: flipH ?? this.flipH,
+      flipV: flipV ?? this.flipV,
+    );
+  }
+}
+
+// ─── Template catalog ────────────────────────────────────────────────────────
 
 class _CollageTemplateCatalog {
   static final List<CollageLayout> layouts = _buildLayouts();

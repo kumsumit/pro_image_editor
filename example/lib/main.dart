@@ -146,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 }
 
                 return PageRouteBuilder(
-                  pageBuilder: (_, __, ___) => kImageEditorExamples[index].page,
+                  pageBuilder: (_, _, _) => kImageEditorExamples[index].page,
                   transitionsBuilder:
                       (_, animation, secondaryAnimation, child) {
                     const begin =

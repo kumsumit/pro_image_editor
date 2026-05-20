@@ -20,7 +20,7 @@ class TiltRulerChooser extends StatelessWidget {
       switchInCurve: Curves.ease,
       transitionBuilder: (child, animation) => SizeTransition(
         sizeFactor: animation,
-        axisAlignment: -1,
+        alignment: const Alignment(0.0, -1.0),
         child: FadeTransition(opacity: animation, child: child),
       ),
       child: provider.isTiltEditorVisible

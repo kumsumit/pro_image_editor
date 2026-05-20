@@ -120,7 +120,7 @@ class _MovableBackgroundImageExampleState
       ),
       child: ValueListenableBuilder(
           valueListenable: _isMovableImageReadyNotifier,
-          builder: (_, isReady, __) {
+          builder: (_, isReady, _) {
             return Stack(
               fit: StackFit.expand,
               children: [

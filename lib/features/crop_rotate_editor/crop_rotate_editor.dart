@@ -709,7 +709,8 @@ class CropRotateEditorState extends State<CropRotateEditor>
       },
       onScale: (scale) async {
         double startZoom = userScaleFactor;
-        double targetZoom = (userScaleFactor + scale).clamp(
+        double targetZoom = _safeClamp(
+          userScaleFactor + scale,
           1,
           cropRotateEditorConfigs.maxScale,
         );
@@ -1241,7 +1242,8 @@ class CropRotateEditorState extends State<CropRotateEditor>
   /// 3. Updates the translation and user scale factor
   /// 4. Applies offset limits and triggers scale callbacks
   void setScale(double value) {
-    double newZoom = (_startingPinchScale * value).clamp(
+    double newZoom = _safeClamp(
+      _startingPinchScale * value,
       1.0,
       cropRotateEditorConfigs.maxScale,
     );
@@ -1763,20 +1765,21 @@ class CropRotateEditorState extends State<CropRotateEditor>
     addHistory();
   }
 
+  // Samsung S10: direct double.clamp throws when min > max; use manual clamp
+  double _safeClamp(double value, double min, double max) {
+    if (max < min) return min;
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+  }
+
   void _handleDoubleTapDown(TapDownDetails details) {
     _doubleTapDetails = details;
   }
 
   void _handleDoubleTap() async {
-    double clampValue(double value, double min, double max) {
-      if (value < min) {
-        return min;
-      } else if (value > max) {
-        return max;
-      } else {
-        return value;
-      }
-    }
+    double clampValue(double value, double min, double max) =>
+        _safeClamp(value, min, max);
 
     if (!cropRotateEditorConfigs.enableDoubleTap || _blockInteraction) return;
     _blockInteraction = true;

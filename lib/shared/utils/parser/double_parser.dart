@@ -43,8 +43,9 @@ double safeParseDouble(dynamic value, {double fallback = 0}) {
 /// tryParseDouble('3.14');    // returns 3.14
 /// tryParseDouble('abc');     // returns null
 /// tryParseDouble(10);        // returns 10.0 (automatic conversion from int)
-/// tryParseDouble(null);      // throws error (null cannot be converted to String)
+/// tryParseDouble(null);      // returns null
 /// ```
 double? tryParseDouble(dynamic value) {
+  if (value == null) return null;
   return double.tryParse(value.toString());
 }

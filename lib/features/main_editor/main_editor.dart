@@ -2770,7 +2770,7 @@ class ProImageEditorState extends State<ProImageEditor>
                               transitionBuilder: (child, animation) {
                                 return SizeTransition(
                                   sizeFactor: animation,
-                                  axisAlignment: -1,
+                                  alignment: const Alignment(0.0, -1.0),
                                   child: child,
                                 );
                               },

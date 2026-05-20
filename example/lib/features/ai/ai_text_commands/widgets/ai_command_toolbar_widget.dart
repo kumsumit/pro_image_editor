@@ -67,7 +67,7 @@ class _AiCommandToolbarWidgetState extends State<AiCommandToolbarWidget> {
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
       valueListenable: widget.alignTopNotifier,
-      builder: (_, alignTop, __) {
+      builder: (_, alignTop, _) {
         return AnimatedAlign(
           duration: _animationDuration,
           curve: Curves.ease,
@@ -76,7 +76,7 @@ class _AiCommandToolbarWidgetState extends State<AiCommandToolbarWidget> {
             padding: const EdgeInsets.all(16.0),
             child: ValueListenableBuilder(
                 valueListenable: widget.generationModeNotifier,
-                builder: (_, mode, __) {
+                builder: (_, mode, _) {
                   bool isTextMode = mode == AiGenerationMode.text;
                   return LayoutBuilder(builder: (_, constraints) {
                     bool isMobile = constraints.maxWidth < 560;
@@ -111,7 +111,7 @@ class _AiCommandToolbarWidgetState extends State<AiCommandToolbarWidget> {
   Widget _buildInput() {
     return ValueListenableBuilder(
       valueListenable: widget.isProcessingNotifier,
-      builder: (_, isProcessing, __) {
+      builder: (_, isProcessing, _) {
         return AiCommandInputWidget(
           isProcessing: isProcessing,
           inputCtrl: widget.inputCtrl,

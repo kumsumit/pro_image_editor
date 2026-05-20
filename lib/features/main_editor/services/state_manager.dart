@@ -33,10 +33,8 @@ class StateManager {
   /// - Throws: `ArgumentError` if `value < 0` or `value >=
   /// _stateHistory.length`.
   set historyPointer(int value) {
-    if (value < 0 || value >= _stateHistory.length) {
-      throw ArgumentError('History pointer out of range');
-    }
-    _historyPointer = value;
+    if (_stateHistory.isEmpty) return;
+    _historyPointer = value.clamp(0, _stateHistory.length - 1);
   }
 
   /// A list that stores the history of changes made in the image editor.
@@ -296,15 +294,15 @@ class StateManager {
   /// If there is no forward change available, this operation will throw an
   /// error due to out-of-bounds access handled by the `historyPointer` setter.
   void redo() {
+    if (!canRedo) return;
     historyPointer = _historyPointer + 1;
     updateActiveItems();
   }
 
   /// Undoes the last change by moving the history pointer back by one step.
   /// This reverts the editor to the previous state.
-  /// If there is no previous state available, this operation will throw an
-  /// error due to out-of-bounds access handled by the `historyPointer` setter.
   void undo() {
+    if (!canUndo) return;
     historyPointer = _historyPointer - 1;
     updateActiveItems();
   }

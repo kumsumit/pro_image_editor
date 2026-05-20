@@ -2,7 +2,6 @@
 
 import 'dart:typed_data';
 
-import '../../util/image_exception.dart';
 import '../../util/input_buffer.dart';
 
 class LzwDecoder {
@@ -15,7 +14,7 @@ class LzwDecoder {
     _bytePointer = p.offset;
 
     if (_data[0] == 0x00 && _data[1] == 0x01) {
-      throw ImageException('Invalid LZW Data');
+      return; // unsupported LZW variant – skip silently
     }
 
     _initializeStringTable();
