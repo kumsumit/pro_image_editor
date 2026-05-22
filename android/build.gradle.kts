@@ -48,11 +48,6 @@ tasks.withType<Test>().configureEach {
     outputs.upToDateWhen { false }
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
-    }
-}
 
 dependencies {
         testImplementation("org.jetbrains.kotlin:kotlin-test")
