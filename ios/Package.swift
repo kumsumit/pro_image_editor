@@ -8,7 +8,7 @@ let package = Package(
         .iOS(.v12)
     ],
     products: [
-        .library(name: "pro-image-editor", targets: ["pro_image_editor"])
+        .library(name: "pro_image_editor", targets: ["pro_image_editor"])
     ],
     dependencies: [],
     targets: [
