@@ -46,7 +46,7 @@ dependencies:
     git: https://github.com/kumsumit/plugin_platform_interface.git
   shared_preferences:
     git: https://github.com/kumsumit/shared_preferences.git
-  vector_math: ^2.2.0
+  vector_math: ^2.3.0
   web: ^1.1.1
 
 dev_dependencies:

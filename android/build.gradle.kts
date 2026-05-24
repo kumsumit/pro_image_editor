@@ -26,10 +26,10 @@ extensions.configure<LibraryExtension>("android") {
 
     sourceSets {
         getByName("main") {
-            kotlin.srcDir("src/main/kotlin")
+            kotlin.directories.add("src/main/kotlin")
         }
         getByName("test") {
-            kotlin.srcDir("src/test/kotlin")
+            kotlin.directories.add("src/test/kotlin")
         }
     }
 
