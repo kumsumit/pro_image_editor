@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '/features/audio_editor/models/audio_track.dart';
 import '/features/clips_editor/models/video_clip.dart';
 import '/features/filter_editor/utils/combine_color_matrix_utils.dart';
+import '/features/tune_editor/models/tune_adjustment_matrix.dart';
 import 'layers/layer.dart';
 
 /// A data class that contains all parameters needed for applying visual
@@ -23,6 +24,12 @@ class CompleteParameters {
       ),
       matrixTuneAdjustmentsList: List<List<double>>.from(
         map['matrixTuneAdjustmentsList']?.map((x) => List<double>.from(x)) ??
+            [],
+      ),
+      tuneAdjustments: List<TuneAdjustmentMatrix>.from(
+        map['tuneAdjustments']?.map(
+              (x) => TuneAdjustmentMatrix.fromMap(Map<String, dynamic>.from(x)),
+            ) ??
             [],
       ),
       startTime: map['startTime'] != null
@@ -67,6 +74,7 @@ class CompleteParameters {
     required this.image,
     required this.isTransformed,
     required this.layers,
+    this.tuneAdjustments = const [],
     this.videoClips = const [],
     this.customAudioTrack,
   });
@@ -79,6 +87,9 @@ class CompleteParameters {
 
   /// List of color tuning adjustment matrices (e.g. brightness, contrast).
   final List<List<double>> matrixTuneAdjustmentsList;
+
+  /// Editable tune adjustments, including advanced color payloads.
+  final List<TuneAdjustmentMatrix> tuneAdjustments;
 
   /// All active color filters including both tuning and filter matrices.
   List<List<double>> get colorFilters => [
@@ -163,6 +174,7 @@ class CompleteParameters {
     Uint8List? image,
     bool? isTransformed,
     List<Layer>? layers,
+    List<TuneAdjustmentMatrix>? tuneAdjustments,
     List<VideoClip>? videoClips,
     AudioTrack? customAudioTrack,
   }) {
@@ -183,6 +195,7 @@ class CompleteParameters {
       image: image ?? this.image,
       isTransformed: isTransformed ?? this.isTransformed,
       layers: layers ?? this.layers,
+      tuneAdjustments: tuneAdjustments ?? this.tuneAdjustments,
       videoClips: videoClips ?? this.videoClips,
       customAudioTrack: customAudioTrack ?? this.customAudioTrack,
     );
@@ -199,6 +212,7 @@ class CompleteParameters {
           other.matrixTuneAdjustmentsList,
           matrixTuneAdjustmentsList,
         ) &&
+        listEquals(other.tuneAdjustments, tuneAdjustments) &&
         other.startTime == startTime &&
         other.endTime == endTime &&
         other.cropWidth == cropWidth &&
@@ -220,6 +234,7 @@ class CompleteParameters {
     return blur.hashCode ^
         matrixFilterList.hashCode ^
         matrixTuneAdjustmentsList.hashCode ^
+        tuneAdjustments.hashCode ^
         startTime.hashCode ^
         endTime.hashCode ^
         cropWidth.hashCode ^
@@ -244,6 +259,7 @@ class CompleteParameters {
       'blur': blur,
       'matrixFilterList': matrixFilterList,
       'matrixTuneAdjustmentsList': matrixTuneAdjustmentsList,
+      'tuneAdjustments': tuneAdjustments.map((x) => x.toMap()).toList(),
       'startTime': startTime?.inMicroseconds,
       'endTime': endTime?.inMicroseconds,
       'cropWidth': cropWidth,
@@ -267,6 +283,7 @@ class CompleteParameters {
     return 'CompleteParameters(blur: $blur, '
         'matrixFilterList: $matrixFilterList, '
         'matrixTuneAdjustmentsList: $matrixTuneAdjustmentsList, '
+        'tuneAdjustments: $tuneAdjustments, '
         'startTime: $startTime, '
         'endTime: $endTime, '
         'cropWidth: $cropWidth, '

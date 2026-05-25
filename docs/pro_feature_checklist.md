@@ -98,9 +98,12 @@ Step 3 adds serializable advanced color-adjustment primitives for RGB and
 per-channel curves, levels, HSL color ranges, and shadow/midtone/highlight
 color-grading wheels. These payloads are preserved by `TuneAdjustmentMatrix`
 copying and state-history import/export, including zero-value adjustments that
-carry editable pro color data. Accurate nonlinear rendering/export for curves,
-gamma levels, selective HSL ranges, and color-grading wheels is the next color
-pipeline slice.
+carry editable pro color data. The follow-up renderer slice adds exact CPU
+processing for curves, gamma levels, selective HSL ranges, and color-grading
+wheels during final image conversion. `TuneEditorState` now exposes setter
+methods that custom pro controls can call for curves, levels, HSL, and color
+grading; a first-party visual curves graph and wheel UI remains a dedicated UI
+design slice.
 
 AI workflows are represented by examples and integration hooks rather than a
 bundled model provider. Catalog management, batch processing, professional

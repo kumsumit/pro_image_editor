@@ -542,6 +542,7 @@ mixin CropAreaHistory
       matrixTuneAdjustmentsList: appliedTuneAdjustments
           .map((item) => item.matrix)
           .toList(),
+      tuneAdjustments: appliedTuneAdjustments,
       cropWidth: isTransformed ? outputSize.width.round() : null,
       cropHeight: isTransformed ? outputSize.height.round() : null,
       cropX: isTransformed ? outputOffset.dx.round() : null,

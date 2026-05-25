@@ -266,6 +266,7 @@ class TuneEditorState extends State<TuneEditor>
       matrixTuneAdjustmentsList: tuneAdjustmentMatrix
           .map((item) => item.matrix)
           .toList(),
+      advancedTuneAdjustmentsList: tuneAdjustmentMatrix,
       transform: initialTransformConfigs,
     );
     tuneEditorCallbacks?.handleDone();
@@ -352,6 +353,83 @@ class TuneEditorState extends State<TuneEditor>
 
     uiStream.add(null);
     tuneEditorCallbacks?.handleTuneFactorChange(tuneAdjustmentMatrix);
+  }
+
+  /// Sets an editable curves adjustment.
+  ///
+  /// Custom pro color controls can call this from [TuneEditorWidgets] to drive
+  /// non-destructive curve state that is rendered during export.
+  void setCurvesAdjustment(
+    CurvesAdjustment curves, {
+    String id = 'curves',
+    List<double> matrix = const [],
+  }) {
+    _setAdvancedAdjustment(id: id, matrix: matrix, curves: curves);
+  }
+
+  /// Sets an editable levels adjustment.
+  void setLevelsAdjustment(
+    LevelsAdjustment levels, {
+    String id = 'levels',
+    List<double> matrix = const [],
+  }) {
+    _setAdvancedAdjustment(id: id, matrix: matrix, levels: levels);
+  }
+
+  /// Sets editable HSL color-range adjustments.
+  void setHslAdjustment(
+    HslAdjustment hsl, {
+    String id = 'hsl',
+    List<double> matrix = const [],
+  }) {
+    _setAdvancedAdjustment(id: id, matrix: matrix, hsl: hsl);
+  }
+
+  /// Sets editable color-grading wheel adjustments.
+  void setColorGradingAdjustment(
+    ColorGradingAdjustment colorGrading, {
+    String id = 'colorGrading',
+    List<double> matrix = const [],
+  }) {
+    _setAdvancedAdjustment(id: id, matrix: matrix, colorGrading: colorGrading);
+  }
+
+  void _setAdvancedAdjustment({
+    required String id,
+    required List<double> matrix,
+    CurvesAdjustment? curves,
+    LevelsAdjustment? levels,
+    HslAdjustment? hsl,
+    ColorGradingAdjustment? colorGrading,
+  }) {
+    _undoStack.add(tuneAdjustmentMatrix.map((e) => e.copy()).toList());
+    _redoStack.clear();
+
+    final index = tuneAdjustmentMatrix.indexWhere((item) => item.id == id);
+    final existing = index >= 0 ? tuneAdjustmentMatrix[index] : null;
+    final item = TuneAdjustmentMatrix(
+      id: id,
+      value: existing?.value ?? 0,
+      matrix: matrix.isEmpty ? existing?.matrix ?? const [] : matrix,
+      curves: curves ?? existing?.curves,
+      levels: levels ?? existing?.levels,
+      hsl: hsl ?? existing?.hsl,
+      colorGrading: colorGrading ?? existing?.colorGrading,
+    );
+
+    if (index >= 0) {
+      tuneAdjustmentMatrix[index] = item;
+    } else {
+      tuneAdjustmentMatrix.add(item);
+    }
+
+    tuneAdjustmentMatrix = [...tuneAdjustmentMatrix];
+    setState(() {});
+    tuneEditorCallbacks?.handleTuneFactorChange(tuneAdjustmentMatrix);
+    tuneEditorCallbacks?.handleTuneFactorChangeEnd(tuneAdjustmentMatrix);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      takeScreenshot();
+    });
   }
 
   /// Saves the current state to the undo stack before making changes.

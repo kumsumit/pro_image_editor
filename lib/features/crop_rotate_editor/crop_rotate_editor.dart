@@ -829,6 +829,7 @@ class CropRotateEditorState extends State<CropRotateEditor>
               screenshotHistoryPosition >= screenshotHistory.length
               ? null
               : screenshotHistory[screenshotHistoryPosition],
+          advancedTuneAdjustments: appliedTuneAdjustments,
         );
         retry++;
       } while (bytes == null && retry < 7 && mounted);

@@ -146,6 +146,7 @@ mixin StandaloneEditorState<
     required double blur,
     required List<List<double>> matrixFilterList,
     required List<List<double>> matrixTuneAdjustmentsList,
+    List<TuneAdjustmentMatrix>? advancedTuneAdjustmentsList,
     required TransformConfigs? transform,
   }) async {
     if (isGenerationActive) return;
@@ -180,6 +181,8 @@ mixin StandaloneEditorState<
         originalImageBytes: screenshotHistoryPosition > 0
             ? null
             : await editorImage!.safeByteArray(context),
+        advancedTuneAdjustments:
+            advancedTuneAdjustmentsList ?? appliedTuneAdjustments,
       );
 
       isGenerationActive = false;
@@ -207,6 +210,8 @@ mixin StandaloneEditorState<
             blur: blur,
             matrixFilterList: matrixFilterList,
             matrixTuneAdjustmentsList: matrixTuneAdjustmentsList,
+            tuneAdjustments:
+                advancedTuneAdjustmentsList ?? appliedTuneAdjustments,
             cropWidth: isTransformed ? outputSize!.width.round() : null,
             cropHeight: isTransformed ? outputSize!.height.round() : null,
             cropX: isTransformed ? outputOffset!.dx.round() : null,

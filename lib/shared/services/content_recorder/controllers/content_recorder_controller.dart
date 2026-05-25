@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/core/models/multi_threading/thread_capture_model.dart';
 import '/core/models/multi_threading/thread_request_model.dart';
+import '/features/tune_editor/models/tune_adjustment_matrix.dart';
+import '/features/tune_editor/utils/advanced_color_processor.dart';
 import '/plugins/mime/mime.dart';
 import '/shared/utils/decode_image.dart';
 import '/shared/utils/unique_id_generator.dart';
@@ -113,10 +115,12 @@ class ContentRecorderController {
   Future<Uint8List?> convertRawImageData({
     required ui.Image image,
     String? id,
+    List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
   }) {
     return _imageConverterService.convert(
       image: image,
       id: id ?? generateUniqueId(),
+      advancedTuneAdjustments: advancedTuneAdjustments,
     );
   }
 
@@ -131,6 +135,7 @@ class ContentRecorderController {
     String? id,
     ui.Image? image,
     OutputFormat? outputFormat,
+    List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
   }) async {
     /// If we're just capturing a screenshot for the state history in the web
     /// platform, but web worker is not supported, we return null.
@@ -152,6 +157,7 @@ class ContentRecorderController {
       image: image,
       id: id,
       format: outputFormat,
+      advancedTuneAdjustments: advancedTuneAdjustments,
     );
   }
 
@@ -167,6 +173,7 @@ class ContentRecorderController {
     Function(ui.Image?)? onImageCaptured,
     bool enableStateHistoryScreenshot = false,
     String? id,
+    List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
   }) async {
     recordReadyHelper = Completer();
     recorderStream.add(
@@ -196,6 +203,7 @@ class ContentRecorderController {
       onImageCaptured: onImageCaptured,
       stateHistoryScreenshot: enableStateHistoryScreenshot,
       outputFormat: format,
+      advancedTuneAdjustments: advancedTuneAdjustments,
     );
   }
 
@@ -270,11 +278,17 @@ class ContentRecorderController {
     BuildContext? context,
     Uint8List? originalImageBytes,
     Size? targetSize,
+    List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
   }) async {
     Uint8List? bytes;
 
+    final bool hasAdvancedTuneAdjustments = advancedTuneAdjustments.any(
+      (item) => item.hasAdvancedAdjustments,
+    );
     bool isGenerationActive =
-        backgroundScreenshot != null && !backgroundScreenshot.broken;
+        backgroundScreenshot != null &&
+        !backgroundScreenshot.broken &&
+        !hasAdvancedTuneAdjustments;
     String id = isGenerationActive
         ? backgroundScreenshot.id
         : generateUniqueId();
@@ -290,12 +304,17 @@ class ContentRecorderController {
           // Capture a new screenshot if the current screenshot is broken or
           // didn't exists.
           bytes = widget == null
-              ? await _captureImageContent(id: id, imageInfos: imageInfos)
+              ? await _captureImageContent(
+                  id: id,
+                  imageInfos: imageInfos,
+                  advancedTuneAdjustments: advancedTuneAdjustments,
+                )
               : await _captureWidget(
                   widget,
                   id: id,
                   targetSize: targetSize,
                   imageInfos: imageInfos,
+                  advancedTuneAdjustments: advancedTuneAdjustments,
                 );
         }
       } else {
@@ -308,6 +327,7 @@ class ContentRecorderController {
           id: id,
           targetSize: targetSize,
           widget: widget,
+          advancedTuneAdjustments: advancedTuneAdjustments,
         );
       }
     } catch (e) {
@@ -315,12 +335,17 @@ class ContentRecorderController {
 
       // Take a new screenshot when something went wrong.
       bytes = widget == null
-          ? await _captureImageContent(id: id, imageInfos: imageInfos)
+          ? await _captureImageContent(
+              id: id,
+              imageInfos: imageInfos,
+              advancedTuneAdjustments: advancedTuneAdjustments,
+            )
           : await _captureWidget(
               widget,
               id: id,
               targetSize: targetSize,
               imageInfos: imageInfos,
+              advancedTuneAdjustments: advancedTuneAdjustments,
             );
     }
     return bytes;
@@ -338,6 +363,7 @@ class ContentRecorderController {
     required String id,
     Size? targetSize,
     Widget? widget,
+    List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
   }) async {
     Uint8List? bytes = imageBytes;
 
@@ -373,23 +399,36 @@ class ContentRecorderController {
           /// Due to a known issue with image decoding in Flutter web, we need
           /// to recapture the image to ensure accuracy.
           bytes = widget == null
-              ? await _captureImageContent(id: id, imageInfos: imageInfos)
+              ? await _captureImageContent(
+                  id: id,
+                  imageInfos: imageInfos,
+                  advancedTuneAdjustments: advancedTuneAdjustments,
+                )
               : await _captureWidget(
                   widget,
                   id: id,
                   targetSize: targetSize,
                   imageInfos: imageInfos,
+                  advancedTuneAdjustments: advancedTuneAdjustments,
                 );
         } else {
           /// Send the image to the separate thread for encoding.
           bytes = await _threadManager.send(
-            await _generateSendEncodeData(id: id, image: image),
+            await _generateSendEncodeData(
+              id: id,
+              image: image,
+              advancedTuneAdjustments: advancedTuneAdjustments,
+            ),
           );
         }
       } else {
         /// Encode the image on the main thread.
         bytes = await encodeImageFromThreadRequest(
-          await _generateSendEncodeData(image: image, id: 'id'),
+          await _generateSendEncodeData(
+            image: image,
+            id: 'id',
+            advancedTuneAdjustments: advancedTuneAdjustments,
+          ),
         );
       }
     }
@@ -427,13 +466,22 @@ class ContentRecorderController {
   Future<ThreadRequest> _generateSendEncodeData({
     required ui.Image image,
     required String id,
+    List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
   }) async {
+    var convertedImage = await convertFlutterUiToImage(
+      image,
+      imageByteFormat: _configs.captureImageByteFormat,
+    );
+    if (advancedTuneAdjustments.any((item) => item.hasAdvancedAdjustments)) {
+      convertedImage = applyAdvancedColorAdjustments(
+        convertedImage,
+        advancedTuneAdjustments,
+      );
+    }
+
     return ThreadRequest(
       id: id,
-      image: await convertFlutterUiToImage(
-        image,
-        imageByteFormat: _configs.captureImageByteFormat,
-      ),
+      image: convertedImage,
       outputFormat: _configs.outputFormat,
       singleFrame: _configs.singleFrame,
       jpegQuality: _configs.jpegQuality,

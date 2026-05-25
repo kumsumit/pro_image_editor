@@ -2371,6 +2371,7 @@ class ProImageEditorState extends State<ProImageEditor>
             matrixTuneAdjustmentsList: stateManager.activeTuneAdjustments
                 .map((item) => item.matrix)
                 .toList(),
+            tuneAdjustments: stateManager.activeTuneAdjustments,
             startTime: _videoController?.startTime,
             endTime: _videoController?.endTime,
             cropWidth: isTransformed ? outputSize.width.round() : null,
@@ -2438,6 +2439,7 @@ class ProImageEditorState extends State<ProImageEditor>
           originalImageBytes: useOriginalImage
               ? await editorImage!.safeByteArray(context)
               : null,
+          advancedTuneAdjustments: stateManager.activeTuneAdjustments,
         ) ??
         Uint8List.fromList([]);
   }

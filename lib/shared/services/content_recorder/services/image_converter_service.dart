@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 
 import '/core/models/editor_configs/image_generation_configs/image_generation_configs.dart';
 import '/core/models/multi_threading/thread_request_model.dart';
+import '/features/tune_editor/models/tune_adjustment_matrix.dart';
+import '/features/tune_editor/utils/advanced_color_processor.dart';
 import '../utils/converters/convert_flutter_ui_to_image.dart';
 import '../utils/dart_ui_remove_transparent_image_areas.dart';
 import '../utils/encoder/encode_image.dart';
@@ -62,15 +64,24 @@ class ImageConverterService {
     required ui.Image image,
     required String id,
     OutputFormat? format,
+    List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
   }) async {
     format ??= configs.outputFormat;
+
+    if (_hasAdvancedColorAdjustments(advancedTuneAdjustments)) {
+      return await _convertOnMainThread(
+        image: image,
+        format: format,
+        advancedTuneAdjustments: advancedTuneAdjustments,
+      );
+    }
 
     if (configs.enableIsolateGeneration) {
       try {
         /// For the case multithreading isn't supported we fall back to the
         /// main thread.
         if (!threadManager.isSupported) {
-          return await _convertOnMainThread(image: image);
+          return await _convertOnMainThread(image: image, format: format);
         }
 
         return await threadManager.send(
@@ -79,10 +90,10 @@ class ImageConverterService {
       } catch (e) {
         // Fallback to the main thread.
         debugPrint('Fallback to main thread: $e');
-        return await _convertOnMainThread(image: image);
+        return await _convertOnMainThread(image: image, format: format);
       }
     } else {
-      return await _convertOnMainThread(image: image);
+      return await _convertOnMainThread(image: image, format: format);
     }
   }
 
@@ -95,18 +106,29 @@ class ImageConverterService {
   ///
   /// Returns a `Uint8List` containing the converted image data or `null`
   /// if the conversion fails.
-  Future<Uint8List?> _convertOnMainThread({required ui.Image image}) async {
+  Future<Uint8List?> _convertOnMainThread({
+    required ui.Image image,
+    required OutputFormat format,
+    List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
+  }) async {
     if (configs.cropToDrawingBounds) {
       image = await dartUiRemoveTransparentImgAreas(image) ?? image;
+    }
+    var convertedImage = await convertFlutterUiToImage(
+      image,
+      imageByteFormat: configs.captureImageByteFormat,
+    );
+    if (_hasAdvancedColorAdjustments(advancedTuneAdjustments)) {
+      convertedImage = applyAdvancedColorAdjustments(
+        convertedImage,
+        advancedTuneAdjustments,
+      );
     }
     return await encodeImageFromThreadRequest(
       ThreadRequest(
         id: 'id',
-        image: await convertFlutterUiToImage(
-          image,
-          imageByteFormat: configs.captureImageByteFormat,
-        ),
-        outputFormat: configs.outputFormat,
+        image: convertedImage,
+        outputFormat: format,
         singleFrame: configs.singleFrame,
         jpegQuality: configs.jpegQuality,
         jpegBackgroundColor: configs.jpegBackgroundColor.toARGB32(),
@@ -115,6 +137,10 @@ class ImageConverterService {
         pngLevel: configs.pngLevel,
       ),
     );
+  }
+
+  bool _hasAdvancedColorAdjustments(List<TuneAdjustmentMatrix> adjustments) {
+    return adjustments.any((item) => item.hasAdvancedAdjustments);
   }
 
   /// Prepares the image data required for conversion in a separate thread.
