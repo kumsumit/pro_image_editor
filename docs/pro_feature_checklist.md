@@ -94,11 +94,19 @@ are now part of layer state, layer copying, minified import/export, and
 non-destructive history round trips. UI tools for drawing/refining those masks
 are still the next slice of the masking epic.
 
+Step 3 adds serializable advanced color-adjustment primitives for RGB and
+per-channel curves, levels, HSL color ranges, and shadow/midtone/highlight
+color-grading wheels. These payloads are preserved by `TuneAdjustmentMatrix`
+copying and state-history import/export, including zero-value adjustments that
+carry editable pro color data. Accurate nonlinear rendering/export for curves,
+gamma levels, selective HSL ranges, and color-grading wheels is the next color
+pipeline slice.
+
 AI workflows are represented by examples and integration hooks rather than a
 bundled model provider. Catalog management, batch processing, professional
-retouching, masks, curves/levels, RAW processing, HDR merge, focus stacking,
-and panorama stitching should be treated as product epics rather than small
-editor toggles.
+retouching, mask UI/refinement, nonlinear color renderers, RAW processing,
+HDR merge, focus stacking, and panorama stitching should be treated as product
+epics rather than small editor toggles.
 
 ## Implementation Order
 

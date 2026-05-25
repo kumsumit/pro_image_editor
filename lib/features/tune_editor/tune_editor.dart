@@ -223,7 +223,7 @@ class TuneEditorState extends State<TuneEditor>
             .firstWhere(
               (el) => el.id == item.id,
               orElse: () =>
-                  TuneAdjustmentMatrix(id: 'id', value: 0, matrix: []),
+                  const TuneAdjustmentMatrix(id: 'id', value: 0, matrix: []),
             )
             .value,
       );

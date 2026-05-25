@@ -256,6 +256,67 @@ void main() {
       });
     });
 
+    testWidgets(
+      'restores zero-value advanced color adjustments after export/import',
+      (WidgetTester tester) async {
+        await tester.runAsync(() async {
+          final editor = await pumpTestEditor(tester);
+
+          const tuneMatrix = TuneAdjustmentMatrix(
+            id: 'pro-color',
+            value: 0,
+            matrix: [],
+            curves: CurvesAdjustment(
+              rgb: [
+                CurvePoint(input: 0, output: 0),
+                CurvePoint(input: 0.5, output: 0.65),
+                CurvePoint(input: 1, output: 1),
+              ],
+            ),
+            levels: LevelsAdjustment(
+              rgb: ChannelLevels(inputBlack: 0.05, inputWhite: 0.95),
+            ),
+            hsl: HslAdjustment(
+              ranges: [
+                HslRangeAdjustment(
+                  range: HslColorRange.green,
+                  hue: -0.04,
+                  saturation: 0.2,
+                  luminance: -0.1,
+                ),
+              ],
+            ),
+            colorGrading: ColorGradingAdjustment(
+              wheels: [
+                ColorGradingWheel(
+                  range: ColorGradingRange.shadows,
+                  hue: 0.58,
+                  saturation: 0.25,
+                  luminance: -0.08,
+                ),
+              ],
+            ),
+          );
+
+          editor.addHistory(tuneAdjustments: [tuneMatrix.copy()]);
+
+          expect(editor.stateManager.activeTuneAdjustments, [tuneMatrix]);
+          expect(editor.stateManager.historyPointer, 1);
+
+          await runExportImport(
+            editor,
+            onAfterImport: () {
+              editor.addHistory(tuneAdjustments: []);
+              expect(editor.stateManager.activeTuneAdjustments.length, 1);
+            },
+          );
+
+          expect(editor.stateManager.activeTuneAdjustments, [tuneMatrix]);
+          expect(editor.stateManager.historyPointer, 1);
+        });
+      },
+    );
+
     testWidgets('restores transformations correctly after export/import', (
       WidgetTester tester,
     ) async {

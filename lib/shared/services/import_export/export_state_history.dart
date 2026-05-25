@@ -223,7 +223,7 @@ class ExportStateHistory {
               .toList(),
         if (enableTuneExport)
           'tune'.toHistoryKey(minifier): element.tuneAdjustments
-              .where((item) => item.value != 0.0)
+              .where((item) => item.value != 0.0 || item.hasAdvancedAdjustments)
               .map((item) => item.toMap(maxDecimalPlaces: maxDecimalPlaces))
               .toList(),
         if (enableBlurExport) 'blur'.toHistoryKey(minifier): element.blur,
