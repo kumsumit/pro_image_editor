@@ -335,6 +335,7 @@ class LayerInteractionManager {
         flipY: originalLayer.flipY,
         meta: originalLayer.meta,
         boxConstraints: originalLayer.boxConstraints,
+        mask: originalLayer.mask,
       )..groupId = originalLayer.groupId;
     } else if (originalLayer is EmojiLayer) {
       return EmojiLayer(
@@ -349,6 +350,7 @@ class LayerInteractionManager {
         flipY: originalLayer.flipY,
         meta: originalLayer.meta,
         boxConstraints: originalLayer.boxConstraints,
+        mask: originalLayer.mask,
       )..groupId = originalLayer.groupId;
     } else if (originalLayer is PaintLayer) {
       return PaintLayer(
@@ -365,6 +367,7 @@ class LayerInteractionManager {
         flipY: originalLayer.flipY,
         meta: originalLayer.meta,
         boxConstraints: originalLayer.boxConstraints,
+        mask: originalLayer.mask,
       )..groupId = originalLayer.groupId;
     } else if (originalLayer is WidgetLayer) {
       return WidgetLayer(
@@ -380,6 +383,7 @@ class LayerInteractionManager {
         flipY: originalLayer.flipY,
         meta: originalLayer.meta,
         boxConstraints: originalLayer.boxConstraints,
+        mask: originalLayer.mask,
       )..groupId = originalLayer.groupId;
     }
 
@@ -396,6 +400,7 @@ class LayerInteractionManager {
       meta: originalLayer.meta,
       boxConstraints: originalLayer.boxConstraints,
       groupId: originalLayer.groupId,
+      mask: originalLayer.mask,
     );
   }
 

@@ -37,6 +37,7 @@ class EmojiLayer extends Layer {
     super.boxConstraints,
     super.key,
     super.groupId,
+    super.mask,
   });
 
   /// Factory constructor for creating an EmojiLayer instance from a Layer
@@ -59,6 +60,7 @@ class EmojiLayer extends Layer {
       rotation: layer.rotation,
       scale: layer.scale,
       meta: layer.meta,
+      mask: layer.mask,
       groupId: layer.groupId,
       emoji: map[keyConverter('emoji')],
       boxConstraints: layer.boxConstraints,
@@ -117,6 +119,7 @@ class EmojiLayer extends Layer {
     BoxConstraints? boxConstraints,
     String? id,
     String? groupId,
+    LayerMask? mask,
   }) {
     return EmojiLayer(
       emoji: emoji ?? this.emoji,
@@ -130,6 +133,7 @@ class EmojiLayer extends Layer {
       boxConstraints: boxConstraints ?? this.boxConstraints,
       id: id ?? this.id,
       groupId: groupId ?? this.groupId,
+      mask: mask ?? this.mask,
     );
   }
 

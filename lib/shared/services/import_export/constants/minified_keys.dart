@@ -55,6 +55,7 @@ const Map<String, String> kMinifiedLayerKeys = {
   'decoration': 'd',
   'interaction': 'in',
   'meta': 'm',
+  'mask': 'ma',
   'boxConstraints': 'bx',
   'maxTextWidth': 'mt',
   'shadows': 'sh',

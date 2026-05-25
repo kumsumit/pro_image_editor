@@ -78,16 +78,84 @@ void main() {
   }
 
   group('ProImageEditor import/export', () {
+    testWidgets('restores full non-destructive history after export/import', (
+      WidgetTester tester,
+    ) async {
+      await tester.runAsync(() async {
+        final editor = await pumpTestEditor(tester);
+        final testFilters = PresetFilters.addictiveRed.filters;
+        final tuneMatrix = TuneAdjustmentMatrix(
+          id: 'brightness',
+          value: 0.2,
+          matrix: ColorFilterAddons.brightness(0.2),
+        );
+
+        editor
+          ..addHistory(blur: 3)
+          ..addHistory(filters: testFilters)
+          ..addHistory(tuneAdjustments: [tuneMatrix.copy()])
+          ..undoAction();
+        expect(editor.stateManager.historyPointer, 2);
+        expect(editor.stateManager.canRedo, isTrue);
+        expect(editor.stateManager.activeFilters, testFilters);
+        expect(editor.stateManager.activeTuneAdjustments, isEmpty);
+
+        final history = await editor.exportStateHistory(
+          configs: const ExportEditorConfigs(
+            enableMinify: true,
+            historySpan: ExportHistorySpan.all,
+            maxDecimalPlaces: 16,
+          ),
+        );
+        final historyJson = await history.toJson();
+        final importHistory = ImportStateHistory.fromJson(
+          historyJson,
+          configs: importConfigs,
+        );
+
+        editor.addHistory(blur: 0);
+        expect(editor.stateManager.historyPointer, 3);
+        expect(editor.stateManager.activeBlur, 0);
+
+        await editor.importStateHistory(importHistory);
+
+        expect(editor.stateManager.stateHistory.length, 4);
+        expect(editor.stateManager.historyPointer, 2);
+        expect(editor.stateManager.canUndo, isTrue);
+        expect(editor.stateManager.canRedo, isTrue);
+        expect(editor.stateManager.activeBlur, 3);
+        expect(editor.stateManager.activeFilters, testFilters);
+        expect(editor.stateManager.activeTuneAdjustments, isEmpty);
+
+        editor.redoAction();
+
+        expect(editor.stateManager.historyPointer, 3);
+        expect(editor.stateManager.activeTuneAdjustments, [tuneMatrix.copy()]);
+      });
+    });
+
     testWidgets('restores all layers correctly after export/import', (
       WidgetTester tester,
     ) async {
       await tester.runAsync(() async {
         final editor = await pumpTestEditor(tester);
+        final maskedTextLayer = textLayerMock.copyWith(
+          mask: const LayerMask(
+            inverted: true,
+            primitives: [
+              LayerMaskPrimitive(
+                type: LayerMaskPrimitiveType.rectangle,
+                bounds: Rect.fromLTWH(4, 8, 16, 32),
+                feather: 2,
+              ),
+            ],
+          ),
+        );
 
         // Add one of each layer type
         editor
           ..addLayer(emojiLayerMock)
-          ..addLayer(textLayerMock)
+          ..addLayer(maskedTextLayer)
           ..addLayer(paintLayerMock)
           ..addLayer(widgetLayerMock);
 
@@ -103,6 +171,7 @@ void main() {
         );
 
         expect(editor.activeLayers.length, 4);
+        expect(editor.activeLayers[1].mask, maskedTextLayer.mask);
         expect(editor.stateManager.historyPointer, 1);
       });
     });

@@ -328,7 +328,7 @@ class CropCornerPainter extends CustomPainter {
     canvas.drawPath(path, cornerPaint);
   }
 
-  /// Determines whether the painter should repaint based on changes 
+  /// Determines whether the painter should repaint based on changes
   /// in the delegate.
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {

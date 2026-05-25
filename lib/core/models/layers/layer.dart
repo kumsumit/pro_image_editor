@@ -15,11 +15,13 @@ import '/shared/utils/unique_id_generator.dart';
 import '../editor_image.dart';
 import 'emoji_layer.dart';
 import 'layer_interaction.dart';
+import 'layer_mask.dart';
 import 'paint_layer.dart';
 import 'text_layer.dart';
 import 'widget_layer.dart';
 
 export 'emoji_layer.dart';
+export 'layer_mask.dart';
 export 'paint_layer.dart';
 export 'text_layer.dart';
 export 'widget_layer.dart';
@@ -39,6 +41,7 @@ class Layer {
     this.meta,
     this.boxConstraints,
     this.groupId,
+    this.mask,
   }) : key = key ??= GlobalKey(),
        keyInternalSize = GlobalKey(),
        id = id ?? generateUniqueId(),
@@ -90,6 +93,11 @@ class Layer {
       scale: safeParseDouble(map[keyConverter('scale')], fallback: 1),
       boxConstraints: boxConstraints,
       groupId: map[keyConverter('groupId')],
+      mask: map[keyConverter('mask')] != null
+          ? LayerMask.fromMap(
+              Map<String, dynamic>.from(map[keyConverter('mask')]),
+            )
+          : null,
     );
 
     /// Determines the layer type from the map and returns the appropriate
@@ -160,6 +168,9 @@ class Layer {
   /// that may be needed for processing or rendering.
   Map<String, dynamic>? meta;
 
+  /// Optional editable mask for selectively revealing or hiding this layer.
+  LayerMask? mask;
+
   /// Indicates whether this layer is a [TextLayer].
   ///
   /// Subclasses can override this to return `true` if the layer represents
@@ -208,6 +219,7 @@ class Layer {
           maxDecimalPlaces: maxDecimalPlaces,
         ),
       if (groupId != null) 'groupId': groupId,
+      if (mask != null) 'mask': mask!.toMap(maxDecimalPlaces: maxDecimalPlaces),
     };
   }
 
@@ -243,6 +255,8 @@ class Layer {
           maxDecimalPlaces: maxDecimalPlaces,
         ),
       if (layer.groupId != groupId) 'groupId': groupId,
+      if (layer.mask != mask)
+        'mask': mask?.toMap(maxDecimalPlaces: maxDecimalPlaces),
     };
   }
 
@@ -315,6 +329,7 @@ class Layer {
         other.interaction == interaction &&
         other.boxConstraints == boxConstraints &&
         other.groupId == groupId &&
+        other.mask == mask &&
         mapIsEqual(other.meta, meta);
   }
 
@@ -329,6 +344,7 @@ class Layer {
         interaction.hashCode ^
         boxConstraints.hashCode ^
         meta.hashCode ^
+        mask.hashCode ^
         groupId.hashCode;
   }
 
@@ -345,6 +361,7 @@ class Layer {
     LayerInteraction? interaction,
     Map<String, dynamic>? meta,
     BoxConstraints? boxConstraints,
+    LayerMask? mask,
   }) {
     return Layer(
       id: id ?? this.id,
@@ -357,6 +374,7 @@ class Layer {
       interaction: interaction ?? this.interaction,
       meta: meta ?? this.meta,
       boxConstraints: boxConstraints ?? this.boxConstraints,
+      mask: mask ?? this.mask,
     );
   }
 
@@ -372,6 +390,7 @@ class Layer {
       ..add(DiagnosticsProperty<bool>('flipY', flipY))
       ..add(DiagnosticsProperty<Offset>('offset', offset))
       ..add(DiagnosticsProperty<Map<String, dynamic>>('meta', meta))
+      ..add(DiagnosticsProperty<LayerMask>('mask', mask))
       ..add(
         DiagnosticsProperty<BoxConstraints>('boxConstraints', boxConstraints),
       )

@@ -134,6 +134,7 @@ class LayerCopyManager {
       customSecondaryColor: layer.customSecondaryColor,
       interaction: layer.interaction.copyWith(),
       boxConstraints: layer.boxConstraints?.copyWith(),
+      mask: layer.mask?.copyWith(),
     )..groupId = layer.groupId;
   }
 
@@ -156,6 +157,7 @@ class LayerCopyManager {
       meta: layer.meta,
       interaction: layer.interaction.copyWith(),
       boxConstraints: layer.boxConstraints?.copyWith(),
+      mask: layer.mask?.copyWith(),
     )..groupId = layer.groupId;
   }
 
@@ -180,6 +182,7 @@ class LayerCopyManager {
       interaction: layer.interaction.copyWith(),
       boxConstraints: layer.boxConstraints?.copyWith(),
       exportConfigs: layer.exportConfigs.copyWith(),
+      mask: layer.mask?.copyWith(),
     )..groupId = layer.groupId;
   }
 
@@ -204,6 +207,7 @@ class LayerCopyManager {
       opacity: layer.opacity,
       interaction: layer.interaction.copyWith(),
       boxConstraints: layer.boxConstraints?.copyWith(),
+      mask: layer.mask?.copyWith(),
     )..groupId = layer.groupId;
   }
 }

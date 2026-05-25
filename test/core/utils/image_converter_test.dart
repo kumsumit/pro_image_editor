@@ -3,17 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:pro_image_editor/shared/services/content_recorder/controllers/content_recorder_controller.dart';
-
-class MockContentRecorderController extends Mock
-    implements ContentRecorderController {}
-
-class MockBuildContext extends Mock implements BuildContext {
-  @override
-  bool get mounted => true;
-}
 
 Future<ui.Image> createTestUiImage() async {
   final recorder = ui.PictureRecorder();
@@ -26,17 +16,33 @@ Future<ui.Image> createTestUiImage() async {
 
 void main() {
   group('ImageConverter', () {
-    test('uiImageToImageBytes returns bytes and precaches if context is '
-        'provided', () async {
-      final testImage = await createTestUiImage();
-      final context = MockBuildContext();
+    testWidgets(
+      'uiImageToImageBytes returns bytes and precaches if context is provided',
+      (tester) async {
+        late BuildContext context;
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Builder(
+              builder: (builderContext) {
+                context = builderContext;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
 
-      final result = await ImageConverter.instance.uiImageToImageBytes(
-        testImage,
-        context: context,
-      );
-      expect(result, isA<Uint8List?>());
-    });
+        final testImage = await createTestUiImage();
+
+        final result = await tester.runAsync(
+          () => ImageConverter.instance.uiImageToImageBytes(
+            testImage,
+            context: context,
+          ),
+        );
+        expect(result, isA<Uint8List?>());
+      },
+    );
 
     test('uiImageToImageBytes returns bytes without context', () async {
       final testImage = await createTestUiImage();

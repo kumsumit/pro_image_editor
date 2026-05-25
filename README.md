@@ -26,6 +26,7 @@ The ProImageEditor is a Flutter widget designed for image editing within your ap
 
 - **[📷 Preview](#preview)**
 - **[✨ Features](#features)**
+- **[✅ Pro Feature Checklist](#pro-feature-checklist)**
 - **[🔧 Setup](#setup)**
 - **[❓ Usage](#usage)**
 - **[📽️ Video-Editor](#video-editor)**
@@ -175,6 +176,13 @@ The ProImageEditor is a Flutter widget designed for image editing within your ap
 
 - 🤖 **AI Assistant**: Integrate ChatGPT, Gemini, or other AI models to assist with image editing via smart suggestions or direct commands.
 - 🎥 **Video Editor**: Seamlessly combine image and video editing workflows.
+
+## Pro Feature Checklist
+
+For professional editing coverage, see the
+[Pro Feature Checklist](docs/pro_feature_checklist.md). It tracks each target
+capability with three QA gates: present, works correctly, and
+non-destructive/export-safe.
 
 
 

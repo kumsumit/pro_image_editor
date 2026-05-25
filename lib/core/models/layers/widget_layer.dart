@@ -45,6 +45,7 @@ class WidgetLayer extends Layer {
     super.boxConstraints,
     super.key,
     super.groupId,
+    super.mask,
   });
 
   /// Factory constructor for creating a WidgetLayer instance from a
@@ -127,6 +128,7 @@ class WidgetLayer extends Layer {
       rotation: layer.rotation,
       scale: layer.scale,
       meta: layer.meta,
+      mask: layer.mask,
       groupId: layer.groupId,
       widget: widget,
       width: layerWidth != null ? safeParseDouble(layerWidth) : null,
@@ -213,6 +215,7 @@ class WidgetLayer extends Layer {
     BoxConstraints? boxConstraints,
     WidgetLayerExportConfigs? exportConfigs,
     String? groupId,
+    LayerMask? mask,
   }) {
     return WidgetLayer(
       widget: widget ?? this.widget,
@@ -228,6 +231,7 @@ class WidgetLayer extends Layer {
       groupId: groupId ?? this.groupId,
       meta: meta ?? this.meta,
       boxConstraints: boxConstraints ?? this.boxConstraints,
+      mask: mask ?? this.mask,
     );
   }
 

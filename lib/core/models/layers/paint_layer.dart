@@ -46,6 +46,7 @@ class PaintLayer extends Layer {
     super.boxConstraints,
     super.key,
     super.groupId,
+    super.mask,
   });
 
   /// Factory constructor for creating a PaintLayer instance from a
@@ -68,6 +69,7 @@ class PaintLayer extends Layer {
       rotation: layer.rotation,
       scale: layer.scale,
       meta: layer.meta,
+      mask: layer.mask,
       groupId: layer.groupId,
       opacity: safeParseDouble(map[keyConverter('opacity')], fallback: 1.0),
       rawSize: Size(
@@ -164,6 +166,7 @@ class PaintLayer extends Layer {
     BoxConstraints? boxConstraints,
     String? id,
     String? groupId,
+    LayerMask? mask,
   }) {
     return PaintLayer(
       item: item ?? this.item,
@@ -179,6 +182,7 @@ class PaintLayer extends Layer {
       meta: meta ?? this.meta,
       boxConstraints: boxConstraints ?? this.boxConstraints,
       groupId: groupId ?? this.groupId,
+      mask: mask ?? this.mask,
     );
   }
 

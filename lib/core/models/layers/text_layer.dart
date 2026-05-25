@@ -47,6 +47,7 @@ class TextLayer extends Layer {
     super.boxConstraints,
     super.key,
     super.groupId,
+    super.mask,
   });
 
   /// Factory constructor for creating a TextLayer instance from a Layer
@@ -131,6 +132,7 @@ class TextLayer extends Layer {
       rotation: layer.rotation,
       scale: layer.scale,
       meta: layer.meta,
+      mask: layer.mask,
       boxConstraints: layer.boxConstraints,
       groupId: layer.groupId,
       text: map[keyConverter('text')] ?? '-',
@@ -336,6 +338,7 @@ class TextLayer extends Layer {
     BoxConstraints? boxConstraints,
     String? id,
     String? groupId,
+    LayerMask? mask,
   }) {
     return TextLayer(
       text: text ?? this.text,
@@ -358,6 +361,7 @@ class TextLayer extends Layer {
       meta: meta ?? this.meta,
       boxConstraints: boxConstraints ?? this.boxConstraints,
       groupId: groupId ?? this.groupId,
+      mask: mask ?? this.mask,
     );
   }
 

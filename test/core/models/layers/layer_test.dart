@@ -16,6 +16,7 @@ void main() {
       expect(layer.flipX, false);
       expect(layer.flipY, false);
       expect(layer.meta, isNull);
+      expect(layer.mask, isNull);
       expect(layer.boxConstraints, isNull);
       expect(layer.interaction, isA<LayerInteraction>());
       expect(layer.key, isA<GlobalKey>());
@@ -31,6 +32,15 @@ void main() {
         'flipX': true,
         'flipY': false,
         'meta': {'key': 'value'},
+        'mask': {
+          'inverted': true,
+          'primitives': [
+            {
+              'type': 'rectangle',
+              'bounds': {'x': 1, 'y': 2, 'width': 3, 'height': 4},
+            },
+          ],
+        },
         'interaction': {'movable': true},
         'boxConstraints': {
           'minWidth': 50.0,
@@ -49,6 +59,9 @@ void main() {
       expect(layer.flipX, true);
       expect(layer.flipY, false);
       expect(layer.meta, {'key': 'value'});
+      expect(layer.mask, isNotNull);
+      expect(layer.mask!.inverted, isTrue);
+      expect(layer.mask!.primitives, hasLength(1));
       expect(layer.boxConstraints, isNotNull);
       expect(layer.boxConstraints!.minWidth, 50.0);
       expect(layer.boxConstraints!.minHeight, 50.0);
@@ -64,6 +77,14 @@ void main() {
         flipX: true,
         flipY: false,
         meta: {'key': 'value'},
+        mask: const LayerMask(
+          primitives: [
+            LayerMaskPrimitive(
+              type: LayerMaskPrimitiveType.oval,
+              bounds: Rect.fromLTWH(1, 2, 3, 4),
+            ),
+          ],
+        ),
         boxConstraints: const BoxConstraints(
           minWidth: 50.0,
           minHeight: 50.0,
@@ -81,6 +102,8 @@ void main() {
       expect(map['flipX'], true);
       expect(map['flipY'], false);
       expect(map['meta'], {'key': 'value'});
+      expect(map['mask'], isNotNull);
+      expect(map['mask']['primitives'], hasLength(1));
       expect(map['boxConstraints'], isNotNull);
       expect(map['boxConstraints']['minWidth'], 50.0);
       expect(map['boxConstraints']['minHeight'], 50.0);
@@ -99,6 +122,15 @@ void main() {
         flipX: true,
         flipY: false,
         meta: {'custom': 'value'},
+        mask: const LayerMask(
+          primitives: [
+            LayerMaskPrimitive(
+              type: LayerMaskPrimitiveType.path,
+              points: [Offset(1, 2), Offset(3, 4)],
+              feather: 2,
+            ),
+          ],
+        ),
         interaction: LayerInteraction(
           enableEdit: true,
           enableMove: false,
@@ -130,6 +162,14 @@ void main() {
         flipX: false,
         flipY: true,
         meta: {'emojiMeta': 'value'},
+        mask: const LayerMask(
+          primitives: [
+            LayerMaskPrimitive(
+              type: LayerMaskPrimitiveType.rectangle,
+              bounds: Rect.fromLTWH(1, 2, 3, 4),
+            ),
+          ],
+        ),
         boxConstraints: const BoxConstraints(minWidth: 1, maxWidth: 500),
         interaction: LayerInteraction(
           enableEdit: true,
