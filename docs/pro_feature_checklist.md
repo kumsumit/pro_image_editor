@@ -34,8 +34,8 @@ Status values:
 
 | Feature | Status | Present | Works correctly | Non-destructive/export-safe | Complete requirement |
 |---|---|---:|---:|---:|---|
-| Healing and clone tools | Planned | [ ] | [ ] | [ ] | Healing brush, spot heal, clone stamp, patch-like repair, blemish cleanup, and edge-aware sampling. |
-| Object removal | Extension | [ ] | [ ] | [ ] | Brush selection, content-aware fill behavior, cleanup preview, and believable background reconstruction. |
+| Healing and clone tools | Partial | [ ] | [ ] | [ ] | Healing brush, spot heal, clone stamp, patch-like repair, blemish cleanup, and edge-aware sampling. |
+| Object removal | Partial | [ ] | [ ] | [ ] | Brush selection, content-aware fill behavior, cleanup preview, and believable background reconstruction. |
 | Blur and depth tools | Partial | [ ] | [ ] | [ ] | Selective blur, lens blur, background blur, focal-point control, bokeh styles, feathering, and editable blur masks. |
 | Face and portrait retouch | Planned | [ ] | [ ] | [ ] | Skin smoothing, teeth whitening, eye enhancement, stray-hair cleanup, face-shape controls, and natural-strength sliders. |
 
@@ -104,6 +104,13 @@ wheels during final image conversion. `TuneEditorState` now exposes setter
 methods that custom pro controls can call for curves, levels, HSL, and color
 grading; a first-party visual curves graph and wheel UI remains a dedicated UI
 design slice.
+
+Step 4 adds non-destructive retouch operation primitives and export rendering
+for clone stamp, healing brush, and object-removal fills. Retouch operations
+reuse `LayerMask`, are stored in state history/import/export, can be added or
+removed from `ProImageEditorState`, and are applied during final image
+conversion. The object-removal renderer is a deterministic surrounding-pixel
+fill, not a bundled generative/content-aware model provider.
 
 AI workflows are represented by examples and integration hooks rather than a
 bundled model provider. Catalog management, batch processing, professional

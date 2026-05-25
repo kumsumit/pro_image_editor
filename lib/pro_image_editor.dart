@@ -39,6 +39,7 @@ export 'core/models/init_configs/tune_editor_init_configs.dart';
 /// Various
 export '/core/models/complete_parameters.dart';
 export 'core/models/layers/layer.dart';
+export 'core/models/retouch/retouch_operation.dart';
 export 'core/models/selections/editor_selection.dart';
 export 'core/models/custom_widgets/layer_interaction_widgets.dart';
 export 'features/blur_editor/blur_editor.dart';
@@ -51,6 +52,7 @@ export '/shared/utils/debounce.dart';
 export '/features/main_editor/services/state_manager.dart';
 export '/features/tune_editor/models/tune_adjustment_matrix.dart';
 export '/features/tune_editor/utils/advanced_color_processor.dart';
+export '/features/retouch_editor/utils/retouch_processor.dart';
 export '/features/clips_editor/models/video_clip.dart';
 
 /// Editors

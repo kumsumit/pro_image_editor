@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/core/models/history/state_history.dart';
 import '/core/models/layers/layer.dart';
+import '/core/models/retouch/retouch_operation.dart';
 import '/core/platform/io/io_helper.dart';
 import '/features/filter_editor/types/filter_matrix.dart';
 import '/features/tune_editor/models/tune_adjustment_matrix.dart';
@@ -134,6 +135,7 @@ class ExportStateHistory {
     EditorStateHistory accumulateHistory(int position) {
       FilterMatrix filters = [];
       List<TuneAdjustmentMatrix> tuneAdjustments = [];
+      List<RetouchOperation>? retouchOperations;
       double? blur;
       TransformConfigs? transformConfigs;
 
@@ -142,6 +144,9 @@ class ExportStateHistory {
         if (item.blur != null) blur = item.blur;
         if (item.tuneAdjustments.isNotEmpty) {
           tuneAdjustments = item.tuneAdjustments;
+        }
+        if (item.retouchOperations != null) {
+          retouchOperations = item.retouchOperations;
         }
         if (item.transformConfigs != null) {
           transformConfigs = item.transformConfigs;
@@ -154,6 +159,7 @@ class ExportStateHistory {
         layers: position <= 0 ? [] : changes[position - 1].layers,
         transformConfigs: transformConfigs,
         tuneAdjustments: tuneAdjustments,
+        retouchOperations: retouchOperations,
       );
     }
 
@@ -206,6 +212,7 @@ class ExportStateHistory {
       bool enableTuneExport =
           _configs.exportTuneAdjustments && element.tuneAdjustments.isNotEmpty;
       bool enableBlurExport = _configs.exportBlur && element.blur != null;
+      bool enableRetouchExport = element.retouchOperations != null;
       bool enableFilterExport =
           _configs.exportFilter && element.filters.isNotEmpty;
       bool enableCropRotateExport =
@@ -224,6 +231,10 @@ class ExportStateHistory {
         if (enableTuneExport)
           'tune'.toHistoryKey(minifier): element.tuneAdjustments
               .where((item) => item.value != 0.0 || item.hasAdvancedAdjustments)
+              .map((item) => item.toMap(maxDecimalPlaces: maxDecimalPlaces))
+              .toList(),
+        if (enableRetouchExport)
+          'retouch'.toHistoryKey(minifier): element.retouchOperations!
               .map((item) => item.toMap(maxDecimalPlaces: maxDecimalPlaces))
               .toList(),
         if (enableBlurExport) 'blur'.toHistoryKey(minifier): element.blur,

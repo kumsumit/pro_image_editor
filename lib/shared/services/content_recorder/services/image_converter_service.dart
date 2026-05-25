@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 
 import '/core/models/editor_configs/image_generation_configs/image_generation_configs.dart';
 import '/core/models/multi_threading/thread_request_model.dart';
+import '/core/models/retouch/retouch_operation.dart';
+import '/features/retouch_editor/utils/retouch_processor.dart';
 import '/features/tune_editor/models/tune_adjustment_matrix.dart';
 import '/features/tune_editor/utils/advanced_color_processor.dart';
 import '../utils/converters/convert_flutter_ui_to_image.dart';
@@ -65,14 +67,17 @@ class ImageConverterService {
     required String id,
     OutputFormat? format,
     List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
+    List<RetouchOperation> retouchOperations = const [],
   }) async {
     format ??= configs.outputFormat;
 
-    if (_hasAdvancedColorAdjustments(advancedTuneAdjustments)) {
+    if (_hasAdvancedColorAdjustments(advancedTuneAdjustments) ||
+        retouchOperations.isNotEmpty) {
       return await _convertOnMainThread(
         image: image,
         format: format,
         advancedTuneAdjustments: advancedTuneAdjustments,
+        retouchOperations: retouchOperations,
       );
     }
 
@@ -110,6 +115,7 @@ class ImageConverterService {
     required ui.Image image,
     required OutputFormat format,
     List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
+    List<RetouchOperation> retouchOperations = const [],
   }) async {
     if (configs.cropToDrawingBounds) {
       image = await dartUiRemoveTransparentImgAreas(image) ?? image;
@@ -122,6 +128,12 @@ class ImageConverterService {
       convertedImage = applyAdvancedColorAdjustments(
         convertedImage,
         advancedTuneAdjustments,
+      );
+    }
+    if (retouchOperations.isNotEmpty) {
+      convertedImage = applyRetouchOperations(
+        convertedImage,
+        retouchOperations,
       );
     }
     return await encodeImageFromThreadRequest(

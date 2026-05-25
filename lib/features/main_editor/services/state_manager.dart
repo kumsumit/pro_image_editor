@@ -2,6 +2,7 @@ import '/core/models/editor_image.dart';
 import '/core/models/history/state_history.dart';
 import '/core/models/layers/layer.dart';
 import '/core/models/multi_threading/thread_capture_model.dart';
+import '/core/models/retouch/retouch_operation.dart';
 import '/features/filter_editor/types/filter_matrix.dart';
 import '/features/tune_editor/models/tune_adjustment_matrix.dart';
 import '../../crop_rotate_editor/models/transform_configs.dart';
@@ -120,6 +121,15 @@ class StateManager {
         )
         .tuneAdjustments;
 
+    _activeRetouchOperations =
+        activeHistory
+            .lastWhere(
+              (item) => item.retouchOperations != null,
+              orElse: EditorStateHistory.new,
+            )
+            .retouchOperations ??
+        [];
+
     activeLayers = _stateHistory[historyPointer].layers;
 
     _transformConfigs =
@@ -166,6 +176,13 @@ class StateManager {
   /// This is used to access the active `TuneAdjustmentMatrix` configurations.
   List<TuneAdjustmentMatrix> get activeTuneAdjustments =>
       _activeTuneAdjustments;
+
+  /// A list of active retouch operations for clone/heal/object removal.
+  List<RetouchOperation> _activeRetouchOperations = [];
+
+  /// A getter that returns the active retouch operations.
+  List<RetouchOperation> get activeRetouchOperations =>
+      _activeRetouchOperations;
 
   /// The current transformation configurations applied to the image,
   /// including rotation, scaling, or other transformations.

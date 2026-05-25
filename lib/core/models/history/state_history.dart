@@ -5,6 +5,7 @@ import '/features/crop_rotate_editor/models/transform_configs.dart';
 import '/features/filter_editor/types/filter_matrix.dart';
 import '/features/tune_editor/models/tune_adjustment_matrix.dart';
 import '../layers/layer.dart';
+import '../retouch/retouch_operation.dart';
 
 /// The `EditorStateHistory` class represents changes made to an image in the
 /// image editor. It contains information about the changes applied to the
@@ -19,6 +20,7 @@ class EditorStateHistory {
     this.layers = const [],
     this.filters = const [],
     this.tuneAdjustments = const [],
+    this.retouchOperations,
     this.transformConfigs,
   });
 
@@ -33,6 +35,9 @@ class EditorStateHistory {
 
   /// The applied tune adjustments.
   final List<TuneAdjustmentMatrix> tuneAdjustments;
+
+  /// The applied retouch operations.
+  final List<RetouchOperation>? retouchOperations;
 
   /// The transformation from the crop/ rotate editor.
   TransformConfigs? transformConfigs;
@@ -49,6 +54,7 @@ class EditorStateHistory {
     List<Layer>? layers,
     FilterMatrix? filters,
     List<TuneAdjustmentMatrix>? tuneAdjustments,
+    List<RetouchOperation>? retouchOperations,
     TransformConfigs? transformConfigs,
   }) {
     return EditorStateHistory(
@@ -56,6 +62,7 @@ class EditorStateHistory {
       layers: layers ?? this.layers,
       filters: filters ?? this.filters,
       tuneAdjustments: tuneAdjustments ?? this.tuneAdjustments,
+      retouchOperations: retouchOperations ?? this.retouchOperations,
       transformConfigs: transformConfigs ?? this.transformConfigs,
     );
   }
@@ -69,6 +76,7 @@ class EditorStateHistory {
         listEquals(other.layers, layers) &&
         listEquals(other.filters, filters) &&
         listEquals(other.tuneAdjustments, tuneAdjustments) &&
+        listEquals(other.retouchOperations, retouchOperations) &&
         transformConfigs == other.transformConfigs;
   }
 
@@ -78,6 +86,7 @@ class EditorStateHistory {
         layers.hashCode ^
         filters.hashCode ^
         tuneAdjustments.hashCode ^
+        retouchOperations.hashCode ^
         transformConfigs.hashCode;
   }
 }

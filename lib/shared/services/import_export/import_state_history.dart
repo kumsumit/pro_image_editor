@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '/core/models/editor_image.dart';
 import '/core/models/history/state_history.dart';
 import '/core/models/layers/layer.dart';
+import '/core/models/retouch/retouch_operation.dart';
 import '/core/platform/io/io_helper.dart';
 import '/features/crop_rotate_editor/models/transform_configs.dart';
 import '/features/filter_editor/constants/identity_matrix_constant.dart';
@@ -62,6 +63,7 @@ class ImportStateHistory {
 
     final blurKey = minifier.convertHistoryKey('blur');
     final tuneKey = minifier.convertHistoryKey('tune');
+    final retouchKey = minifier.convertHistoryKey('retouch');
     final filtersKey = minifier.convertHistoryKey('filters');
     final transformKey = minifier.convertHistoryKey('transform');
 
@@ -157,6 +159,17 @@ class ImportStateHistory {
           .map((tune) => TuneAdjustmentMatrix.fromMap(tune))
           .toList();
 
+      /// Retouch Operations
+      final retouchOperations = historyItem.containsKey(retouchKey)
+          ? (historyItem[retouchKey] as List<dynamic>? ?? [])
+                .map(
+                  (operation) => RetouchOperation.fromMap(
+                    Map<String, dynamic>.from(operation),
+                  ),
+                )
+                .toList()
+          : null;
+
       /// Transformations
       final transformConfigs =
           historyItem[transformKey] != null &&
@@ -172,6 +185,7 @@ class ImportStateHistory {
           layers: layers,
           filters: filters,
           tuneAdjustments: tuneAdjustments,
+          retouchOperations: retouchOperations,
           transformConfigs: transformConfigs,
         ),
       );

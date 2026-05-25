@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '/core/models/retouch/retouch_operation.dart';
 import '/features/audio_editor/models/audio_track.dart';
 import '/features/clips_editor/models/video_clip.dart';
 import '/features/filter_editor/utils/combine_color_matrix_utils.dart';
@@ -29,6 +30,12 @@ class CompleteParameters {
       tuneAdjustments: List<TuneAdjustmentMatrix>.from(
         map['tuneAdjustments']?.map(
               (x) => TuneAdjustmentMatrix.fromMap(Map<String, dynamic>.from(x)),
+            ) ??
+            [],
+      ),
+      retouchOperations: List<RetouchOperation>.from(
+        map['retouchOperations']?.map(
+              (x) => RetouchOperation.fromMap(Map<String, dynamic>.from(x)),
             ) ??
             [],
       ),
@@ -75,6 +82,7 @@ class CompleteParameters {
     required this.isTransformed,
     required this.layers,
     this.tuneAdjustments = const [],
+    this.retouchOperations = const [],
     this.videoClips = const [],
     this.customAudioTrack,
   });
@@ -90,6 +98,9 @@ class CompleteParameters {
 
   /// Editable tune adjustments, including advanced color payloads.
   final List<TuneAdjustmentMatrix> tuneAdjustments;
+
+  /// Editable clone/heal/object-removal operations.
+  final List<RetouchOperation> retouchOperations;
 
   /// All active color filters including both tuning and filter matrices.
   List<List<double>> get colorFilters => [
@@ -175,6 +186,7 @@ class CompleteParameters {
     bool? isTransformed,
     List<Layer>? layers,
     List<TuneAdjustmentMatrix>? tuneAdjustments,
+    List<RetouchOperation>? retouchOperations,
     List<VideoClip>? videoClips,
     AudioTrack? customAudioTrack,
   }) {
@@ -196,6 +208,7 @@ class CompleteParameters {
       isTransformed: isTransformed ?? this.isTransformed,
       layers: layers ?? this.layers,
       tuneAdjustments: tuneAdjustments ?? this.tuneAdjustments,
+      retouchOperations: retouchOperations ?? this.retouchOperations,
       videoClips: videoClips ?? this.videoClips,
       customAudioTrack: customAudioTrack ?? this.customAudioTrack,
     );
@@ -213,6 +226,7 @@ class CompleteParameters {
           matrixTuneAdjustmentsList,
         ) &&
         listEquals(other.tuneAdjustments, tuneAdjustments) &&
+        listEquals(other.retouchOperations, retouchOperations) &&
         other.startTime == startTime &&
         other.endTime == endTime &&
         other.cropWidth == cropWidth &&
@@ -235,6 +249,7 @@ class CompleteParameters {
         matrixFilterList.hashCode ^
         matrixTuneAdjustmentsList.hashCode ^
         tuneAdjustments.hashCode ^
+        retouchOperations.hashCode ^
         startTime.hashCode ^
         endTime.hashCode ^
         cropWidth.hashCode ^
@@ -260,6 +275,7 @@ class CompleteParameters {
       'matrixFilterList': matrixFilterList,
       'matrixTuneAdjustmentsList': matrixTuneAdjustmentsList,
       'tuneAdjustments': tuneAdjustments.map((x) => x.toMap()).toList(),
+      'retouchOperations': retouchOperations.map((x) => x.toMap()).toList(),
       'startTime': startTime?.inMicroseconds,
       'endTime': endTime?.inMicroseconds,
       'cropWidth': cropWidth,
@@ -284,6 +300,7 @@ class CompleteParameters {
         'matrixFilterList: $matrixFilterList, '
         'matrixTuneAdjustmentsList: $matrixTuneAdjustmentsList, '
         'tuneAdjustments: $tuneAdjustments, '
+        'retouchOperations: $retouchOperations, '
         'startTime: $startTime, '
         'endTime: $endTime, '
         'cropWidth: $cropWidth, '

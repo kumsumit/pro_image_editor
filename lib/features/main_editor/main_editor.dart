@@ -713,6 +713,8 @@ class ProImageEditorState extends State<ProImageEditor>
   /// state.
   /// - [tuneAdjustments]: An optional list of tune adjustments states to be
   /// included in the new state.
+  /// - [retouchOperations]: An optional list of retouch operations to be
+  /// included in the new state.
   /// - [blur]: An optional blur state to be included in the new state.
   /// - [heroScreenshotRequired]: A flag indicating whether a hero screenshot
   /// is required.
@@ -735,6 +737,7 @@ class ProImageEditorState extends State<ProImageEditor>
     TransformConfigs? transformConfigs,
     FilterMatrix? filters,
     List<TuneAdjustmentMatrix>? tuneAdjustments,
+    List<RetouchOperation>? retouchOperations,
     double? blur,
     bool heroScreenshotRequired = false,
     bool blockCaptureScreenshot = false,
@@ -752,6 +755,7 @@ class ProImageEditorState extends State<ProImageEditor>
                 : activeLayerList),
         filters: filters ?? [],
         tuneAdjustments: tuneAdjustments ?? [],
+        retouchOperations: retouchOperations ?? [],
       ),
       historyLimit: stateHistoryConfigs.stateHistoryLimit,
       enableScreenshotLimit: imageGenerationConfigs.enableBackgroundGeneration,
@@ -768,6 +772,31 @@ class ProImageEditorState extends State<ProImageEditor>
       );
     }
     setState(() {});
+  }
+
+  /// Adds or replaces a non-destructive retouch operation.
+  void addRetouchOperation(RetouchOperation operation) {
+    final retouchOperations = [
+      ...stateManager.activeRetouchOperations.where(
+        (item) => item.id != operation.id,
+      ),
+      operation,
+    ];
+    addHistory(
+      retouchOperations: retouchOperations,
+      heroScreenshotRequired: true,
+    );
+  }
+
+  /// Removes a non-destructive retouch operation by id.
+  void removeRetouchOperation(String id) {
+    final retouchOperations = stateManager.activeRetouchOperations
+        .where((item) => item.id != id)
+        .toList();
+    addHistory(
+      retouchOperations: retouchOperations,
+      heroScreenshotRequired: true,
+    );
   }
 
   /// Replaces a layer at the specified index with a new layer.
@@ -2372,6 +2401,7 @@ class ProImageEditorState extends State<ProImageEditor>
                 .map((item) => item.matrix)
                 .toList(),
             tuneAdjustments: stateManager.activeTuneAdjustments,
+            retouchOperations: stateManager.activeRetouchOperations,
             startTime: _videoController?.startTime,
             endTime: _videoController?.endTime,
             cropWidth: isTransformed ? outputSize.width.round() : null,
@@ -2440,6 +2470,7 @@ class ProImageEditorState extends State<ProImageEditor>
               ? await editorImage!.safeByteArray(context)
               : null,
           advancedTuneAdjustments: stateManager.activeTuneAdjustments,
+          retouchOperations: stateManager.activeRetouchOperations,
         ) ??
         Uint8List.fromList([]);
   }

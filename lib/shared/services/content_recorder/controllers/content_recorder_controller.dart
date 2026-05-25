@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import '/core/models/editor_configs/pro_image_editor_configs.dart';
 import '/core/models/multi_threading/thread_capture_model.dart';
 import '/core/models/multi_threading/thread_request_model.dart';
+import '/core/models/retouch/retouch_operation.dart';
+import '/features/retouch_editor/utils/retouch_processor.dart';
 import '/features/tune_editor/models/tune_adjustment_matrix.dart';
 import '/features/tune_editor/utils/advanced_color_processor.dart';
 import '/plugins/mime/mime.dart';
@@ -116,11 +118,13 @@ class ContentRecorderController {
     required ui.Image image,
     String? id,
     List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
+    List<RetouchOperation> retouchOperations = const [],
   }) {
     return _imageConverterService.convert(
       image: image,
       id: id ?? generateUniqueId(),
       advancedTuneAdjustments: advancedTuneAdjustments,
+      retouchOperations: retouchOperations,
     );
   }
 
@@ -136,6 +140,7 @@ class ContentRecorderController {
     ui.Image? image,
     OutputFormat? outputFormat,
     List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
+    List<RetouchOperation> retouchOperations = const [],
   }) async {
     /// If we're just capturing a screenshot for the state history in the web
     /// platform, but web worker is not supported, we return null.
@@ -158,6 +163,7 @@ class ContentRecorderController {
       id: id,
       format: outputFormat,
       advancedTuneAdjustments: advancedTuneAdjustments,
+      retouchOperations: retouchOperations,
     );
   }
 
@@ -174,6 +180,7 @@ class ContentRecorderController {
     bool enableStateHistoryScreenshot = false,
     String? id,
     List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
+    List<RetouchOperation> retouchOperations = const [],
   }) async {
     recordReadyHelper = Completer();
     recorderStream.add(
@@ -204,6 +211,7 @@ class ContentRecorderController {
       stateHistoryScreenshot: enableStateHistoryScreenshot,
       outputFormat: format,
       advancedTuneAdjustments: advancedTuneAdjustments,
+      retouchOperations: retouchOperations,
     );
   }
 
@@ -279,6 +287,7 @@ class ContentRecorderController {
     Uint8List? originalImageBytes,
     Size? targetSize,
     List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
+    List<RetouchOperation> retouchOperations = const [],
   }) async {
     Uint8List? bytes;
 
@@ -288,7 +297,8 @@ class ContentRecorderController {
     bool isGenerationActive =
         backgroundScreenshot != null &&
         !backgroundScreenshot.broken &&
-        !hasAdvancedTuneAdjustments;
+        !hasAdvancedTuneAdjustments &&
+        retouchOperations.isEmpty;
     String id = isGenerationActive
         ? backgroundScreenshot.id
         : generateUniqueId();
@@ -308,6 +318,7 @@ class ContentRecorderController {
                   id: id,
                   imageInfos: imageInfos,
                   advancedTuneAdjustments: advancedTuneAdjustments,
+                  retouchOperations: retouchOperations,
                 )
               : await _captureWidget(
                   widget,
@@ -315,6 +326,7 @@ class ContentRecorderController {
                   targetSize: targetSize,
                   imageInfos: imageInfos,
                   advancedTuneAdjustments: advancedTuneAdjustments,
+                  retouchOperations: retouchOperations,
                 );
         }
       } else {
@@ -328,6 +340,7 @@ class ContentRecorderController {
           targetSize: targetSize,
           widget: widget,
           advancedTuneAdjustments: advancedTuneAdjustments,
+          retouchOperations: retouchOperations,
         );
       }
     } catch (e) {
@@ -339,6 +352,7 @@ class ContentRecorderController {
               id: id,
               imageInfos: imageInfos,
               advancedTuneAdjustments: advancedTuneAdjustments,
+              retouchOperations: retouchOperations,
             )
           : await _captureWidget(
               widget,
@@ -346,6 +360,7 @@ class ContentRecorderController {
               targetSize: targetSize,
               imageInfos: imageInfos,
               advancedTuneAdjustments: advancedTuneAdjustments,
+              retouchOperations: retouchOperations,
             );
     }
     return bytes;
@@ -364,6 +379,7 @@ class ContentRecorderController {
     Size? targetSize,
     Widget? widget,
     List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
+    List<RetouchOperation> retouchOperations = const [],
   }) async {
     Uint8List? bytes = imageBytes;
 
@@ -390,7 +406,10 @@ class ContentRecorderController {
       outputRatio,
       enableThumbnailGeneration,
     );
-    if (!isFormatSame || isOutputSizeTooLarge) {
+    if (!isFormatSame ||
+        isOutputSizeTooLarge ||
+        advancedTuneAdjustments.any((item) => item.hasAdvancedAdjustments) ||
+        retouchOperations.isNotEmpty) {
       final ui.Image image = await decodeImageFromList(bytes);
       if (_configs.enableIsolateGeneration) {
         /// Recapture the image if the output format is incorrect or the output
@@ -403,6 +422,7 @@ class ContentRecorderController {
                   id: id,
                   imageInfos: imageInfos,
                   advancedTuneAdjustments: advancedTuneAdjustments,
+                  retouchOperations: retouchOperations,
                 )
               : await _captureWidget(
                   widget,
@@ -418,6 +438,7 @@ class ContentRecorderController {
               id: id,
               image: image,
               advancedTuneAdjustments: advancedTuneAdjustments,
+              retouchOperations: retouchOperations,
             ),
           );
         }
@@ -428,6 +449,7 @@ class ContentRecorderController {
             image: image,
             id: 'id',
             advancedTuneAdjustments: advancedTuneAdjustments,
+            retouchOperations: retouchOperations,
           ),
         );
       }
@@ -467,6 +489,7 @@ class ContentRecorderController {
     required ui.Image image,
     required String id,
     List<TuneAdjustmentMatrix> advancedTuneAdjustments = const [],
+    List<RetouchOperation> retouchOperations = const [],
   }) async {
     var convertedImage = await convertFlutterUiToImage(
       image,
@@ -476,6 +499,12 @@ class ContentRecorderController {
       convertedImage = applyAdvancedColorAdjustments(
         convertedImage,
         advancedTuneAdjustments,
+      );
+    }
+    if (retouchOperations.isNotEmpty) {
+      convertedImage = applyRetouchOperations(
+        convertedImage,
+        retouchOperations,
       );
     }
 

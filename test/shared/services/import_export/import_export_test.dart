@@ -317,6 +317,46 @@ void main() {
       },
     );
 
+    testWidgets('restores retouch operations after export/import', (
+      WidgetTester tester,
+    ) async {
+      await tester.runAsync(() async {
+        final editor = await pumpTestEditor(tester);
+
+        const operation = RetouchOperation(
+          id: 'clone-spot',
+          type: RetouchOperationType.cloneStamp,
+          sourceOffset: Offset(-12, 0),
+          strength: 0.8,
+          mask: LayerMask(
+            primitives: [
+              LayerMaskPrimitive(
+                type: LayerMaskPrimitiveType.rectangle,
+                bounds: Rect.fromLTWH(24, 24, 12, 12),
+                feather: 2,
+              ),
+            ],
+          ),
+        );
+
+        editor.addRetouchOperation(operation);
+
+        expect(editor.stateManager.activeRetouchOperations, [operation]);
+        expect(editor.stateManager.historyPointer, 1);
+
+        await runExportImport(
+          editor,
+          onAfterImport: () {
+            editor.removeRetouchOperation(operation.id);
+            expect(editor.stateManager.activeRetouchOperations, isEmpty);
+          },
+        );
+
+        expect(editor.stateManager.activeRetouchOperations, [operation]);
+        expect(editor.stateManager.historyPointer, 1);
+      });
+    });
+
     testWidgets('restores transformations correctly after export/import', (
       WidgetTester tester,
     ) async {
