@@ -156,6 +156,8 @@ class CollageMakerState extends State<CollageMaker> {
   bool _isFreestyle = false;
   bool _isRendering = false;
   _FreestyleLayer? _gestureStartLayer;
+  Offset? _gestureStartFocal;
+  _PhotoEditState? _gestureStartPhotoEdit;
 
   // Text overlay state
   final List<_TextLayer> _textLayers = [];
@@ -572,6 +574,7 @@ class CollageMakerState extends State<CollageMaker> {
         _freestyleLayers[i] = layer.copyWith(imageIndex: imageIndex);
       }
       _remapRemovedFreestyleIndexes(from, to);
+      _remapPhotoEditStatesForMove(from, to);
     });
 
     widget.onMoveImage?.call(from, to);
@@ -581,6 +584,7 @@ class CollageMakerState extends State<CollageMaker> {
     if (widget.onRemoveImage == null) return;
 
     setState(() {
+      _remapPhotoEditStatesForRemove(index);
       _freestyleLayers.removeWhere((layer) => layer.imageIndex == index);
       for (var i = 0; i < _freestyleLayers.length; i++) {
         final layer = _freestyleLayers[i];
@@ -617,8 +621,45 @@ class CollageMakerState extends State<CollageMaker> {
       _freestyleLayers.clear();
       _removedFreestyleImageIndexes.clear();
       _selectedFreestyleLayerIndex = null;
+      _photoEditStates.clear();
     });
     widget.onClearImages?.call();
+  }
+
+  /// Per-photo edits are keyed by image index, so they must follow the photo
+  /// whenever the underlying list is reordered.
+  void _remapPhotoEditStatesForMove(int from, int to) {
+    if (_photoEditStates.isEmpty) return;
+    final remapped = <int, _PhotoEditState>{};
+    for (final entry in _photoEditStates.entries) {
+      final index = entry.key;
+      var next = index;
+      if (index == from) {
+        next = to;
+      } else if (from < to && index > from && index <= to) {
+        next = index - 1;
+      } else if (from > to && index >= to && index < from) {
+        next = index + 1;
+      }
+      remapped[next] = entry.value;
+    }
+    _photoEditStates
+      ..clear()
+      ..addAll(remapped);
+  }
+
+  /// Drops the edit for [removedIndex] and shifts later edits down a slot.
+  void _remapPhotoEditStatesForRemove(int removedIndex) {
+    if (_photoEditStates.isEmpty) return;
+    final remapped = <int, _PhotoEditState>{};
+    for (final entry in _photoEditStates.entries) {
+      final index = entry.key;
+      if (index == removedIndex) continue;
+      remapped[index > removedIndex ? index - 1 : index] = entry.value;
+    }
+    _photoEditStates
+      ..clear()
+      ..addAll(remapped);
   }
 
   void _remapRemovedFreestyleIndexes(int from, int to) {
@@ -1988,8 +2029,9 @@ class CollageMakerState extends State<CollageMaker> {
                     },
                     onScaleStart: layer.locked
                         ? null
-                        : (_) {
+                        : (details) {
                             _gestureStartLayer = _freestyleLayers[index];
+                            _gestureStartFocal = details.focalPoint;
                             setState(() {
                               _selectedFreestyleLayerIndex = index;
                               _selectedTextLayerIndex = null;
@@ -2001,7 +2043,10 @@ class CollageMakerState extends State<CollageMaker> {
                         : (details) {
                             final start =
                                 _gestureStartLayer ?? _freestyleLayers[index];
-                            final current = _freestyleLayers[index];
+                            final startFocal =
+                                _gestureStartFocal ?? details.focalPoint;
+
+                            // Size grows/shrinks about the start center.
                             final nextWidth =
                                 (start.placement.width * details.scale)
                                     .clamp(0.18, 0.92)
@@ -2010,19 +2055,35 @@ class CollageMakerState extends State<CollageMaker> {
                                 (start.placement.height * details.scale)
                                     .clamp(0.16, 0.92)
                                     .toDouble();
-                            final nextLeft =
-                                (current.placement.left +
-                                        details.focalPointDelta.dx / width)
-                                    .clamp(0.0, 1 - nextWidth)
-                                    .toDouble();
-                            final nextTop =
-                                (current.placement.top +
-                                        details.focalPointDelta.dy / height)
-                                    .clamp(0.0, 1 - nextHeight)
-                                    .toDouble();
+
+                            // Keep the gesture anchored to the start center,
+                            // then translate by how far the fingers travelled.
+                            final dragX =
+                                (details.focalPoint.dx - startFocal.dx) / width;
+                            final dragY =
+                                (details.focalPoint.dy - startFocal.dy) /
+                                height;
+                            final centerX =
+                                start.placement.left +
+                                start.placement.width / 2 +
+                                dragX;
+                            final centerY =
+                                start.placement.top +
+                                start.placement.height / 2 +
+                                dragY;
+
+                            final nextLeft = (centerX - nextWidth / 2)
+                                .clamp(0.0, 1 - nextWidth)
+                                .toDouble();
+                            final nextTop = (centerY - nextHeight / 2)
+                                .clamp(0.0, 1 - nextHeight)
+                                .toDouble();
+                            final nextRotation =
+                                start.rotation + details.rotation;
 
                             setState(() {
-                              _freestyleLayers[index] = current.copyWith(
+                              _freestyleLayers[index] = start.copyWith(
+                                rotation: nextRotation,
                                 placement: _FreestylePlacement(
                                   left: nextLeft,
                                   top: nextTop,
@@ -2034,7 +2095,10 @@ class CollageMakerState extends State<CollageMaker> {
                           },
                     onScaleEnd: layer.locked
                         ? null
-                        : (_) => _gestureStartLayer = null,
+                        : (_) {
+                            _gestureStartLayer = null;
+                            _gestureStartFocal = null;
+                          },
                     child: _FreestylePhoto(
                       image: widget.images[layer.imageIndex],
                       selected: selected,
@@ -2086,22 +2150,65 @@ class CollageMakerState extends State<CollageMaker> {
   Widget _slot(int index) {
     final editState = _photoEditStates[index];
     final hasImage = index < widget.images.length;
-    return GestureDetector(
-      onTap: hasImage ? () => _showPhotoEditSheet(index) : null,
-      child: _FramedPhoto(
-        radius: _radius,
-        borderColor: _borderColor,
-        borderWidth: _borderWidth,
-        frameStyle: _frameStyle,
-        shadowStyle: _shadowStyle,
-        child: ClipRRect(
-          borderRadius:
-              BorderRadius.circular(_frameStyle.contentRadius(_radius)),
-          child: hasImage
-              ? _buildPhotoWithEdit(index, editState)
-              : _EmptySlot(index: index + 1),
-        ),
+
+    final framed = _FramedPhoto(
+      radius: _radius,
+      borderColor: _borderColor,
+      borderWidth: _borderWidth,
+      frameStyle: _frameStyle,
+      shadowStyle: _shadowStyle,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_frameStyle.contentRadius(_radius)),
+        child: hasImage
+            ? _buildPhotoWithEdit(index, editState)
+            : _EmptySlot(index: index + 1),
       ),
+    );
+
+    if (!hasImage) return framed;
+
+    // Single tap opens the fine-tune sheet (flip / reset / precise sliders);
+    // dragging pans the photo inside its slot and pinching zooms it.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final slotWidth = constraints.maxWidth;
+        final slotHeight = constraints.maxHeight;
+        _PhotoEditState current() =>
+            _photoEditStates[index] ?? const _PhotoEditState();
+
+        return GestureDetector(
+          onTap: () => _showPhotoEditSheet(index),
+          onScaleStart: (_) => _gestureStartPhotoEdit = current(),
+          onScaleUpdate: (details) {
+            final start = _gestureStartPhotoEdit ?? current();
+            final live = current();
+            final nextZoom = (start.zoom * details.scale)
+                .clamp(1.0, 3.0)
+                .toDouble();
+            // _buildPhotoWithEdit applies a 0.35 fractional translation factor,
+            // so divide back through it to keep dragging 1:1 with the finger.
+            final nextPanX =
+                (live.panX +
+                        (details.focalPointDelta.dx / slotWidth) / 0.35)
+                    .clamp(-1.0, 1.0)
+                    .toDouble();
+            final nextPanY =
+                (live.panY +
+                        (details.focalPointDelta.dy / slotHeight) / 0.35)
+                    .clamp(-1.0, 1.0)
+                    .toDouble();
+            setState(() {
+              _photoEditStates[index] = live.copyWith(
+                zoom: nextZoom,
+                panX: nextPanX,
+                panY: nextPanY,
+              );
+            });
+          },
+          onScaleEnd: (_) => _gestureStartPhotoEdit = null,
+          child: framed,
+        );
+      },
     );
   }
 }
